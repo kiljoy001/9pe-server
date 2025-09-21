@@ -1,0 +1,432 @@
+DIGEST 19ff977fcf3e76bae408f99a1aa241a5
+FServerCorrectness
+R79:92 Coq.Lists.List <> <> lib
+R110:124 Coq.Arith.Arith <> <> lib
+R142:154 Coq.Bool.Bool <> <> lib
+R172:189 Coq.Strings.String <> <> lib
+R207:240 Coq.Logic.FunctionalExtensionality <> <> lib
+R250:262 Coq.Lists.List ListNotations <> mod
+ind 334:344 <> MessageType
+constr 360:367 <> TVersion
+constr 371:378 <> RVersion
+constr 384:390 <> TAttach
+constr 394:400 <> RAttach
+constr 406:410 <> TWalk
+constr 414:418 <> RWalk
+constr 424:428 <> TOpen
+constr 432:436 <> ROpen
+constr 442:446 <> TRead
+constr 450:454 <> RRead
+constr 460:465 <> TWrite
+constr 469:474 <> RWrite
+constr 480:485 <> TClunk
+constr 489:494 <> RClunk
+constr 500:505 <> TError
+constr 509:514 <> RError
+scheme 334:344 <> MessageType_rect
+scheme 334:344 <> MessageType_ind
+scheme 334:344 <> MessageType_rec
+scheme 334:344 <> MessageType_sind
+rec 525:527 <> Qid
+proj 549:553 <> qtype
+proj 564:567 <> vers
+proj 578:581 <> path
+R557:559 Coq.Init.Datatypes <> nat ind
+R571:573 Coq.Init.Datatypes <> nat ind
+R585:587 Coq.Init.Datatypes <> nat ind
+ind 603:609 <> Message
+constr 625:631 <> Version
+constr 664:674 <> VersionResp
+constr 707:712 <> Attach
+constr 762:771 <> AttachResp
+constr 794:797 <> Walk
+constr 842:849 <> WalkResp
+constr 877:880 <> Open
+constr 910:917 <> OpenResp
+constr 947:950 <> Read
+constr 987:994 <> ReadResp
+constr 1022:1026 <> Write
+constr 1068:1076 <> WriteResp
+constr 1099:1103 <> Clunk
+constr 1126:1134 <> ClunkResp
+constr 1150:1154 <> Error
+R638:641 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R635:637 Coq.Init.Datatypes <> nat ind
+R648:651 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R642:647 Coq.Strings.String <> string ind
+R652:658 ServerCorrectness <> Message:7 ind
+R681:684 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R678:680 Coq.Init.Datatypes <> nat ind
+R691:694 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R685:690 Coq.Strings.String <> string ind
+R695:701 ServerCorrectness <> Message:7 ind
+R719:722 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R716:718 Coq.Init.Datatypes <> nat ind
+R726:729 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R723:725 Coq.Init.Datatypes <> nat ind
+R736:739 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R730:735 Coq.Strings.String <> string ind
+R746:749 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R740:745 Coq.Strings.String <> string ind
+R750:756 ServerCorrectness <> Message:7 ind
+R778:781 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R775:777 ServerCorrectness <> Qid rec
+R782:788 ServerCorrectness <> Message:7 ind
+R804:807 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R801:803 Coq.Init.Datatypes <> nat ind
+R811:814 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R808:810 Coq.Init.Datatypes <> nat ind
+R826:829 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R815:818 Coq.Init.Datatypes <> list ind
+R820:825 Coq.Strings.String <> string ind
+R830:836 ServerCorrectness <> Message:7 ind
+R861:864 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R853:856 Coq.Init.Datatypes <> list ind
+R858:860 ServerCorrectness <> Qid rec
+R865:871 ServerCorrectness <> Message:7 ind
+R887:890 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R884:886 Coq.Init.Datatypes <> nat ind
+R894:897 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R891:893 Coq.Init.Datatypes <> nat ind
+R898:904 ServerCorrectness <> Message:7 ind
+R924:927 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R921:923 ServerCorrectness <> Qid rec
+R931:934 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R928:930 Coq.Init.Datatypes <> nat ind
+R935:941 ServerCorrectness <> Message:7 ind
+R957:960 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R954:956 Coq.Init.Datatypes <> nat ind
+R964:967 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R961:963 Coq.Init.Datatypes <> nat ind
+R971:974 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R968:970 Coq.Init.Datatypes <> nat ind
+R975:981 ServerCorrectness <> Message:7 ind
+R1006:1009 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R998:1001 Coq.Init.Datatypes <> list ind
+R1003:1005 Coq.Init.Datatypes <> nat ind
+R1010:1016 ServerCorrectness <> Message:7 ind
+R1033:1036 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1030:1032 Coq.Init.Datatypes <> nat ind
+R1040:1043 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1037:1039 Coq.Init.Datatypes <> nat ind
+R1052:1055 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1044:1047 Coq.Init.Datatypes <> list ind
+R1049:1051 Coq.Init.Datatypes <> nat ind
+R1056:1062 ServerCorrectness <> Message:7 ind
+R1083:1086 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1080:1082 Coq.Init.Datatypes <> nat ind
+R1087:1093 ServerCorrectness <> Message:7 ind
+R1110:1113 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1107:1109 Coq.Init.Datatypes <> nat ind
+R1114:1120 ServerCorrectness <> Message:7 ind
+R1138:1144 ServerCorrectness <> Message:7 ind
+R1164:1167 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1158:1163 Coq.Strings.String <> string ind
+R1168:1174 ServerCorrectness <> Message:7 ind
+scheme 603:609 <> Message_rect
+scheme 603:609 <> Message_ind
+scheme 603:609 <> Message_rec
+scheme 603:609 <> Message_sind
+def 1189:1191 <> Fid
+R1196:1198 Coq.Init.Datatypes <> nat ind
+def 1212:1215 <> Path
+R1220:1223 Coq.Init.Datatypes <> list ind
+R1225:1230 Coq.Strings.String <> string ind
+rec 1260:1270 <> ServerState
+proj 1295:1303 <> root_path
+proj 1315:1321 <> fid_map
+proj 1346:1361 <> max_message_size
+R1307:1310 ServerCorrectness <> Path def
+R1325:1328 Coq.Init.Datatypes <> list ind
+R1334:1336 Coq.Init.Datatypes <> ::type_scope:x_'*'_x not
+R1331:1333 ServerCorrectness <> Fid def
+R1337:1340 ServerCorrectness <> Path def
+R1365:1367 Coq.Init.Datatypes <> nat ind
+def 1404:1419 <> path_starts_with
+R1433:1436 ServerCorrectness <> Path def
+binder 1422:1422 <> p:13
+binder 1424:1429 <> prefix:14
+R1441:1444 Coq.Init.Datatypes <> bool ind
+R1465:1465 ServerCorrectness <> p:13 var
+R1457:1462 ServerCorrectness <> prefix:14 var
+R1476:1477 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+R1485:1488 Coq.Init.Datatypes <> true constr
+R1497:1498 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+R1503:1507 Coq.Init.Datatypes <> false constr
+R1515:1516 Coq.Init.Datatypes <> ::list_scope:x_'::'_x not
+R1523:1524 Coq.Init.Datatypes <> ::list_scope:x_'::'_x not
+R1540:1549 Coq.Strings.String <> eqb def
+R1596:1600 Coq.Init.Datatypes <> false constr
+R1562:1577 ServerCorrectness <> path_starts_with:15 def
+def 1621:1629 <> path_join
+R1639:1642 ServerCorrectness <> Path def
+binder 1632:1635 <> base:18
+R1659:1662 Coq.Init.Datatypes <> list ind
+R1664:1669 Coq.Strings.String <> string ind
+binder 1646:1655 <> components:19
+R1674:1677 ServerCorrectness <> Path def
+R1688:1691 Coq.Init.Datatypes <> ::list_scope:x_'++'_x not
+R1684:1687 ServerCorrectness <> base:18 var
+R1692:1701 ServerCorrectness <> components:19 var
+def 1716:1724 <> safe_join
+R1736:1746 ServerCorrectness <> ServerState rec
+binder 1727:1732 <> server:20
+R1757:1760 ServerCorrectness <> Path def
+binder 1750:1753 <> base:21
+R1777:1780 Coq.Init.Datatypes <> list ind
+R1782:1787 Coq.Strings.String <> string ind
+binder 1764:1773 <> components:22
+R1792:1797 Coq.Init.Datatypes <> option ind
+R1799:1802 ServerCorrectness <> Path def
+R1825:1833 ServerCorrectness <> path_join def
+R1835:1838 ServerCorrectness <> base:21 var
+R1840:1849 ServerCorrectness <> components:22 var
+binder 1813:1820 <> new_path:23
+R1859:1874 ServerCorrectness <> path_starts_with def
+R1876:1883 ServerCorrectness <> new_path:23 var
+R1886:1894 ServerCorrectness <> root_path proj
+R1896:1901 ServerCorrectness <> server:20 var
+R1932:1935 Coq.Init.Datatypes <> None constr
+R1911:1914 Coq.Init.Datatypes <> Some constr
+R1916:1923 ServerCorrectness <> new_path:23 var
+def 1971:1977 <> get_fid
+R1984:1994 ServerCorrectness <> ServerState rec
+binder 1980:1980 <> s:24
+R2004:2006 ServerCorrectness <> Fid def
+binder 1998:2000 <> fid:25
+R2011:2016 Coq.Init.Datatypes <> option ind
+R2018:2021 ServerCorrectness <> Path def
+R2034:2042 Coq.Lists.List <> find def
+R2076:2082 ServerCorrectness <> fid_map proj
+R2084:2084 ServerCorrectness <> s:24 var
+binder 2049:2049 <> p:26
+R2054:2060 Coq.Arith.PeanoNat Nat eqb def
+R2063:2065 Coq.Init.Datatypes <> fst def
+R2067:2067 ServerCorrectness <> p:26 var
+R2070:2072 ServerCorrectness <> fid:25 var
+R2096:2099 Coq.Init.Datatypes <> Some constr
+R2101:2101 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R2103:2104 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R2109:2109 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R2114:2117 Coq.Init.Datatypes <> Some constr
+R2128:2131 Coq.Init.Datatypes <> None constr
+R2136:2139 Coq.Init.Datatypes <> None constr
+def 2160:2166 <> set_fid
+R2173:2183 ServerCorrectness <> ServerState rec
+binder 2169:2169 <> s:27
+R2193:2195 ServerCorrectness <> Fid def
+binder 2187:2189 <> fid:28
+R2206:2209 ServerCorrectness <> Path def
+binder 2199:2202 <> path:29
+R2214:2224 ServerCorrectness <> ServerState rec
+R2231:2238 ServerCorrectness <> mkServer constr
+R2241:2249 ServerCorrectness <> root_path proj
+R2251:2251 ServerCorrectness <> s:27 var
+R2277:2280 Coq.Init.Datatypes <> ::list_scope:x_'::'_x not
+R2266:2266 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R2270:2271 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R2276:2276 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R2267:2269 ServerCorrectness <> fid:28 var
+R2272:2275 ServerCorrectness <> path:29 var
+R2281:2286 Coq.Lists.List <> filter def
+R2327:2333 ServerCorrectness <> fid_map proj
+R2335:2335 ServerCorrectness <> s:27 var
+binder 2293:2293 <> p:30
+R2298:2301 Coq.Init.Datatypes <> negb def
+R2304:2310 Coq.Arith.PeanoNat Nat eqb def
+R2313:2315 Coq.Init.Datatypes <> fst def
+R2317:2317 ServerCorrectness <> p:30 var
+R2320:2322 ServerCorrectness <> fid:28 var
+R2351:2366 ServerCorrectness <> max_message_size proj
+R2368:2368 ServerCorrectness <> s:27 var
+def 2384:2393 <> remove_fid
+R2400:2410 ServerCorrectness <> ServerState rec
+binder 2396:2396 <> s:31
+R2420:2422 ServerCorrectness <> Fid def
+binder 2414:2416 <> fid:32
+R2427:2437 ServerCorrectness <> ServerState rec
+R2444:2451 ServerCorrectness <> mkServer constr
+R2454:2462 ServerCorrectness <> root_path proj
+R2464:2464 ServerCorrectness <> s:31 var
+R2479:2484 Coq.Lists.List <> filter def
+R2525:2531 ServerCorrectness <> fid_map proj
+R2533:2533 ServerCorrectness <> s:31 var
+binder 2491:2491 <> p:33
+R2496:2499 Coq.Init.Datatypes <> negb def
+R2502:2508 Coq.Arith.PeanoNat Nat eqb def
+R2511:2513 Coq.Init.Datatypes <> fst def
+R2515:2515 ServerCorrectness <> p:33 var
+R2518:2520 ServerCorrectness <> fid:32 var
+R2549:2564 ServerCorrectness <> max_message_size proj
+R2566:2566 ServerCorrectness <> s:31 var
+def 2607:2621 <> process_message
+R2628:2638 ServerCorrectness <> ServerState rec
+binder 2624:2624 <> s:34
+R2648:2654 ServerCorrectness <> Message ind
+binder 2642:2644 <> msg:35
+R2670:2672 Coq.Init.Datatypes <> ::type_scope:x_'*'_x not
+R2659:2669 ServerCorrectness <> ServerState rec
+R2673:2679 ServerCorrectness <> Message ind
+R2692:2694 ServerCorrectness <> msg:35 var
+R2705:2711 ServerCorrectness <> Version constr
+R2754:2756 Coq.Init.Peano <> min abbrev
+R2765:2780 ServerCorrectness <> max_message_size proj
+R2782:2782 ServerCorrectness <> s:34 var
+binder 2740:2749 <> resp_msize:37
+R2817:2826 Coq.Strings.String <> eqb def
+binder 2798:2809 <> resp_version:38
+R2900:2900 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R2902:2903 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R2939:2939 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R2901:2901 ServerCorrectness <> s:34 var
+R2904:2914 ServerCorrectness <> VersionResp constr
+R2916:2925 ServerCorrectness <> resp_msize:37 var
+R2927:2938 ServerCorrectness <> resp_version:38 var
+R2946:2951 ServerCorrectness <> Attach constr
+R3000:3006 ServerCorrectness <> set_fid def
+R3008:3008 ServerCorrectness <> s:34 var
+R3015:3023 ServerCorrectness <> root_path proj
+R3025:3025 ServerCorrectness <> s:34 var
+binder 2987:2995 <> new_state:39
+R3037:3037 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R3047:3048 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R3075:3075 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R3038:3046 ServerCorrectness <> new_state:39 var
+R3049:3058 ServerCorrectness <> AttachResp constr
+R3061:3065 ServerCorrectness <> mkQid constr
+R3082:3085 ServerCorrectness <> Walk constr
+R3119:3125 ServerCorrectness <> get_fid def
+R3127:3127 ServerCorrectness <> s:34 var
+R3146:3149 Coq.Init.Datatypes <> Some constr
+R3180:3188 ServerCorrectness <> safe_join def
+R3190:3190 ServerCorrectness <> s:34 var
+R3225:3228 Coq.Init.Datatypes <> Some constr
+R3273:3279 ServerCorrectness <> set_fid def
+R3281:3281 ServerCorrectness <> s:34 var
+binder 3260:3268 <> new_state:40
+R3316:3316 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R3326:3327 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R3352:3352 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R3317:3325 ServerCorrectness <> new_state:40 var
+R3328:3335 ServerCorrectness <> WalkResp constr
+R3337:3337 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R3351:3351 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R3338:3342 ServerCorrectness <> mkQid constr
+R3366:3369 Coq.Init.Datatypes <> None constr
+R3374:3374 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R3376:3377 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R3410:3410 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R3375:3375 ServerCorrectness <> s:34 var
+R3378:3382 ServerCorrectness <> Error constr
+R3434:3437 Coq.Init.Datatypes <> None constr
+R3442:3442 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R3444:3445 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R3472:3472 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R3443:3443 ServerCorrectness <> s:34 var
+R3446:3450 ServerCorrectness <> Error constr
+R3489:3493 ServerCorrectness <> Clunk constr
+R3525:3534 ServerCorrectness <> remove_fid def
+R3536:3536 ServerCorrectness <> s:34 var
+binder 3512:3520 <> new_state:41
+R3551:3551 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R3561:3562 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R3572:3572 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R3552:3560 ServerCorrectness <> new_state:41 var
+R3563:3571 ServerCorrectness <> ClunkResp constr
+R3584:3584 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R3586:3587 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R3618:3618 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R3585:3585 ServerCorrectness <> s:34 var
+R3588:3592 ServerCorrectness <> Error constr
+prf 3735:3760 <> path_containment_preserved
+binder 3773:3773 <> s:42
+binder 3775:3777 <> msg:43
+binder 3779:3780 <> s':44
+binder 3782:3785 <> resp:45
+R3826:3833 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R3813:3815 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R3792:3806 ServerCorrectness <> process_message def
+R3808:3808 ServerCorrectness <> s:42 var
+R3810:3812 ServerCorrectness <> msg:43 var
+R3816:3816 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R3819:3820 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R3825:3825 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R3817:3818 ServerCorrectness <> s':44 var
+R3821:3824 ServerCorrectness <> resp:45 var
+binder 3841:3843 <> fid:46
+binder 3845:3848 <> path:47
+R3883:3892 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R3871:3873 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R3857:3863 ServerCorrectness <> get_fid def
+R3865:3866 ServerCorrectness <> s':44 var
+R3868:3870 ServerCorrectness <> fid:46 var
+R3874:3877 Coq.Init.Datatypes <> Some constr
+R3879:3882 ServerCorrectness <> path:47 var
+R3929:3931 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R3893:3908 ServerCorrectness <> path_starts_with def
+R3910:3913 ServerCorrectness <> path:47 var
+R3916:3924 ServerCorrectness <> root_path proj
+R3926:3927 ServerCorrectness <> s':44 var
+R3932:3935 Coq.Init.Datatypes <> true constr
+prf 4002:4022 <> path_starts_with_refl
+binder 4033:4033 <> p:48
+R4056:4058 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R4036:4051 ServerCorrectness <> path_starts_with def
+R4053:4053 ServerCorrectness <> p:48 var
+R4055:4055 ServerCorrectness <> p:48 var
+R4059:4062 Coq.Init.Datatypes <> true constr
+R4123:4137 Coq.Strings.String <> eqb_refl thm
+R4123:4137 Coq.Strings.String <> eqb_refl thm
+R4123:4137 Coq.Strings.String <> eqb_refl thm
+prf 4211:4224 <> fid_uniqueness
+binder 4237:4237 <> s:49
+binder 4239:4241 <> fid:50
+binder 4243:4247 <> path1:51
+binder 4249:4253 <> path2:52
+R4286:4293 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R4273:4275 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R4260:4266 ServerCorrectness <> get_fid def
+R4268:4268 ServerCorrectness <> s:49 var
+R4270:4272 ServerCorrectness <> fid:50 var
+R4276:4279 Coq.Init.Datatypes <> Some constr
+R4281:4285 ServerCorrectness <> path1:51 var
+R4320:4327 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R4307:4309 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R4294:4300 ServerCorrectness <> get_fid def
+R4302:4302 ServerCorrectness <> s:49 var
+R4304:4306 ServerCorrectness <> fid:50 var
+R4310:4313 Coq.Init.Datatypes <> Some constr
+R4315:4319 ServerCorrectness <> path2:52 var
+R4333:4335 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R4328:4332 ServerCorrectness <> path1:51 var
+R4336:4340 ServerCorrectness <> path2:52 var
+prf 4478:4494 <> clunk_removes_fid
+binder 4507:4507 <> s:53
+binder 4509:4511 <> fid:54
+binder 4513:4514 <> s':55
+binder 4516:4519 <> resp:56
+R4568:4575 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R4555:4557 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R4526:4540 ServerCorrectness <> process_message def
+R4542:4542 ServerCorrectness <> s:53 var
+R4545:4549 ServerCorrectness <> Clunk constr
+R4551:4553 ServerCorrectness <> fid:54 var
+R4558:4558 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4561:4562 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4567:4567 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4559:4560 ServerCorrectness <> s':55 var
+R4563:4566 ServerCorrectness <> resp:56 var
+R4590:4592 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R4576:4582 ServerCorrectness <> get_fid def
+R4584:4585 ServerCorrectness <> s':55 var
+R4587:4589 ServerCorrectness <> fid:54 var
+R4593:4596 Coq.Init.Datatypes <> None constr
+R4683:4689 ServerCorrectness <> get_fid def
+R4724:4726 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R4709:4715 Coq.Arith.PeanoNat Nat eqb def
+R4727:4730 Coq.Init.Datatypes <> true constr
+R4724:4726 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R4709:4715 Coq.Arith.PeanoNat Nat eqb def
+R4727:4730 Coq.Init.Datatypes <> true constr
+R4751:4760 Coq.Arith.PeanoNat Nat eqb_eq thm
+R4751:4760 Coq.Arith.PeanoNat Nat eqb_eq thm

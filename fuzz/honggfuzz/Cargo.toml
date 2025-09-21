@@ -1,0 +1,31 @@
+[package]
+name = "ninepee-honggfuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+license = "AGPL-3.0-or-later"
+
+[dependencies]
+ninepee-server = { path = "../.." }
+honggfuzz = "0.5"
+arbitrary = { version = "1.0", features = ["derive"] }
+
+[[bin]]
+name = "hfuzz_protocol"
+path = "src/protocol.rs"
+
+[[bin]]
+name = "hfuzz_auth"
+path = "src/auth.rs"
+
+[[bin]]
+name = "hfuzz_namespace"
+path = "src/namespace.rs"
+
+[[bin]]
+name = "hfuzz_path"
+path = "src/path.rs"
+
+[[bin]]
+name = "hfuzz_crypto"
+path = "src/crypto.rs"

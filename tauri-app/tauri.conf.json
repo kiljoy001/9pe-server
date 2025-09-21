@@ -1,0 +1,58 @@
+{
+  "build": {
+    "beforeDevCommand": "cargo build --release",
+    "beforeBuildCommand": "cargo build --release",
+    "devPath": "index.html",
+    "distDir": "."
+  },
+  "package": {
+    "productName": "9P.e Server Dashboard",
+    "version": "1.0.0"
+  },
+  "tauri": {
+    "allowlist": {
+      "all": false,
+      "shell": {
+        "all": false,
+        "open": true
+      },
+      "fs": {
+        "all": true,
+        "scope": ["$HOME", "/tmp", "/"]
+      },
+      "http": {
+        "all": true,
+        "request": true,
+        "scope": ["http://localhost:*", "http://127.0.0.1:*"]
+      }
+    },
+    "bundle": {
+      "active": true,
+      "targets": ["appimage", "deb"],
+      "identifier": "io.plan9e.server",
+      "icon": [
+        "icons/32x32.png",
+        "icons/128x128.png",
+        "icons/128x128@2x.png",
+        "icons/icon.icns",
+        "icons/icon.ico"
+      ]
+    },
+    "security": {
+      "csp": null
+    },
+    "windows": [
+      {
+        "fullscreen": false,
+        "resizable": true,
+        "title": "9P.e Server Dashboard",
+        "width": 1400,
+        "height": 900,
+        "minWidth": 1000,
+        "minHeight": 600,
+        "decorations": true,
+        "transparent": false
+      }
+    ]
+  }
+}

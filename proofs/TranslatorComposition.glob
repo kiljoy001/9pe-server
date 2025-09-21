@@ -1,0 +1,567 @@
+DIGEST 8a8b79f0a55e83ebea152f75a83cfe16
+FTranslatorComposition
+R64:81 Coq.Strings.String <> <> lib
+R99:112 Coq.Lists.List <> <> lib
+R130:144 Coq.Arith.Arith <> <> lib
+R162:174 Coq.Bool.Bool <> <> lib
+R184:196 Coq.Lists.List ListNotations <> mod
+rec 235:244 <> Translator
+proj 266:269 <> name
+proj 283:297 <> isolation_level
+proj 360:367 <> can_read
+proj 379:387 <> can_write
+proj 399:407 <> transform
+R273:278 Coq.Strings.String <> string ind
+R301:303 Coq.Init.Datatypes <> nat ind
+R371:374 Coq.Init.Datatypes <> bool ind
+R391:394 Coq.Init.Datatypes <> bool ind
+R419:422 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R411:414 Coq.Init.Datatypes <> list ind
+R416:418 Coq.Init.Datatypes <> nat ind
+R423:426 Coq.Init.Datatypes <> list ind
+R428:430 Coq.Init.Datatypes <> nat ind
+def 534:541 <> Pipeline
+R546:549 Coq.Init.Datatypes <> list ind
+R551:560 TranslatorComposition <> Translator rec
+def 616:620 <> Stack
+R625:628 Coq.Init.Datatypes <> list ind
+R630:639 TranslatorComposition <> Translator rec
+ind 679:696 <> ComposedTranslator
+constr 705:710 <> Single
+constr 751:754 <> Pipe
+constr 793:799 <> Stacked
+R724:727 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R714:723 TranslatorComposition <> Translator rec
+R728:745 TranslatorComposition <> ComposedTranslator:7 ind
+R766:769 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R758:765 TranslatorComposition <> Pipeline def
+R770:787 TranslatorComposition <> ComposedTranslator:7 ind
+R808:811 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R803:807 TranslatorComposition <> Stack def
+R812:829 TranslatorComposition <> ComposedTranslator:7 ind
+scheme 679:696 <> ComposedTranslator_rect
+scheme 679:696 <> ComposedTranslator_ind
+scheme 679:696 <> ComposedTranslator_rec
+scheme 679:696 <> ComposedTranslator_sind
+def 875:890 <> apply_translator
+R897:906 TranslatorComposition <> Translator rec
+binder 893:893 <> t:9
+R917:920 Coq.Init.Datatypes <> list ind
+R922:924 Coq.Init.Datatypes <> nat ind
+binder 910:913 <> data:10
+R929:932 Coq.Init.Datatypes <> list ind
+R934:936 Coq.Init.Datatypes <> nat ind
+R943:951 TranslatorComposition <> transform proj
+R953:953 TranslatorComposition <> t:9 var
+R955:958 TranslatorComposition <> data:10 var
+def 1017:1030 <> apply_pipeline
+R1037:1044 TranslatorComposition <> Pipeline def
+binder 1033:1033 <> p:11
+R1055:1058 Coq.Init.Datatypes <> list ind
+R1060:1062 Coq.Init.Datatypes <> nat ind
+binder 1048:1051 <> data:12
+R1067:1070 Coq.Init.Datatypes <> list ind
+R1072:1074 Coq.Init.Datatypes <> nat ind
+R1087:1087 TranslatorComposition <> p:11 var
+R1098:1099 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+R1104:1107 TranslatorComposition <> data:12 var
+R1114:1117 Coq.Init.Datatypes <> ::list_scope:x_'::'_x not
+R1126:1139 TranslatorComposition <> apply_pipeline:13 def
+R1147:1162 TranslatorComposition <> apply_translator def
+R1166:1169 TranslatorComposition <> data:12 var
+def 1251:1261 <> apply_stack
+R1268:1272 TranslatorComposition <> Stack def
+binder 1264:1264 <> s:15
+R1283:1286 Coq.Init.Datatypes <> list ind
+R1288:1290 Coq.Init.Datatypes <> nat ind
+binder 1276:1279 <> data:16
+R1295:1298 Coq.Init.Datatypes <> list ind
+R1301:1304 Coq.Init.Datatypes <> list ind
+R1306:1308 Coq.Init.Datatypes <> nat ind
+R1316:1318 Coq.Lists.List <> map def
+R1355:1355 TranslatorComposition <> s:15 var
+binder 1325:1325 <> t:17
+R1330:1345 TranslatorComposition <> apply_translator def
+R1347:1347 TranslatorComposition <> t:17 var
+R1349:1352 TranslatorComposition <> data:16 var
+def 1430:1448 <> merge_stack_results
+R1461:1464 Coq.Init.Datatypes <> list ind
+R1467:1470 Coq.Init.Datatypes <> list ind
+R1472:1474 Coq.Init.Datatypes <> nat ind
+binder 1451:1457 <> results:18
+R1480:1483 Coq.Init.Datatypes <> list ind
+R1485:1487 Coq.Init.Datatypes <> nat ind
+R1500:1506 TranslatorComposition <> results:18 var
+R1517:1518 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+R1523:1524 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+R1532:1535 Coq.Init.Datatypes <> ::list_scope:x_'::'_x not
+R1530:1531 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+R1544:1562 TranslatorComposition <> merge_stack_results:19 def
+R1574:1577 Coq.Init.Datatypes <> ::list_scope:x_'::'_x not
+def 1667:1679 <> has_isolation
+R1686:1695 TranslatorComposition <> Translator rec
+binder 1682:1682 <> t:21
+R1711:1713 Coq.Init.Datatypes <> nat ind
+binder 1699:1707 <> min_level:22
+R1718:1721 Coq.Init.Datatypes <> bool ind
+R1737:1741 Coq.Arith.PeanoNat <> ::nat_scope:x_'<=?'_x not
+R1728:1736 TranslatorComposition <> min_level:22 var
+R1742:1756 TranslatorComposition <> isolation_level proj
+R1758:1758 TranslatorComposition <> t:21 var
+def 1837:1851 <> pipeline_secure
+R1858:1865 TranslatorComposition <> Pipeline def
+binder 1854:1854 <> p:23
+R1881:1883 Coq.Init.Datatypes <> nat ind
+binder 1869:1877 <> min_level:24
+R1888:1891 Coq.Init.Datatypes <> bool ind
+R1898:1904 Coq.Lists.List <> forallb def
+R1943:1943 TranslatorComposition <> p:23 var
+binder 1911:1911 <> t:25
+R1916:1928 TranslatorComposition <> has_isolation def
+R1930:1930 TranslatorComposition <> t:25 var
+R1932:1940 TranslatorComposition <> min_level:24 var
+def 2015:2026 <> stack_secure
+R2033:2037 TranslatorComposition <> Stack def
+binder 2029:2029 <> s:26
+R2053:2055 Coq.Init.Datatypes <> nat ind
+binder 2041:2049 <> min_level:27
+R2060:2063 Coq.Init.Datatypes <> bool ind
+R2070:2076 Coq.Lists.List <> forallb def
+R2115:2115 TranslatorComposition <> s:26 var
+binder 2083:2083 <> t:28
+R2088:2100 TranslatorComposition <> has_isolation def
+R2102:2102 TranslatorComposition <> t:28 var
+R2104:2112 TranslatorComposition <> min_level:27 var
+def 2188:2201 <> preserves_data
+R2208:2217 TranslatorComposition <> Translator rec
+binder 2204:2204 <> t:29
+binder 2239:2242 <> data:30
+R2255:2258 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2249:2252 Coq.Init.Logic <> ::type_scope:x_'<>'_x not
+R2245:2248 TranslatorComposition <> data:30 var
+R2253:2254 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+R2275:2278 Coq.Init.Logic <> ::type_scope:x_'<>'_x not
+R2259:2267 TranslatorComposition <> transform proj
+R2269:2269 TranslatorComposition <> t:29 var
+R2271:2274 TranslatorComposition <> data:30 var
+R2279:2280 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+prf 2369:2390 <> pipeline_associativity
+binder 2403:2404 <> p1:31
+binder 2406:2407 <> p2:32
+binder 2409:2410 <> p3:33
+binder 2412:2415 <> data:34
+R2460:2466 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R2422:2435 TranslatorComposition <> apply_pipeline def
+R2440:2444 Coq.Init.Datatypes <> ::list_scope:x_'++'_x not
+R2453:2453 Coq.Init.Datatypes <> ::list_scope:x_'++'_x not
+R2438:2439 TranslatorComposition <> p1:31 var
+R2447:2450 Coq.Init.Datatypes <> ::list_scope:x_'++'_x not
+R2445:2446 TranslatorComposition <> p2:32 var
+R2451:2452 TranslatorComposition <> p3:33 var
+R2456:2459 TranslatorComposition <> data:34 var
+R2467:2480 TranslatorComposition <> apply_pipeline def
+R2483:2483 Coq.Init.Datatypes <> ::list_scope:x_'++'_x not
+R2492:2496 Coq.Init.Datatypes <> ::list_scope:x_'++'_x not
+R2486:2489 Coq.Init.Datatypes <> ::list_scope:x_'++'_x not
+R2484:2485 TranslatorComposition <> p1:31 var
+R2490:2491 TranslatorComposition <> p2:32 var
+R2497:2498 TranslatorComposition <> p3:33 var
+R2501:2504 TranslatorComposition <> data:34 var
+R2548:2556 Coq.Lists.List <> app_assoc thm
+R2548:2556 Coq.Lists.List <> app_assoc thm
+R2548:2556 Coq.Lists.List <> app_assoc thm
+prf 2632:2654 <> empty_pipeline_identity
+binder 2667:2670 <> data:35
+R2699:2701 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R2677:2690 TranslatorComposition <> apply_pipeline def
+R2692:2693 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+R2695:2698 TranslatorComposition <> data:35 var
+R2702:2705 TranslatorComposition <> data:35 var
+prf 2830:2852 <> pipeline_preserves_data
+binder 2865:2865 <> p:36
+binder 2867:2870 <> data:37
+R2887:2894 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2881:2884 Coq.Init.Logic <> ::type_scope:x_'<>'_x not
+R2877:2880 TranslatorComposition <> data:37 var
+R2885:2886 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+R2895:2895 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2932:2940 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+binder 2903:2903 <> t:38
+R2912:2915 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2906:2907 Coq.Lists.List <> In def
+R2911:2911 TranslatorComposition <> p:36 var
+R2909:2909 TranslatorComposition <> t:38 var
+R2916:2929 TranslatorComposition <> preserves_data def
+R2931:2931 TranslatorComposition <> t:38 var
+R2962:2965 Coq.Init.Logic <> ::type_scope:x_'<>'_x not
+R2941:2954 TranslatorComposition <> apply_pipeline def
+R2956:2956 TranslatorComposition <> p:36 var
+R2958:2961 TranslatorComposition <> data:37 var
+R2966:2967 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+prf 3314:3340 <> pipeline_security_preserved
+binder 3353:3353 <> p:39
+binder 3355:3363 <> min_level:40
+R3404:3411 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R3397:3399 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R3370:3384 TranslatorComposition <> pipeline_secure def
+R3386:3386 TranslatorComposition <> p:39 var
+R3388:3396 TranslatorComposition <> min_level:40 var
+R3400:3403 Coq.Init.Datatypes <> true constr
+binder 3419:3419 <> t:41
+R3428:3431 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R3422:3423 Coq.Lists.List <> In def
+R3427:3427 TranslatorComposition <> p:39 var
+R3425:3425 TranslatorComposition <> t:41 var
+R3457:3459 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R3432:3444 TranslatorComposition <> has_isolation def
+R3446:3446 TranslatorComposition <> t:41 var
+R3448:3456 TranslatorComposition <> min_level:40 var
+R3460:3463 Coq.Init.Datatypes <> true constr
+R3515:3529 TranslatorComposition <> pipeline_secure def
+R3550:3563 Coq.Lists.List <> forallb_forall thm
+R3550:3563 Coq.Lists.List <> forallb_forall thm
+R3550:3563 Coq.Lists.List <> forallb_forall thm
+prf 3662:3679 <> stack_independence
+binder 3692:3692 <> s:42
+binder 3694:3697 <> data:43
+binder 3699:3699 <> t:44
+R3712:3719 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R3706:3707 Coq.Lists.List <> In def
+R3711:3711 TranslatorComposition <> s:42 var
+R3709:3709 TranslatorComposition <> t:44 var
+R3720:3721 Coq.Lists.List <> In def
+R3750:3760 TranslatorComposition <> apply_stack def
+R3762:3762 TranslatorComposition <> s:42 var
+R3764:3767 TranslatorComposition <> data:43 var
+R3724:3739 TranslatorComposition <> apply_translator def
+R3741:3741 TranslatorComposition <> t:44 var
+R3743:3746 TranslatorComposition <> data:43 var
+R3810:3820 TranslatorComposition <> apply_stack def
+R3833:3842 Coq.Lists.List <> in_map_iff thm
+R3833:3842 Coq.Lists.List <> in_map_iff thm
+R3833:3842 Coq.Lists.List <> in_map_iff thm
+prf 3952:3973 <> pipeline_order_matters
+R3979:3985 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+R3996:4001 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+binder 3986:3987 <> t1:45
+binder 3989:3990 <> t2:46
+binder 3992:3995 <> data:47
+R4030:4033 Coq.Init.Logic <> ::type_scope:x_'<>'_x not
+R4002:4015 TranslatorComposition <> apply_pipeline def
+R4017:4017 Coq.Lists.List ListNotations ::list_scope:'['_x_';'_x_';'_'..'_';'_x_']' not
+R4020:4021 Coq.Lists.List ListNotations ::list_scope:'['_x_';'_x_';'_'..'_';'_x_']' not
+R4024:4024 Coq.Lists.List ListNotations ::list_scope:'['_x_';'_x_';'_'..'_';'_x_']' not
+R4018:4019 TranslatorComposition <> t1:45 var
+R4022:4023 TranslatorComposition <> t2:46 var
+R4026:4029 TranslatorComposition <> data:47 var
+R4034:4047 TranslatorComposition <> apply_pipeline def
+R4049:4049 Coq.Lists.List ListNotations ::list_scope:'['_x_';'_x_';'_'..'_';'_x_']' not
+R4052:4053 Coq.Lists.List ListNotations ::list_scope:'['_x_';'_x_';'_'..'_';'_x_']' not
+R4056:4056 Coq.Lists.List ListNotations ::list_scope:'['_x_';'_x_';'_'..'_';'_x_']' not
+R4050:4051 TranslatorComposition <> t2:46 var
+R4054:4055 TranslatorComposition <> t1:45 var
+R4058:4061 TranslatorComposition <> data:47 var
+R4144:4155 TranslatorComposition <> mkTranslator constr
+R4173:4176 Coq.Init.Datatypes <> true constr
+R4178:4181 Coq.Init.Datatypes <> true constr
+binder 4188:4188 <> d:48
+R4193:4195 Coq.Lists.List <> map def
+R4206:4206 TranslatorComposition <> d:48 var
+R4198:4201 Coq.Init.Peano <> plus abbrev
+R4144:4155 TranslatorComposition <> mkTranslator constr
+R4173:4176 Coq.Init.Datatypes <> true constr
+R4178:4181 Coq.Init.Datatypes <> true constr
+binder 4188:4188 <> d:49
+R4193:4195 Coq.Lists.List <> map def
+R4206:4206 TranslatorComposition <> d:49 var
+R4198:4201 Coq.Init.Peano <> plus abbrev
+R4221:4232 TranslatorComposition <> mkTranslator constr
+R4250:4253 Coq.Init.Datatypes <> true constr
+R4255:4258 Coq.Init.Datatypes <> true constr
+binder 4265:4265 <> d:50
+R4270:4272 Coq.Lists.List <> map def
+R4283:4283 TranslatorComposition <> d:50 var
+R4275:4278 Coq.Init.Peano <> mult abbrev
+R4221:4232 TranslatorComposition <> mkTranslator constr
+R4250:4253 Coq.Init.Datatypes <> true constr
+R4255:4258 Coq.Init.Datatypes <> true constr
+binder 4265:4265 <> d:51
+R4270:4272 Coq.Lists.List <> map def
+R4283:4283 TranslatorComposition <> d:51 var
+R4275:4278 Coq.Init.Peano <> mult abbrev
+R4297:4297 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R4299:4299 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R4297:4297 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R4299:4299 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+prf 4477:4494 <> composed_isolation
+binder 4507:4507 <> p:52
+binder 4509:4517 <> min_level:53
+R4558:4565 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R4551:4553 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R4524:4538 TranslatorComposition <> pipeline_secure def
+R4540:4540 TranslatorComposition <> p:52 var
+R4542:4550 TranslatorComposition <> min_level:53 var
+R4554:4557 Coq.Init.Datatypes <> true constr
+binder 4573:4573 <> t:54
+R4582:4585 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R4576:4577 Coq.Lists.List <> In def
+R4581:4581 TranslatorComposition <> p:52 var
+R4579:4579 TranslatorComposition <> t:54 var
+R4603:4606 Coq.Init.Peano <> ::nat_scope:x_'>='_x not
+R4586:4600 TranslatorComposition <> isolation_level proj
+R4602:4602 TranslatorComposition <> t:54 var
+R4607:4615 TranslatorComposition <> min_level:53 var
+R4666:4692 TranslatorComposition <> pipeline_security_preserved thm
+R4666:4692 TranslatorComposition <> pipeline_security_preserved thm
+R4728:4740 TranslatorComposition <> has_isolation def
+R4761:4770 Coq.Arith.PeanoNat Nat leb_le thm
+R4761:4770 Coq.Arith.PeanoNat Nat leb_le thm
+prf 4884:4908 <> stack_security_all_layers
+binder 4921:4921 <> s:55
+binder 4923:4931 <> min_level:56
+R4969:4976 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R4962:4964 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R4938:4949 TranslatorComposition <> stack_secure def
+R4951:4951 TranslatorComposition <> s:55 var
+R4953:4961 TranslatorComposition <> min_level:56 var
+R4965:4968 Coq.Init.Datatypes <> true constr
+binder 4984:4984 <> t:57
+R4993:4996 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R4987:4988 Coq.Lists.List <> In def
+R4992:4992 TranslatorComposition <> s:55 var
+R4990:4990 TranslatorComposition <> t:57 var
+R5022:5024 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R4997:5009 TranslatorComposition <> has_isolation def
+R5011:5011 TranslatorComposition <> t:57 var
+R5013:5021 TranslatorComposition <> min_level:56 var
+R5025:5028 Coq.Init.Datatypes <> true constr
+R5080:5091 TranslatorComposition <> stack_secure def
+R5112:5125 Coq.Lists.List <> forallb_forall thm
+R5112:5125 Coq.Lists.List <> forallb_forall thm
+R5112:5125 Coq.Lists.List <> forallb_forall thm
+prf 5233:5253 <> single_pipeline_equiv
+binder 5266:5266 <> t:58
+binder 5268:5271 <> data:59
+R5301:5303 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R5278:5291 TranslatorComposition <> apply_pipeline def
+R5293:5293 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R5295:5295 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R5294:5294 TranslatorComposition <> t:58 var
+R5297:5300 TranslatorComposition <> data:59 var
+R5304:5319 TranslatorComposition <> apply_translator def
+R5321:5321 TranslatorComposition <> t:58 var
+R5323:5326 TranslatorComposition <> data:59 var
+prf 5440:5466 <> pipeline_composition_closed
+binder 5479:5480 <> p1:60
+binder 5482:5483 <> p2:61
+binder 5485:5488 <> data:62
+R5495:5501 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+R5508:5515 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+binder 5502:5507 <> result:63
+R5546:5548 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R5516:5529 TranslatorComposition <> apply_pipeline def
+R5534:5537 Coq.Init.Datatypes <> ::list_scope:x_'++'_x not
+R5532:5533 TranslatorComposition <> p1:60 var
+R5538:5539 TranslatorComposition <> p2:61 var
+R5542:5545 TranslatorComposition <> data:62 var
+R5549:5554 TranslatorComposition <> result:63 var
+R5595:5608 TranslatorComposition <> apply_pipeline def
+R5613:5616 Coq.Init.Datatypes <> ::list_scope:x_'++'_x not
+R5595:5608 TranslatorComposition <> apply_pipeline def
+R5613:5616 Coq.Init.Datatypes <> ::list_scope:x_'++'_x not
+prf 5719:5735 <> stack_parallelism
+binder 5748:5748 <> s:64
+binder 5750:5753 <> data:65
+R5787:5789 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R5760:5765 Coq.Lists.List <> length abbrev
+R5768:5778 TranslatorComposition <> apply_stack def
+R5780:5780 TranslatorComposition <> s:64 var
+R5782:5785 TranslatorComposition <> data:65 var
+R5790:5795 Coq.Lists.List <> length abbrev
+R5797:5797 TranslatorComposition <> s:64 var
+R5833:5843 TranslatorComposition <> apply_stack def
+R5854:5863 Coq.Lists.List <> length_map thm
+R5854:5863 Coq.Lists.List <> length_map thm
+prf 5927:5944 <> userland_isolation
+binder 5957:5957 <> t:66
+R5985:5992 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R5981:5983 Coq.Init.Peano <> ::nat_scope:x_'>'_x not
+R5964:5978 TranslatorComposition <> isolation_level proj
+R5980:5980 TranslatorComposition <> t:66 var
+R6015:6097 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R6010:6013 Coq.Init.Peano <> ::nat_scope:x_'<='_x not
+R5993:6007 TranslatorComposition <> isolation_level proj
+R6009:6009 TranslatorComposition <> t:66 var
+R6098:6101 Coq.Init.Logic <> True ind
+R6214:6214 Coq.Init.Logic <> I constr
+R6214:6214 Coq.Init.Logic <> I constr
+def 6308:6323 <> safe_composition
+R6330:6347 TranslatorComposition <> ComposedTranslator ind
+binder 6326:6326 <> c:67
+R6368:6368 TranslatorComposition <> c:67 var
+R6379:6384 TranslatorComposition <> Single constr
+R6408:6410 Coq.Init.Peano <> ::nat_scope:x_'>'_x not
+R6391:6405 TranslatorComposition <> isolation_level proj
+R6417:6420 TranslatorComposition <> Pipe constr
+binder 6434:6434 <> t:69
+R6443:6446 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R6437:6438 Coq.Lists.List <> In def
+R6440:6440 TranslatorComposition <> t:69 var
+R6464:6466 Coq.Init.Peano <> ::nat_scope:x_'>'_x not
+R6447:6461 TranslatorComposition <> isolation_level proj
+R6463:6463 TranslatorComposition <> t:69 var
+R6473:6479 TranslatorComposition <> Stacked constr
+binder 6493:6493 <> t:70
+R6502:6505 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R6496:6497 Coq.Lists.List <> In def
+R6499:6499 TranslatorComposition <> t:70 var
+R6523:6525 Coq.Init.Peano <> ::nat_scope:x_'>'_x not
+R6506:6520 TranslatorComposition <> isolation_level proj
+R6522:6522 TranslatorComposition <> t:70 var
+prf 6609:6633 <> safe_composition_security
+binder 6646:6646 <> c:71
+R6671:6714 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R6653:6668 TranslatorComposition <> safe_composition def
+R6670:6670 TranslatorComposition <> c:71 var
+R6715:6718 Coq.Init.Logic <> True ind
+R6808:6808 Coq.Init.Logic <> I constr
+R6808:6808 Coq.Init.Logic <> I constr
+prf 6875:6893 <> pipeline_capability
+binder 6906:6906 <> p:72
+binder 6908:6908 <> t:73
+R6921:6928 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R6915:6916 Coq.Lists.List <> In def
+R6920:6920 TranslatorComposition <> p:72 var
+R6918:6918 TranslatorComposition <> t:73 var
+R6946:6953 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R6939:6941 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R6929:6936 TranslatorComposition <> can_read proj
+R6938:6938 TranslatorComposition <> t:73 var
+R6942:6945 Coq.Init.Datatypes <> true constr
+R6954:6960 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+R6972:6979 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+binder 6961:6964 <> data:74
+binder 6966:6971 <> result:75
+R7003:7005 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R6980:6995 TranslatorComposition <> apply_translator def
+R6997:6997 TranslatorComposition <> t:73 var
+R6999:7002 TranslatorComposition <> data:74 var
+R7006:7011 TranslatorComposition <> result:75 var
+R7054:7055 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+R7054:7055 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+R7066:7081 TranslatorComposition <> apply_translator def
+R7085:7086 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+R7066:7081 TranslatorComposition <> apply_translator def
+R7085:7086 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+prf 7159:7179 <> stack_read_capability
+binder 7192:7192 <> s:76
+R7199:7199 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R7237:7245 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R7200:7206 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+R7208:7209 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+binder 7207:7207 <> t:77
+R7216:7219 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R7210:7211 Coq.Lists.List <> In def
+R7215:7215 TranslatorComposition <> s:76 var
+R7213:7213 TranslatorComposition <> t:77 var
+R7230:7232 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R7220:7227 TranslatorComposition <> can_read proj
+R7229:7229 TranslatorComposition <> t:77 var
+R7233:7236 Coq.Init.Datatypes <> true constr
+binder 7253:7256 <> data:78
+R7283:7286 Coq.Init.Logic <> ::type_scope:x_'<>'_x not
+R7265:7275 TranslatorComposition <> apply_stack def
+R7277:7277 TranslatorComposition <> s:76 var
+R7279:7282 TranslatorComposition <> data:78 var
+R7287:7288 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+R7340:7350 TranslatorComposition <> apply_stack def
+R7372:7381 Coq.Lists.List <> map_eq_nil thm
+R7372:7381 Coq.Lists.List <> map_eq_nil thm
+ind 7538:7551 <> ControlCommand
+constr 7560:7573 <> CreatePipeline
+constr 7618:7628 <> CreateStack
+constr 7670:7685 <> ComposePipelines
+constr 7728:7743 <> StackTranslators
+R7583:7586 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R7577:7582 Coq.Strings.String <> string ind
+R7595:7598 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R7587:7594 TranslatorComposition <> Pipeline def
+R7599:7612 TranslatorComposition <> ControlCommand:79 ind
+R7638:7641 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R7632:7637 Coq.Strings.String <> string ind
+R7647:7650 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R7642:7646 TranslatorComposition <> Stack def
+R7651:7664 TranslatorComposition <> ControlCommand:79 ind
+R7695:7698 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R7689:7694 Coq.Strings.String <> string ind
+R7705:7708 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R7699:7704 Coq.Strings.String <> string ind
+R7709:7722 TranslatorComposition <> ControlCommand:79 ind
+R7753:7756 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R7747:7752 Coq.Strings.String <> string ind
+R7763:7766 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R7757:7762 Coq.Strings.String <> string ind
+R7767:7780 TranslatorComposition <> ControlCommand:79 ind
+scheme 7538:7551 <> ControlCommand_rect
+scheme 7538:7551 <> ControlCommand_ind
+scheme 7538:7551 <> ControlCommand_rec
+scheme 7538:7551 <> ControlCommand_sind
+ind 7825:7837 <> CommandResult
+constr 7846:7852 <> Success
+constr 7896:7902 <> Failure
+R7874:7877 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R7856:7873 TranslatorComposition <> ComposedTranslator ind
+R7878:7890 TranslatorComposition <> CommandResult:81 ind
+R7912:7915 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R7906:7911 Coq.Strings.String <> string ind
+R7916:7928 TranslatorComposition <> CommandResult:81 ind
+scheme 7825:7837 <> CommandResult_rect
+scheme 7825:7837 <> CommandResult_ind
+scheme 7825:7837 <> CommandResult_rec
+scheme 7825:7837 <> CommandResult_sind
+prf 7981:8002 <> control_command_safety
+R8021:8034 TranslatorComposition <> ControlCommand ind
+binder 8015:8017 <> cmd:83
+R8092:8095 Coq.Init.Logic <> True ind
+R8189:8189 Coq.Init.Logic <> I constr
+R8189:8189 Coq.Init.Logic <> I constr
+prf 8277:8307 <> synthetic_composition_preserves
+binder 8320:8321 <> p1:84
+binder 8323:8324 <> p2:85
+binder 8326:8329 <> data:86
+R8420:8426 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R8390:8403 TranslatorComposition <> apply_pipeline def
+R8408:8411 Coq.Init.Datatypes <> ::list_scope:x_'++'_x not
+R8406:8407 TranslatorComposition <> p1:84 var
+R8412:8413 TranslatorComposition <> p2:85 var
+R8416:8419 TranslatorComposition <> data:86 var
+R8427:8440 TranslatorComposition <> apply_pipeline def
+R8442:8443 TranslatorComposition <> p2:85 var
+R8446:8459 TranslatorComposition <> apply_pipeline def
+R8461:8462 TranslatorComposition <> p1:84 var
+R8464:8467 TranslatorComposition <> data:86 var
+prf 8699:8726 <> synthetic_stack_independence
+binder 8739:8740 <> s1:87
+binder 8742:8743 <> s2:88
+binder 8745:8748 <> data:89
+R8857:8863 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R8830:8840 TranslatorComposition <> apply_stack def
+R8845:8848 Coq.Init.Datatypes <> ::list_scope:x_'++'_x not
+R8843:8844 TranslatorComposition <> s1:87 var
+R8849:8850 TranslatorComposition <> s2:88 var
+R8853:8856 TranslatorComposition <> data:89 var
+R8883:8886 Coq.Init.Datatypes <> ::list_scope:x_'++'_x not
+R8864:8874 TranslatorComposition <> apply_stack def
+R8876:8877 TranslatorComposition <> s1:87 var
+R8879:8882 TranslatorComposition <> data:89 var
+R8887:8897 TranslatorComposition <> apply_stack def
+R8899:8900 TranslatorComposition <> s2:88 var
+R8902:8905 TranslatorComposition <> data:89 var
+R8945:8955 TranslatorComposition <> apply_stack def
+R8966:8972 Coq.Lists.List <> map_app thm
+R8966:8972 Coq.Lists.List <> map_app thm
+R9036:9057 TranslatorComposition <> pipeline_associativity thm
+R9078:9100 TranslatorComposition <> pipeline_preserves_data thm
+R9121:9138 TranslatorComposition <> composed_isolation thm
+R9159:9176 TranslatorComposition <> userland_isolation thm
+R9197:9227 TranslatorComposition <> synthetic_composition_preserves thm

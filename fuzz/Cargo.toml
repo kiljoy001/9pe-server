@@ -1,0 +1,50 @@
+[package]
+name = "ninepee-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+license = "AGPL-3.0-or-later"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+ninepee-server = { path = ".." }
+libfuzzer-sys = "0.4"
+arbitrary = { version = "1.0", features = ["derive"] }
+
+[[bin]]
+name = "fuzz_protocol_parser"
+path = "fuzz_targets/fuzz_protocol_parser.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_auth"
+path = "fuzz_targets/fuzz_auth.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_namespace"
+path = "fuzz_targets/fuzz_namespace.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_path"
+path = "fuzz_targets/fuzz_path.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_crypto"
+path = "fuzz_targets/fuzz_crypto.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_message"
+path = "fuzz_targets/fuzz_message.rs"
+test = false
+doc = false

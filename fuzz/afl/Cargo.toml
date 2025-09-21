@@ -1,0 +1,26 @@
+[package]
+name = "ninepee-afl-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+license = "AGPL-3.0-or-later"
+
+[dependencies]
+ninepee-server = { path = "../.." }
+afl = "0.15"
+
+[[bin]]
+name = "afl_protocol"
+path = "src/protocol.rs"
+
+[[bin]]
+name = "afl_auth"
+path = "src/auth.rs"
+
+[[bin]]
+name = "afl_namespace"
+path = "src/namespace.rs"
+
+[[bin]]
+name = "afl_path"
+path = "src/path.rs"
