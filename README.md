@@ -414,15 +414,13 @@ RUST_LOG=debug 9pe-server start
 ## License
 
 Licensed under either of:
-- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE))
-- MIT License ([LICENSE-MIT](LICENSE-MIT))
-
+- AGPL3 
+- Commerical
+  
 at your option.
 
 ## Links
 
-- **Homepage**: https://9pe.dev
-- **Documentation**: https://docs.9pe.dev
 - **Protocol Specification**: https://github.com/kiljoy001/9PE
 - **Issue Tracker**: https://github.com/kiljoy001/9pe-server/issues
 - **Discussions**: https://github.com/kiljoy001/9pe-server/discussions
