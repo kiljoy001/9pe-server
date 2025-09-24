@@ -1,0 +1,415 @@
+DIGEST e6e9b0d9dae3a0243b3c6f274c72f6db
+FWasmTranslatorInterface_Simple
+R163:176 Coq.Lists.List <> <> lib
+R194:208 Coq.Arith.Arith <> <> lib
+R226:238 Coq.Bool.Bool <> <> lib
+R256:258 Coq.micromega.Lia <> <> lib
+R268:280 Coq.Lists.List ListNotations <> mod
+ind 411:428 <> NinePeeMessageType
+constr 444:448 <> Tread
+constr 452:456 <> Rread
+constr 460:465 <> Twrite
+constr 469:474 <> Rwrite
+constr 478:483 <> Terror
+constr 487:492 <> Rerror
+scheme 411:428 <> NinePeeMessageType_rect
+scheme 411:428 <> NinePeeMessageType_ind
+scheme 411:428 <> NinePeeMessageType_rec
+scheme 411:428 <> NinePeeMessageType_sind
+rec 530:543 <> NinePeeMessage
+proj 559:566 <> msg_type
+proj 592:598 <> msg_fid
+proj 609:616 <> msg_data
+R570:587 WasmTranslatorInterface_Simple <> NinePeeMessageType ind
+R602:604 Coq.Init.Datatypes <> nat ind
+R620:623 Coq.Init.Datatypes <> list ind
+R625:627 Coq.Init.Datatypes <> nat ind
+def 675:684 <> WasmMemory
+R692:695 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R689:691 Coq.Init.Datatypes <> nat ind
+R696:701 Coq.Init.Datatypes <> option ind
+R703:705 Coq.Init.Datatypes <> nat ind
+rec 744:762 <> WasmTranslatorState
+proj 778:788 <> wasm_memory
+proj 806:818 <> wasm_heap_ptr
+proj 829:839 <> wasm_active
+R792:801 WasmTranslatorInterface_Simple <> WasmMemory def
+R822:824 Coq.Init.Datatypes <> nat ind
+R843:846 Coq.Init.Datatypes <> bool ind
+def 1007:1023 <> serialize_message
+R1032:1045 WasmTranslatorInterface_Simple <> NinePeeMessage rec
+binder 1026:1028 <> msg:11
+R1050:1053 Coq.Init.Datatypes <> list ind
+R1055:1057 Coq.Init.Datatypes <> nat ind
+R1075:1082 WasmTranslatorInterface_Simple <> msg_type proj
+R1070:1072 WasmTranslatorInterface_Simple <> msg:11 var
+R1094:1098 WasmTranslatorInterface_Simple <> Tread constr
+R1108:1111 Coq.Init.Datatypes <> ::list_scope:x_'++'_x not
+R1103:1103 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R1107:1107 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R1127:1130 Coq.Init.Datatypes <> ::list_scope:x_'++'_x not
+R1112:1112 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R1126:1126 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R1118:1124 WasmTranslatorInterface_Simple <> msg_fid proj
+R1113:1115 WasmTranslatorInterface_Simple <> msg:11 var
+R1136:1143 WasmTranslatorInterface_Simple <> msg_data proj
+R1131:1133 WasmTranslatorInterface_Simple <> msg:11 var
+R1150:1154 WasmTranslatorInterface_Simple <> Rread constr
+R1164:1167 Coq.Init.Datatypes <> ::list_scope:x_'++'_x not
+R1159:1159 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R1163:1163 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R1183:1186 Coq.Init.Datatypes <> ::list_scope:x_'++'_x not
+R1168:1168 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R1182:1182 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R1174:1180 WasmTranslatorInterface_Simple <> msg_fid proj
+R1169:1171 WasmTranslatorInterface_Simple <> msg:11 var
+R1192:1199 WasmTranslatorInterface_Simple <> msg_data proj
+R1187:1189 WasmTranslatorInterface_Simple <> msg:11 var
+R1206:1211 WasmTranslatorInterface_Simple <> Twrite constr
+R1221:1224 Coq.Init.Datatypes <> ::list_scope:x_'++'_x not
+R1216:1216 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R1220:1220 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R1240:1243 Coq.Init.Datatypes <> ::list_scope:x_'++'_x not
+R1225:1225 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R1239:1239 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R1231:1237 WasmTranslatorInterface_Simple <> msg_fid proj
+R1226:1228 WasmTranslatorInterface_Simple <> msg:11 var
+R1249:1256 WasmTranslatorInterface_Simple <> msg_data proj
+R1244:1246 WasmTranslatorInterface_Simple <> msg:11 var
+R1263:1268 WasmTranslatorInterface_Simple <> Rwrite constr
+R1278:1281 Coq.Init.Datatypes <> ::list_scope:x_'++'_x not
+R1273:1273 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R1277:1277 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R1297:1300 Coq.Init.Datatypes <> ::list_scope:x_'++'_x not
+R1282:1282 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R1296:1296 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R1288:1294 WasmTranslatorInterface_Simple <> msg_fid proj
+R1283:1285 WasmTranslatorInterface_Simple <> msg:11 var
+R1306:1313 WasmTranslatorInterface_Simple <> msg_data proj
+R1301:1303 WasmTranslatorInterface_Simple <> msg:11 var
+R1320:1325 WasmTranslatorInterface_Simple <> Terror constr
+R1335:1338 Coq.Init.Datatypes <> ::list_scope:x_'++'_x not
+R1330:1330 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R1334:1334 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R1339:1339 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R1353:1353 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R1345:1351 WasmTranslatorInterface_Simple <> msg_fid proj
+R1340:1342 WasmTranslatorInterface_Simple <> msg:11 var
+R1359:1364 WasmTranslatorInterface_Simple <> Rerror constr
+R1374:1377 Coq.Init.Datatypes <> ::list_scope:x_'++'_x not
+R1369:1369 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R1373:1373 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R1378:1378 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R1392:1392 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R1384:1390 WasmTranslatorInterface_Simple <> msg_fid proj
+R1379:1381 WasmTranslatorInterface_Simple <> msg:11 var
+def 1451:1469 <> deserialize_message
+R1480:1483 Coq.Init.Datatypes <> list ind
+R1485:1487 Coq.Init.Datatypes <> nat ind
+binder 1472:1476 <> bytes:12
+R1492:1497 Coq.Init.Datatypes <> option ind
+R1499:1512 WasmTranslatorInterface_Simple <> NinePeeMessage rec
+R1525:1529 WasmTranslatorInterface_Simple <> bytes:12 var
+R1543:1546 Coq.Init.Datatypes <> ::list_scope:x_'::'_x not
+R1550:1553 Coq.Init.Datatypes <> ::list_scope:x_'::'_x not
+R1562:1565 Coq.Init.Datatypes <> Some constr
+R1570:1577 WasmTranslatorInterface_Simple <> msg_type proj
+R1570:1577 WasmTranslatorInterface_Simple <> msg_type proj
+R1570:1577 WasmTranslatorInterface_Simple <> msg_type proj
+R1589:1595 WasmTranslatorInterface_Simple <> msg_fid proj
+R1589:1595 WasmTranslatorInterface_Simple <> msg_fid proj
+R1605:1612 WasmTranslatorInterface_Simple <> msg_data proj
+R1605:1612 WasmTranslatorInterface_Simple <> msg_data proj
+R1582:1586 WasmTranslatorInterface_Simple <> Tread constr
+R1632:1635 Coq.Init.Datatypes <> ::list_scope:x_'::'_x not
+R1639:1642 Coq.Init.Datatypes <> ::list_scope:x_'::'_x not
+R1651:1654 Coq.Init.Datatypes <> Some constr
+R1659:1666 WasmTranslatorInterface_Simple <> msg_type proj
+R1659:1666 WasmTranslatorInterface_Simple <> msg_type proj
+R1659:1666 WasmTranslatorInterface_Simple <> msg_type proj
+R1678:1684 WasmTranslatorInterface_Simple <> msg_fid proj
+R1678:1684 WasmTranslatorInterface_Simple <> msg_fid proj
+R1694:1701 WasmTranslatorInterface_Simple <> msg_data proj
+R1694:1701 WasmTranslatorInterface_Simple <> msg_data proj
+R1671:1675 WasmTranslatorInterface_Simple <> Rread constr
+R1721:1724 Coq.Init.Datatypes <> ::list_scope:x_'::'_x not
+R1728:1731 Coq.Init.Datatypes <> ::list_scope:x_'::'_x not
+R1740:1743 Coq.Init.Datatypes <> Some constr
+R1748:1755 WasmTranslatorInterface_Simple <> msg_type proj
+R1748:1755 WasmTranslatorInterface_Simple <> msg_type proj
+R1748:1755 WasmTranslatorInterface_Simple <> msg_type proj
+R1768:1774 WasmTranslatorInterface_Simple <> msg_fid proj
+R1768:1774 WasmTranslatorInterface_Simple <> msg_fid proj
+R1784:1791 WasmTranslatorInterface_Simple <> msg_data proj
+R1784:1791 WasmTranslatorInterface_Simple <> msg_data proj
+R1760:1765 WasmTranslatorInterface_Simple <> Twrite constr
+R1811:1814 Coq.Init.Datatypes <> ::list_scope:x_'::'_x not
+R1818:1821 Coq.Init.Datatypes <> ::list_scope:x_'::'_x not
+R1830:1833 Coq.Init.Datatypes <> Some constr
+R1838:1845 WasmTranslatorInterface_Simple <> msg_type proj
+R1838:1845 WasmTranslatorInterface_Simple <> msg_type proj
+R1838:1845 WasmTranslatorInterface_Simple <> msg_type proj
+R1858:1864 WasmTranslatorInterface_Simple <> msg_fid proj
+R1858:1864 WasmTranslatorInterface_Simple <> msg_fid proj
+R1874:1881 WasmTranslatorInterface_Simple <> msg_data proj
+R1874:1881 WasmTranslatorInterface_Simple <> msg_data proj
+R1850:1855 WasmTranslatorInterface_Simple <> Rwrite constr
+R1901:1904 Coq.Init.Datatypes <> ::list_scope:x_'::'_x not
+R1908:1911 Coq.Init.Datatypes <> ::list_scope:x_'::'_x not
+R1917:1920 Coq.Init.Datatypes <> Some constr
+R1925:1932 WasmTranslatorInterface_Simple <> msg_type proj
+R1925:1932 WasmTranslatorInterface_Simple <> msg_type proj
+R1925:1932 WasmTranslatorInterface_Simple <> msg_type proj
+R1945:1951 WasmTranslatorInterface_Simple <> msg_fid proj
+R1945:1951 WasmTranslatorInterface_Simple <> msg_fid proj
+R1961:1968 WasmTranslatorInterface_Simple <> msg_data proj
+R1961:1968 WasmTranslatorInterface_Simple <> msg_data proj
+R1937:1942 WasmTranslatorInterface_Simple <> Terror constr
+R1973:1974 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+R1986:1989 Coq.Init.Datatypes <> ::list_scope:x_'::'_x not
+R1993:1996 Coq.Init.Datatypes <> ::list_scope:x_'::'_x not
+R2002:2005 Coq.Init.Datatypes <> Some constr
+R2010:2017 WasmTranslatorInterface_Simple <> msg_type proj
+R2010:2017 WasmTranslatorInterface_Simple <> msg_type proj
+R2010:2017 WasmTranslatorInterface_Simple <> msg_type proj
+R2030:2036 WasmTranslatorInterface_Simple <> msg_fid proj
+R2030:2036 WasmTranslatorInterface_Simple <> msg_fid proj
+R2046:2053 WasmTranslatorInterface_Simple <> msg_data proj
+R2046:2053 WasmTranslatorInterface_Simple <> msg_data proj
+R2022:2027 WasmTranslatorInterface_Simple <> Rerror constr
+R2058:2059 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+R2073:2076 Coq.Init.Datatypes <> None constr
+def 2142:2164 <> execute_wasm_translator
+R2175:2193 WasmTranslatorInterface_Simple <> WasmTranslatorState rec
+binder 2167:2171 <> state:14
+R2203:2216 WasmTranslatorInterface_Simple <> NinePeeMessage rec
+binder 2197:2199 <> msg:15
+R2223:2228 Coq.Init.Datatypes <> option ind
+R2250:2252 Coq.Init.Datatypes <> ::type_scope:x_'*'_x not
+R2231:2249 WasmTranslatorInterface_Simple <> WasmTranslatorState rec
+R2253:2266 WasmTranslatorInterface_Simple <> NinePeeMessage rec
+R2284:2294 WasmTranslatorInterface_Simple <> wasm_active proj
+R2277:2281 WasmTranslatorInterface_Simple <> state:14 var
+R2770:2773 Coq.Init.Datatypes <> None constr
+R2324:2340 WasmTranslatorInterface_Simple <> serialize_message def
+R2342:2344 WasmTranslatorInterface_Simple <> msg:15 var
+binder 2310:2319 <> serialized:16
+R2444:2451 WasmTranslatorInterface_Simple <> msg_type proj
+R2439:2441 WasmTranslatorInterface_Simple <> msg:15 var
+R2467:2471 WasmTranslatorInterface_Simple <> Tread constr
+R2479:2486 WasmTranslatorInterface_Simple <> msg_type proj
+R2479:2486 WasmTranslatorInterface_Simple <> msg_type proj
+R2479:2486 WasmTranslatorInterface_Simple <> msg_type proj
+R2498:2504 WasmTranslatorInterface_Simple <> msg_fid proj
+R2498:2504 WasmTranslatorInterface_Simple <> msg_fid proj
+R2524:2531 WasmTranslatorInterface_Simple <> msg_data proj
+R2524:2531 WasmTranslatorInterface_Simple <> msg_data proj
+R2491:2495 WasmTranslatorInterface_Simple <> Rread constr
+R2514:2520 WasmTranslatorInterface_Simple <> msg_fid proj
+R2509:2511 WasmTranslatorInterface_Simple <> msg:15 var
+R2541:2548 WasmTranslatorInterface_Simple <> msg_data proj
+R2536:2538 WasmTranslatorInterface_Simple <> msg:15 var
+R2562:2567 WasmTranslatorInterface_Simple <> Twrite constr
+R2575:2582 WasmTranslatorInterface_Simple <> msg_type proj
+R2575:2582 WasmTranslatorInterface_Simple <> msg_type proj
+R2575:2582 WasmTranslatorInterface_Simple <> msg_type proj
+R2595:2601 WasmTranslatorInterface_Simple <> msg_fid proj
+R2595:2601 WasmTranslatorInterface_Simple <> msg_fid proj
+R2621:2628 WasmTranslatorInterface_Simple <> msg_data proj
+R2621:2628 WasmTranslatorInterface_Simple <> msg_data proj
+R2587:2592 WasmTranslatorInterface_Simple <> Rwrite constr
+R2611:2617 WasmTranslatorInterface_Simple <> msg_fid proj
+R2606:2608 WasmTranslatorInterface_Simple <> msg:15 var
+R2633:2634 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+R2655:2662 WasmTranslatorInterface_Simple <> msg_type proj
+R2655:2662 WasmTranslatorInterface_Simple <> msg_type proj
+R2655:2662 WasmTranslatorInterface_Simple <> msg_type proj
+R2675:2681 WasmTranslatorInterface_Simple <> msg_fid proj
+R2675:2681 WasmTranslatorInterface_Simple <> msg_fid proj
+R2701:2708 WasmTranslatorInterface_Simple <> msg_data proj
+R2701:2708 WasmTranslatorInterface_Simple <> msg_data proj
+R2667:2672 WasmTranslatorInterface_Simple <> Rerror constr
+R2691:2697 WasmTranslatorInterface_Simple <> msg_fid proj
+R2686:2688 WasmTranslatorInterface_Simple <> msg:15 var
+R2713:2714 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+binder 2417:2428 <> response_msg:17
+R2736:2739 Coq.Init.Datatypes <> Some constr
+R2741:2741 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R2747:2748 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R2761:2761 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R2742:2746 WasmTranslatorInterface_Simple <> state:14 var
+R2749:2760 WasmTranslatorInterface_Simple <> response_msg:17 var
+def 2968:2984 <> message_integrity
+R2993:3006 WasmTranslatorInterface_Simple <> NinePeeMessage rec
+binder 2987:2989 <> msg:18
+R3027:3045 WasmTranslatorInterface_Simple <> deserialize_message def
+R3048:3064 WasmTranslatorInterface_Simple <> serialize_message def
+R3066:3068 WasmTranslatorInterface_Simple <> msg:18 var
+R3080:3083 Coq.Init.Datatypes <> Some constr
+R3125:3128 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R3107:3109 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R3098:3105 WasmTranslatorInterface_Simple <> msg_type proj
+R3093:3095 WasmTranslatorInterface_Simple <> msg:18 var
+R3116:3123 WasmTranslatorInterface_Simple <> msg_type proj
+R3142:3144 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R3134:3140 WasmTranslatorInterface_Simple <> msg_fid proj
+R3129:3131 WasmTranslatorInterface_Simple <> msg:18 var
+R3151:3157 WasmTranslatorInterface_Simple <> msg_fid proj
+R3164:3167 Coq.Init.Datatypes <> None constr
+R3172:3176 Coq.Init.Logic <> False ind
+def 3259:3274 <> protocol_correct
+R3296:3309 WasmTranslatorInterface_Simple <> NinePeeMessage rec
+binder 3277:3283 <> request:19
+binder 3285:3292 <> response:20
+R3324:3324 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R3382:3388 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R3351:3354 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R3343:3345 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R3334:3341 WasmTranslatorInterface_Simple <> msg_type proj
+R3325:3331 WasmTranslatorInterface_Simple <> request:19 var
+R3346:3350 WasmTranslatorInterface_Simple <> Tread constr
+R3374:3376 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R3365:3372 WasmTranslatorInterface_Simple <> msg_type proj
+R3355:3362 WasmTranslatorInterface_Simple <> response:20 var
+R3377:3381 WasmTranslatorInterface_Simple <> Rread constr
+R3389:3389 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R3449:3455 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R3417:3420 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R3408:3410 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R3399:3406 WasmTranslatorInterface_Simple <> msg_type proj
+R3390:3396 WasmTranslatorInterface_Simple <> request:19 var
+R3411:3416 WasmTranslatorInterface_Simple <> Twrite constr
+R3440:3442 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R3431:3438 WasmTranslatorInterface_Simple <> msg_type proj
+R3421:3428 WasmTranslatorInterface_Simple <> response:20 var
+R3443:3448 WasmTranslatorInterface_Simple <> Rwrite constr
+R3474:3476 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R3466:3472 WasmTranslatorInterface_Simple <> msg_fid proj
+R3456:3463 WasmTranslatorInterface_Simple <> response:20 var
+R3486:3492 WasmTranslatorInterface_Simple <> msg_fid proj
+R3477:3483 WasmTranslatorInterface_Simple <> request:19 var
+def 3568:3582 <> translator_safe
+R3607:3625 WasmTranslatorInterface_Simple <> WasmTranslatorState rec
+binder 3585:3593 <> old_state:21
+binder 3595:3603 <> new_state:22
+R3689:3694 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R3663:3665 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R3651:3661 WasmTranslatorInterface_Simple <> wasm_active proj
+R3640:3648 WasmTranslatorInterface_Simple <> new_state:22 var
+R3677:3687 WasmTranslatorInterface_Simple <> wasm_active proj
+R3666:3674 WasmTranslatorInterface_Simple <> old_state:21 var
+R3720:3723 Coq.Init.Peano <> ::nat_scope:x_'>='_x not
+R3706:3718 WasmTranslatorInterface_Simple <> wasm_heap_ptr proj
+R3695:3703 WasmTranslatorInterface_Simple <> new_state:22 var
+R3735:3747 WasmTranslatorInterface_Simple <> wasm_heap_ptr proj
+R3724:3732 WasmTranslatorInterface_Simple <> old_state:21 var
+prf 3937:3967 <> serialization_roundtrip_correct
+binder 3978:3980 <> msg:23
+R3985:4001 WasmTranslatorInterface_Simple <> message_integrity def
+R4003:4005 WasmTranslatorInterface_Simple <> msg:23 var
+R4037:4053 WasmTranslatorInterface_Simple <> message_integrity def
+prf 4221:4252 <> wasm_translator_protocol_correct
+binder 4263:4267 <> state:24
+binder 4269:4271 <> msg:25
+binder 4273:4281 <> new_state:26
+binder 4283:4290 <> response:27
+R4357:4362 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R4328:4330 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R4295:4317 WasmTranslatorInterface_Simple <> execute_wasm_translator def
+R4319:4323 WasmTranslatorInterface_Simple <> state:24 var
+R4325:4327 WasmTranslatorInterface_Simple <> msg:25 var
+R4331:4334 Coq.Init.Datatypes <> Some constr
+R4336:4336 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4346:4347 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4356:4356 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4337:4345 WasmTranslatorInterface_Simple <> new_state:26 var
+R4348:4355 WasmTranslatorInterface_Simple <> response:27 var
+R4363:4378 WasmTranslatorInterface_Simple <> protocol_correct def
+R4380:4382 WasmTranslatorInterface_Simple <> msg:25 var
+R4384:4391 WasmTranslatorInterface_Simple <> response:27 var
+R4451:4473 WasmTranslatorInterface_Simple <> execute_wasm_translator def
+R4500:4510 WasmTranslatorInterface_Simple <> wasm_active proj
+R4500:4510 WasmTranslatorInterface_Simple <> wasm_active proj
+R4606:4621 WasmTranslatorInterface_Simple <> protocol_correct def
+prf 4814:4843 <> wasm_translator_execution_safe
+binder 4854:4858 <> state:28
+binder 4860:4862 <> msg:29
+binder 4864:4872 <> new_state:30
+binder 4874:4881 <> response:31
+R4948:4953 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R4919:4921 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R4886:4908 WasmTranslatorInterface_Simple <> execute_wasm_translator def
+R4910:4914 WasmTranslatorInterface_Simple <> state:28 var
+R4916:4918 WasmTranslatorInterface_Simple <> msg:29 var
+R4922:4925 Coq.Init.Datatypes <> Some constr
+R4927:4927 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4937:4938 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4947:4947 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4928:4936 WasmTranslatorInterface_Simple <> new_state:30 var
+R4939:4946 WasmTranslatorInterface_Simple <> response:31 var
+R4954:4968 WasmTranslatorInterface_Simple <> translator_safe def
+R4970:4974 WasmTranslatorInterface_Simple <> state:28 var
+R4976:4984 WasmTranslatorInterface_Simple <> new_state:30 var
+R5044:5066 WasmTranslatorInterface_Simple <> execute_wasm_translator def
+R5093:5103 WasmTranslatorInterface_Simple <> wasm_active proj
+R5093:5103 WasmTranslatorInterface_Simple <> wasm_active proj
+R5190:5204 WasmTranslatorInterface_Simple <> translator_safe def
+prf 5304:5331 <> wasm_interface_deterministic
+binder 5342:5346 <> state:32
+binder 5348:5350 <> msg:33
+binder 5352:5358 <> result1:34
+binder 5360:5366 <> result2:35
+R5419:5424 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R5404:5406 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R5371:5393 WasmTranslatorInterface_Simple <> execute_wasm_translator def
+R5395:5399 WasmTranslatorInterface_Simple <> state:32 var
+R5401:5403 WasmTranslatorInterface_Simple <> msg:33 var
+R5407:5410 Coq.Init.Datatypes <> Some constr
+R5412:5418 WasmTranslatorInterface_Simple <> result1:34 var
+R5473:5478 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R5458:5460 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R5425:5447 WasmTranslatorInterface_Simple <> execute_wasm_translator def
+R5449:5453 WasmTranslatorInterface_Simple <> state:32 var
+R5455:5457 WasmTranslatorInterface_Simple <> msg:33 var
+R5461:5464 Coq.Init.Datatypes <> Some constr
+R5466:5472 WasmTranslatorInterface_Simple <> result2:35 var
+R5486:5488 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R5479:5485 WasmTranslatorInterface_Simple <> result1:34 var
+R5489:5495 WasmTranslatorInterface_Simple <> result2:35 var
+prf 5782:5814 <> wasm_translator_interface_correct
+binder 5825:5829 <> state:36
+binder 5831:5833 <> msg:37
+binder 5835:5843 <> new_state:38
+binder 5845:5852 <> response:39
+R5883:5888 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R5876:5878 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R5864:5874 WasmTranslatorInterface_Simple <> wasm_active proj
+R5857:5861 WasmTranslatorInterface_Simple <> state:36 var
+R5879:5882 Coq.Init.Datatypes <> true constr
+R5951:5982 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R5922:5924 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R5889:5911 WasmTranslatorInterface_Simple <> execute_wasm_translator def
+R5913:5917 WasmTranslatorInterface_Simple <> state:36 var
+R5919:5921 WasmTranslatorInterface_Simple <> msg:37 var
+R5925:5928 Coq.Init.Datatypes <> Some constr
+R5930:5930 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R5940:5941 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R5950:5950 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R5931:5939 WasmTranslatorInterface_Simple <> new_state:38 var
+R5942:5949 WasmTranslatorInterface_Simple <> response:39 var
+R6004:6038 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R5983:5999 WasmTranslatorInterface_Simple <> message_integrity def
+R6001:6003 WasmTranslatorInterface_Simple <> msg:37 var
+R6068:6098 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R6039:6054 WasmTranslatorInterface_Simple <> protocol_correct def
+R6056:6058 WasmTranslatorInterface_Simple <> msg:37 var
+R6060:6067 WasmTranslatorInterface_Simple <> response:39 var
+R6099:6113 WasmTranslatorInterface_Simple <> translator_safe def
+R6115:6119 WasmTranslatorInterface_Simple <> state:36 var
+R6121:6129 WasmTranslatorInterface_Simple <> new_state:38 var
+R6251:6281 WasmTranslatorInterface_Simple <> serialization_roundtrip_correct thm
+R6251:6281 WasmTranslatorInterface_Simple <> serialization_roundtrip_correct thm
+R6326:6357 WasmTranslatorInterface_Simple <> wasm_translator_protocol_correct thm
+R6326:6357 WasmTranslatorInterface_Simple <> wasm_translator_protocol_correct thm
+R6435:6464 WasmTranslatorInterface_Simple <> wasm_translator_execution_safe thm
+R6435:6464 WasmTranslatorInterface_Simple <> wasm_translator_execution_safe thm

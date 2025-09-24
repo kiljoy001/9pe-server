@@ -1,0 +1,134 @@
+DIGEST 300e29b36225a58fe532779c071c8fd3
+FSyntheticFileCorrectness
+R256:269 Coq.Lists.List <> <> lib
+R287:304 Coq.Strings.String <> <> lib
+R322:336 Coq.Arith.Arith <> <> lib
+R354:366 Coq.Bool.Bool <> <> lib
+R384:417 Coq.Logic.FunctionalExtensionality <> <> lib
+R427:439 Coq.Lists.List ListNotations <> mod
+def 509:510 <> u8
+R515:517 Coq.Init.Datatypes <> nat ind
+def 531:533 <> u32
+R538:540 Coq.Init.Datatypes <> nat ind
+def 554:556 <> u64
+R561:563 Coq.Init.Datatypes <> nat ind
+def 577:579 <> Vec
+binder 582:582 <> A:1
+R595:598 Coq.Init.Datatypes <> list ind
+R600:600 SyntheticFileCorrectness <> A:1 var
+def 614:620 <> PathBuf
+R625:630 Coq.Strings.String <> string ind
+def 644:649 <> Result
+binder 652:652 <> A:2
+R665:670 Coq.Init.Datatypes <> option ind
+R672:672 SyntheticFileCorrectness <> A:2 var
+ax 731:736 <> prefix
+R746:749 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R740:745 Coq.Strings.String <> string ind
+R756:759 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R750:755 Coq.Strings.String <> string ind
+R760:763 Coq.Init.Datatypes <> bool ind
+ax 776:781 <> suffix
+R791:794 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R785:790 Coq.Strings.String <> string ind
+R801:804 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R795:800 Coq.Strings.String <> string ind
+R805:808 Coq.Init.Datatypes <> bool ind
+ax 821:829 <> path_join
+R839:842 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R833:838 Coq.Strings.String <> string ind
+R849:852 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R843:848 Coq.Strings.String <> string ind
+R853:858 Coq.Strings.String <> string ind
+ax 898:907 <> string_dec
+R926:931 Coq.Strings.String <> string ind
+binder 918:919 <> s1:9
+binder 921:922 <> s2:10
+R934:934 Coq.Init.Specif <> ::type_scope:'{'_x_'}'_'+'_'{'_x_'}' not
+R942:946 Coq.Init.Specif <> ::type_scope:'{'_x_'}'_'+'_'{'_x_'}' not
+R955:955 Coq.Init.Specif <> ::type_scope:'{'_x_'}'_'+'_'{'_x_'}' not
+R937:939 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R935:936 SyntheticFileCorrectness <> s1:9 var
+R940:941 SyntheticFileCorrectness <> s2:10 var
+R949:952 Coq.Init.Logic <> ::type_scope:x_'<>'_x not
+R947:948 SyntheticFileCorrectness <> s1:9 var
+R953:954 SyntheticFileCorrectness <> s2:10 var
+rec 998:1015 <> SyntheticGenerator
+proj 1024:1031 <> generate
+proj 1068:1071 <> size
+proj 1082:1099 <> supports_streaming
+proj 1111:1125 <> refresh_rate_ms
+R1038:1041 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1035:1037 SyntheticFileCorrectness <> u64 def
+R1045:1048 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1042:1044 SyntheticFileCorrectness <> u32 def
+R1049:1054 SyntheticFileCorrectness <> Result def
+R1057:1059 SyntheticFileCorrectness <> Vec def
+R1061:1062 SyntheticFileCorrectness <> u8 def
+R1075:1077 SyntheticFileCorrectness <> u64 def
+R1103:1106 Coq.Init.Datatypes <> bool ind
+R1129:1131 SyntheticFileCorrectness <> u64 def
+def 1170:1186 <> is_synthetic_path
+R1196:1202 SyntheticFileCorrectness <> PathBuf def
+binder 1189:1192 <> path:18
+R1207:1210 Coq.Init.Datatypes <> bool ind
+R1261:1264 Coq.Init.Datatypes <> ::bool_scope:x_'||'_x not
+R1236:1239 Coq.Init.Datatypes <> ::bool_scope:x_'||'_x not
+R1217:1222 SyntheticFileCorrectness <> prefix defax
+R1232:1235 SyntheticFileCorrectness <> path:18 var
+R1240:1245 SyntheticFileCorrectness <> suffix defax
+R1257:1260 SyntheticFileCorrectness <> path:18 var
+R1265:1270 SyntheticFileCorrectness <> suffix defax
+R1282:1285 SyntheticFileCorrectness <> path:18 var
+def 1325:1340 <> cpu_info_content
+R1344:1346 SyntheticFileCorrectness <> Vec def
+R1348:1349 SyntheticFileCorrectness <> u8 def
+R1356:1356 Coq.Lists.List ListNotations ::list_scope:'['_x_';'_x_';'_'..'_';'_x_']' not
+R1360:1361 Coq.Lists.List ListNotations ::list_scope:'['_x_';'_x_';'_'..'_';'_x_']' not
+R1365:1366 Coq.Lists.List ListNotations ::list_scope:'['_x_';'_x_';'_'..'_';'_x_']' not
+R1370:1371 Coq.Lists.List ListNotations ::list_scope:'['_x_';'_x_';'_'..'_';'_x_']' not
+R1374:1375 Coq.Lists.List ListNotations ::list_scope:'['_x_';'_x_';'_'..'_';'_x_']' not
+R1379:1380 Coq.Lists.List ListNotations ::list_scope:'['_x_';'_x_';'_'..'_';'_x_']' not
+R1384:1385 Coq.Lists.List ListNotations ::list_scope:'['_x_';'_x_';'_'..'_';'_x_']' not
+R1389:1390 Coq.Lists.List ListNotations ::list_scope:'['_x_';'_x_';'_'..'_';'_x_']' not
+R1394:1395 Coq.Lists.List ListNotations ::list_scope:'['_x_';'_x_';'_'..'_';'_x_']' not
+R1399:1399 Coq.Lists.List ListNotations ::list_scope:'['_x_';'_x_';'_'..'_';'_x_']' not
+def 1441:1458 <> cpu_info_generator
+R1462:1479 SyntheticFileCorrectness <> SyntheticGenerator rec
+R1489:1496 SyntheticFileCorrectness <> generate proj
+R1489:1496 SyntheticFileCorrectness <> generate proj
+R1489:1496 SyntheticFileCorrectness <> generate proj
+R1759:1762 SyntheticFileCorrectness <> size proj
+R1759:1762 SyntheticFileCorrectness <> size proj
+R1794:1811 SyntheticFileCorrectness <> supports_streaming proj
+R1794:1811 SyntheticFileCorrectness <> supports_streaming proj
+R1825:1839 SyntheticFileCorrectness <> refresh_rate_ms proj
+R1825:1839 SyntheticFileCorrectness <> refresh_rate_ms proj
+binder 1505:1510 <> offset:19
+binder 1512:1516 <> count:20
+R1540:1555 SyntheticFileCorrectness <> cpu_info_content def
+binder 1529:1535 <> content:21
+R1583:1588 Coq.Strings.String <> length def
+R1590:1596 SyntheticFileCorrectness <> content:21 var
+binder 1568:1578 <> content_len:22
+R1618:1620 Coq.Init.Peano <> min abbrev
+R1622:1627 SyntheticFileCorrectness <> offset:19 var
+R1629:1639 SyntheticFileCorrectness <> content_len:22 var
+binder 1609:1613 <> start:23
+R1663:1665 Coq.Init.Peano <> min abbrev
+R1673:1675 Coq.Init.Peano <> ::nat_scope:x_'+'_x not
+R1668:1672 SyntheticFileCorrectness <> start:23 var
+R1676:1680 SyntheticFileCorrectness <> count:20 var
+R1683:1693 SyntheticFileCorrectness <> content_len:22 var
+binder 1652:1658 <> end_pos:24
+R1702:1705 Coq.Init.Datatypes <> Some constr
+R1708:1713 Coq.Lists.List <> firstn def
+R1734:1738 Coq.Lists.List <> skipn def
+R1746:1752 SyntheticFileCorrectness <> content:21 var
+R1740:1744 SyntheticFileCorrectness <> start:23 var
+R1723:1725 Coq.Init.Peano <> ::nat_scope:x_'-'_x not
+R1716:1722 SyntheticFileCorrectness <> end_pos:24 var
+R1726:1730 SyntheticFileCorrectness <> start:23 var
+R1767:1772 Coq.Strings.String <> length def
+R1774:1789 SyntheticFileCorrectness <> cpu_info_content def
+R1816:1820 Coq.Init.Datatypes <> false constr

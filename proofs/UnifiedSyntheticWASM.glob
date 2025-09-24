@@ -1,0 +1,563 @@
+DIGEST 22b98c211e846ae234a54c33fafcfbf8
+FUnifiedSyntheticWASM
+R188:201 Coq.Lists.List <> <> lib
+R219:233 Coq.Arith.Arith <> <> lib
+R251:263 Coq.Bool.Bool <> <> lib
+R281:283 Coq.micromega.Lia <> <> lib
+R293:305 Coq.Lists.List ListNotations <> mod
+ind 424:441 <> NinePeeMessageType
+constr 457:461 <> Tread
+constr 465:469 <> Rread
+constr 473:478 <> Twrite
+constr 482:487 <> Rwrite
+constr 491:496 <> Terror
+constr 500:505 <> Rerror
+scheme 424:441 <> NinePeeMessageType_rect
+scheme 424:441 <> NinePeeMessageType_ind
+scheme 424:441 <> NinePeeMessageType_rec
+scheme 424:441 <> NinePeeMessageType_sind
+rec 516:529 <> NinePeeMessage
+proj 538:545 <> msg_type
+proj 571:577 <> msg_fid
+proj 588:597 <> msg_offset
+proj 608:616 <> msg_count
+proj 627:634 <> msg_data
+R549:566 UnifiedSyntheticWASM <> NinePeeMessageType ind
+R581:583 Coq.Init.Datatypes <> nat ind
+R601:603 Coq.Init.Datatypes <> nat ind
+R620:622 Coq.Init.Datatypes <> nat ind
+R638:641 Coq.Init.Datatypes <> list ind
+R643:645 Coq.Init.Datatypes <> nat ind
+rec 762:779 <> SyntheticGenerator
+proj 788:799 <> syn_generate
+proj 838:845 <> syn_size
+proj 856:872 <> syn_deterministic
+R806:809 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R803:805 Coq.Init.Datatypes <> nat ind
+R813:816 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R810:812 Coq.Init.Datatypes <> nat ind
+R817:822 Coq.Init.Datatypes <> option ind
+R825:828 Coq.Init.Datatypes <> list ind
+R830:832 Coq.Init.Datatypes <> nat ind
+R849:851 Coq.Init.Datatypes <> nat ind
+R876:879 Coq.Init.Datatypes <> bool ind
+def 896:912 <> is_synthetic_path
+R922:925 Coq.Init.Datatypes <> list ind
+R927:929 Coq.Init.Datatypes <> nat ind
+binder 915:918 <> path:13
+R934:937 Coq.Init.Datatypes <> bool ind
+R1000:1003 Coq.Init.Datatypes <> true constr
+rec 1146:1164 <> WasmTranslatorState
+proj 1173:1183 <> wasm_memory
+proj 1208:1220 <> wasm_heap_ptr
+proj 1231:1241 <> wasm_active
+R1190:1193 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1187:1189 Coq.Init.Datatypes <> nat ind
+R1194:1199 Coq.Init.Datatypes <> option ind
+R1201:1203 Coq.Init.Datatypes <> nat ind
+R1224:1226 Coq.Init.Datatypes <> nat ind
+R1245:1248 Coq.Init.Datatypes <> bool ind
+def 1265:1287 <> execute_wasm_translator
+R1300:1318 UnifiedSyntheticWASM <> WasmTranslatorState rec
+binder 1292:1296 <> state:18
+R1332:1335 Coq.Init.Datatypes <> list ind
+R1337:1339 Coq.Init.Datatypes <> nat ind
+binder 1324:1328 <> input:19
+R1344:1349 Coq.Init.Datatypes <> option ind
+R1352:1355 Coq.Init.Datatypes <> list ind
+R1357:1359 Coq.Init.Datatypes <> nat ind
+R1377:1387 UnifiedSyntheticWASM <> wasm_active proj
+R1370:1374 UnifiedSyntheticWASM <> state:18 var
+R1511:1514 Coq.Init.Datatypes <> None constr
+R1438:1441 Coq.Init.Datatypes <> Some constr
+R1444:1446 Coq.Lists.List <> map def
+R1465:1469 UnifiedSyntheticWASM <> input:19 var
+binder 1453:1453 <> x:20
+R1459:1461 Coq.Init.Peano <> ::nat_scope:x_'+'_x not
+R1458:1458 UnifiedSyntheticWASM <> x:20 var
+rec 1626:1645 <> UnifiedNinePeeSystem
+proj 1688:1707 <> synthetic_generators
+proj 1778:1793 <> wasm_translators
+proj 1865:1882 <> enable_composition
+R1719:1722 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1711:1714 Coq.Init.Datatypes <> list ind
+R1716:1718 Coq.Init.Datatypes <> nat ind
+R1723:1728 Coq.Init.Datatypes <> option ind
+R1730:1747 UnifiedSyntheticWASM <> SyntheticGenerator rec
+R1805:1808 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1797:1800 Coq.Init.Datatypes <> list ind
+R1802:1804 Coq.Init.Datatypes <> nat ind
+R1809:1814 Coq.Init.Datatypes <> option ind
+R1816:1834 UnifiedSyntheticWASM <> WasmTranslatorState rec
+R1886:1889 Coq.Init.Datatypes <> bool ind
+def 2015:2037 <> process_unified_message
+R2051:2070 UnifiedSyntheticWASM <> UnifiedNinePeeSystem rec
+binder 2042:2047 <> system:25
+R2082:2095 UnifiedSyntheticWASM <> NinePeeMessage rec
+binder 2076:2078 <> msg:26
+R2100:2105 Coq.Init.Datatypes <> option ind
+R2107:2120 UnifiedSyntheticWASM <> NinePeeMessage rec
+R2138:2145 UnifiedSyntheticWASM <> msg_type proj
+R2133:2135 UnifiedSyntheticWASM <> msg:26 var
+R2157:2161 UnifiedSyntheticWASM <> Tread constr
+R2214:2230 UnifiedSyntheticWASM <> is_synthetic_path def
+R2237:2244 UnifiedSyntheticWASM <> msg_data proj
+R2232:2234 UnifiedSyntheticWASM <> msg:26 var
+R4068:4071 Coq.Init.Datatypes <> None constr
+R2323:2342 UnifiedSyntheticWASM <> synthetic_generators proj
+R2315:2320 UnifiedSyntheticWASM <> system:25 var
+R2350:2357 UnifiedSyntheticWASM <> msg_data proj
+R2345:2347 UnifiedSyntheticWASM <> msg:26 var
+R2375:2378 Coq.Init.Datatypes <> Some constr
+R2410:2421 UnifiedSyntheticWASM <> syn_generate proj
+R2429:2438 UnifiedSyntheticWASM <> msg_offset proj
+R2424:2426 UnifiedSyntheticWASM <> msg:26 var
+R2446:2454 UnifiedSyntheticWASM <> msg_count proj
+R2441:2443 UnifiedSyntheticWASM <> msg:26 var
+R2476:2479 Coq.Init.Datatypes <> Some constr
+R2589:2606 UnifiedSyntheticWASM <> enable_composition proj
+R2581:2586 UnifiedSyntheticWASM <> system:25 var
+R3688:3691 Coq.Init.Datatypes <> Some constr
+R3696:3703 UnifiedSyntheticWASM <> msg_type proj
+R3696:3703 UnifiedSyntheticWASM <> msg_type proj
+R3696:3703 UnifiedSyntheticWASM <> msg_type proj
+R3740:3746 UnifiedSyntheticWASM <> msg_fid proj
+R3740:3746 UnifiedSyntheticWASM <> msg_fid proj
+R3791:3800 UnifiedSyntheticWASM <> msg_offset proj
+R3791:3800 UnifiedSyntheticWASM <> msg_offset proj
+R3833:3841 UnifiedSyntheticWASM <> msg_count proj
+R3833:3841 UnifiedSyntheticWASM <> msg_count proj
+R3887:3894 UnifiedSyntheticWASM <> msg_data proj
+R3887:3894 UnifiedSyntheticWASM <> msg_data proj
+R3708:3712 UnifiedSyntheticWASM <> Rread constr
+R3756:3762 UnifiedSyntheticWASM <> msg_fid proj
+R3751:3753 UnifiedSyntheticWASM <> msg:26 var
+R3846:3851 Coq.Init.Datatypes <> length def
+R2646:2661 UnifiedSyntheticWASM <> wasm_translators proj
+R2638:2643 UnifiedSyntheticWASM <> system:25 var
+R2669:2676 UnifiedSyntheticWASM <> msg_data proj
+R2664:2666 UnifiedSyntheticWASM <> msg:26 var
+R2704:2707 Coq.Init.Datatypes <> Some constr
+R2751:2773 UnifiedSyntheticWASM <> execute_wasm_translator def
+R2823:2826 Coq.Init.Datatypes <> Some constr
+R2869:2872 Coq.Init.Datatypes <> Some constr
+R2877:2884 UnifiedSyntheticWASM <> msg_type proj
+R2877:2884 UnifiedSyntheticWASM <> msg_type proj
+R2877:2884 UnifiedSyntheticWASM <> msg_type proj
+R2929:2935 UnifiedSyntheticWASM <> msg_fid proj
+R2929:2935 UnifiedSyntheticWASM <> msg_fid proj
+R2988:2997 UnifiedSyntheticWASM <> msg_offset proj
+R2988:2997 UnifiedSyntheticWASM <> msg_offset proj
+R3038:3046 UnifiedSyntheticWASM <> msg_count proj
+R3038:3046 UnifiedSyntheticWASM <> msg_count proj
+R3104:3111 UnifiedSyntheticWASM <> msg_data proj
+R3104:3111 UnifiedSyntheticWASM <> msg_data proj
+R2889:2893 UnifiedSyntheticWASM <> Rread constr
+R2945:2951 UnifiedSyntheticWASM <> msg_fid proj
+R2940:2942 UnifiedSyntheticWASM <> msg:26 var
+R3051:3056 Coq.Init.Datatypes <> length def
+R3155:3158 Coq.Init.Datatypes <> None constr
+R3163:3166 Coq.Init.Datatypes <> None constr
+R3214:3217 Coq.Init.Datatypes <> None constr
+R3318:3321 Coq.Init.Datatypes <> Some constr
+R3326:3333 UnifiedSyntheticWASM <> msg_type proj
+R3326:3333 UnifiedSyntheticWASM <> msg_type proj
+R3326:3333 UnifiedSyntheticWASM <> msg_type proj
+R3374:3380 UnifiedSyntheticWASM <> msg_fid proj
+R3374:3380 UnifiedSyntheticWASM <> msg_fid proj
+R3429:3438 UnifiedSyntheticWASM <> msg_offset proj
+R3429:3438 UnifiedSyntheticWASM <> msg_offset proj
+R3475:3483 UnifiedSyntheticWASM <> msg_count proj
+R3475:3483 UnifiedSyntheticWASM <> msg_count proj
+R3533:3540 UnifiedSyntheticWASM <> msg_data proj
+R3533:3540 UnifiedSyntheticWASM <> msg_data proj
+R3338:3342 UnifiedSyntheticWASM <> Rread constr
+R3390:3396 UnifiedSyntheticWASM <> msg_fid proj
+R3385:3387 UnifiedSyntheticWASM <> msg:26 var
+R3488:3493 Coq.Init.Datatypes <> length def
+R3924:3927 Coq.Init.Datatypes <> None constr
+R3932:3935 Coq.Init.Datatypes <> None constr
+R3963:3966 Coq.Init.Datatypes <> None constr
+R3971:3974 Coq.Init.Datatypes <> None constr
+R4082:4085 Coq.Init.Datatypes <> None constr
+prf 4243:4263 <> unified_preserves_fid
+binder 4276:4281 <> system:27
+binder 4283:4285 <> msg:28
+binder 4287:4294 <> response:29
+R4349:4354 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R4333:4335 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R4299:4321 UnifiedSyntheticWASM <> process_unified_message def
+R4323:4328 UnifiedSyntheticWASM <> system:27 var
+R4330:4332 UnifiedSyntheticWASM <> msg:28 var
+R4336:4339 Coq.Init.Datatypes <> Some constr
+R4341:4348 UnifiedSyntheticWASM <> response:29 var
+R4373:4375 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R4365:4371 UnifiedSyntheticWASM <> msg_fid proj
+R4355:4362 UnifiedSyntheticWASM <> response:29 var
+R4381:4387 UnifiedSyntheticWASM <> msg_fid proj
+R4376:4378 UnifiedSyntheticWASM <> msg:28 var
+R4439:4461 UnifiedSyntheticWASM <> process_unified_message def
+R4595:4611 UnifiedSyntheticWASM <> is_synthetic_path def
+R4595:4611 UnifiedSyntheticWASM <> is_synthetic_path def
+R4659:4678 UnifiedSyntheticWASM <> synthetic_generators proj
+R4659:4678 UnifiedSyntheticWASM <> synthetic_generators proj
+R4733:4744 UnifiedSyntheticWASM <> syn_generate proj
+R4733:4744 UnifiedSyntheticWASM <> syn_generate proj
+R4807:4824 UnifiedSyntheticWASM <> enable_composition proj
+R4807:4824 UnifiedSyntheticWASM <> enable_composition proj
+R4859:4874 UnifiedSyntheticWASM <> wasm_translators proj
+R4859:4874 UnifiedSyntheticWASM <> wasm_translators proj
+R4917:4939 UnifiedSyntheticWASM <> execute_wasm_translator def
+R4917:4939 UnifiedSyntheticWASM <> execute_wasm_translator def
+prf 5170:5193 <> unified_protocol_correct
+binder 5206:5211 <> system:30
+binder 5213:5215 <> msg:31
+binder 5217:5224 <> response:32
+R5251:5256 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R5243:5245 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R5234:5241 UnifiedSyntheticWASM <> msg_type proj
+R5229:5231 UnifiedSyntheticWASM <> msg:31 var
+R5246:5250 UnifiedSyntheticWASM <> Tread constr
+R5307:5312 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R5291:5293 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R5257:5279 UnifiedSyntheticWASM <> process_unified_message def
+R5281:5286 UnifiedSyntheticWASM <> system:30 var
+R5288:5290 UnifiedSyntheticWASM <> msg:31 var
+R5294:5297 Coq.Init.Datatypes <> Some constr
+R5299:5306 UnifiedSyntheticWASM <> response:32 var
+R5332:5334 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R5323:5330 UnifiedSyntheticWASM <> msg_type proj
+R5313:5320 UnifiedSyntheticWASM <> response:32 var
+R5335:5339 UnifiedSyntheticWASM <> Rread constr
+R5396:5418 UnifiedSyntheticWASM <> process_unified_message def
+R5538:5554 UnifiedSyntheticWASM <> is_synthetic_path def
+R5538:5554 UnifiedSyntheticWASM <> is_synthetic_path def
+R5593:5612 UnifiedSyntheticWASM <> synthetic_generators proj
+R5593:5612 UnifiedSyntheticWASM <> synthetic_generators proj
+R5658:5669 UnifiedSyntheticWASM <> syn_generate proj
+R5658:5669 UnifiedSyntheticWASM <> syn_generate proj
+R5718:5735 UnifiedSyntheticWASM <> enable_composition proj
+R5718:5735 UnifiedSyntheticWASM <> enable_composition proj
+R5760:5775 UnifiedSyntheticWASM <> wasm_translators proj
+R5760:5775 UnifiedSyntheticWASM <> wasm_translators proj
+R5807:5829 UnifiedSyntheticWASM <> execute_wasm_translator def
+R5807:5829 UnifiedSyntheticWASM <> execute_wasm_translator def
+def 6056:6071 <> composition_safe
+R6083:6102 UnifiedSyntheticWASM <> UnifiedNinePeeSystem rec
+binder 6074:6079 <> system:33
+binder 6124:6126 <> msg:34
+binder 6128:6144 <> synthetic_content:35
+binder 6146:6164 <> transformed_content:36
+R6191:6196 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R6183:6185 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R6174:6181 UnifiedSyntheticWASM <> msg_type proj
+R6169:6171 UnifiedSyntheticWASM <> msg:34 var
+R6186:6190 UnifiedSyntheticWASM <> Tread constr
+R6236:6241 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R6229:6231 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R6197:6213 UnifiedSyntheticWASM <> is_synthetic_path def
+R6220:6227 UnifiedSyntheticWASM <> msg_data proj
+R6215:6217 UnifiedSyntheticWASM <> msg:34 var
+R6232:6235 Coq.Init.Datatypes <> true constr
+R6242:6242 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R6405:6411 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R6243:6249 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+R6253:6254 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+binder 6250:6252 <> gen:37
+R6310:6328 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R6299:6301 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R6263:6282 UnifiedSyntheticWASM <> synthetic_generators proj
+R6255:6260 UnifiedSyntheticWASM <> system:33 var
+R6290:6297 UnifiedSyntheticWASM <> msg_data proj
+R6285:6287 UnifiedSyntheticWASM <> msg:34 var
+R6302:6305 Coq.Init.Datatypes <> Some constr
+R6307:6309 UnifiedSyntheticWASM <> gen:37 var
+R6380:6382 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R6334:6345 UnifiedSyntheticWASM <> syn_generate proj
+R6329:6331 UnifiedSyntheticWASM <> gen:37 var
+R6353:6362 UnifiedSyntheticWASM <> msg_offset proj
+R6348:6350 UnifiedSyntheticWASM <> msg:34 var
+R6370:6378 UnifiedSyntheticWASM <> msg_count proj
+R6365:6367 UnifiedSyntheticWASM <> msg:34 var
+R6383:6386 Coq.Init.Datatypes <> Some constr
+R6388:6404 UnifiedSyntheticWASM <> synthetic_content:35 var
+R6412:6412 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R6595:6601 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R6413:6419 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+R6430:6431 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+binder 6420:6429 <> translator:38
+R6490:6515 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R6472:6474 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R6440:6455 UnifiedSyntheticWASM <> wasm_translators proj
+R6432:6437 UnifiedSyntheticWASM <> system:33 var
+R6463:6470 UnifiedSyntheticWASM <> msg_data proj
+R6458:6460 UnifiedSyntheticWASM <> msg:34 var
+R6475:6478 Coq.Init.Datatypes <> Some constr
+R6480:6489 UnifiedSyntheticWASM <> translator:38 var
+R6568:6570 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R6516:6538 UnifiedSyntheticWASM <> execute_wasm_translator def
+R6540:6549 UnifiedSyntheticWASM <> translator:38 var
+R6551:6567 UnifiedSyntheticWASM <> synthetic_content:35 var
+R6571:6574 Coq.Init.Datatypes <> Some constr
+R6576:6594 UnifiedSyntheticWASM <> transformed_content:36 var
+R6628:6631 Coq.Init.Peano <> ::nat_scope:x_'<='_x not
+R6602:6607 Coq.Init.Datatypes <> length def
+R6609:6627 UnifiedSyntheticWASM <> transformed_content:36 var
+R6656:6658 Coq.Init.Peano <> ::nat_scope:x_'+'_x not
+R6632:6637 Coq.Init.Datatypes <> length def
+R6639:6655 UnifiedSyntheticWASM <> synthetic_content:35 var
+prf 6697:6723 <> unified_composition_is_safe
+binder 6736:6741 <> system:39
+R6746:6746 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R6843:6849 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+binder 6754:6757 <> path:40
+binder 6759:6761 <> gen:41
+R6809:6812 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R6798:6800 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R6772:6791 UnifiedSyntheticWASM <> synthetic_generators proj
+R6764:6769 UnifiedSyntheticWASM <> system:39 var
+R6794:6797 UnifiedSyntheticWASM <> path:40 var
+R6801:6804 Coq.Init.Datatypes <> Some constr
+R6806:6808 UnifiedSyntheticWASM <> gen:41 var
+R6836:6838 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R6818:6834 UnifiedSyntheticWASM <> syn_deterministic proj
+R6813:6815 UnifiedSyntheticWASM <> gen:41 var
+R6839:6842 Coq.Init.Datatypes <> true constr
+R6850:6850 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R6958:6964 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+binder 6858:6861 <> path:42
+binder 6863:6872 <> translator:43
+R6923:6926 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R6905:6907 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R6883:6898 UnifiedSyntheticWASM <> wasm_translators proj
+R6875:6880 UnifiedSyntheticWASM <> system:39 var
+R6901:6904 UnifiedSyntheticWASM <> path:42 var
+R6908:6911 Coq.Init.Datatypes <> Some constr
+R6913:6922 UnifiedSyntheticWASM <> translator:43 var
+R6951:6953 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R6939:6949 UnifiedSyntheticWASM <> wasm_active proj
+R6927:6936 UnifiedSyntheticWASM <> translator:43 var
+R6954:6957 Coq.Init.Datatypes <> true constr
+R6965:6980 UnifiedSyntheticWASM <> composition_safe def
+R6982:6987 UnifiedSyntheticWASM <> system:39 var
+R7046:7061 UnifiedSyntheticWASM <> composition_safe def
+R7311:7333 UnifiedSyntheticWASM <> execute_wasm_translator def
+R7381:7383 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R7369:7379 UnifiedSyntheticWASM <> wasm_active proj
+R7384:7387 Coq.Init.Datatypes <> true constr
+R7381:7383 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R7369:7379 UnifiedSyntheticWASM <> wasm_active proj
+R7384:7387 Coq.Init.Datatypes <> true constr
+R7425:7432 UnifiedSyntheticWASM <> msg_data proj
+R7425:7432 UnifiedSyntheticWASM <> msg_data proj
+R7533:7542 Coq.Lists.List <> map_length abbrev
+R7533:7542 Coq.Lists.List <> map_length abbrev
+R7533:7542 Coq.Lists.List <> map_length abbrev
+prf 7596:7623 <> unified_system_deterministic
+binder 7636:7641 <> system:44
+binder 7643:7645 <> msg:45
+binder 7647:7655 <> response1:46
+binder 7657:7665 <> response2:47
+R7721:7726 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R7704:7706 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R7670:7692 UnifiedSyntheticWASM <> process_unified_message def
+R7694:7699 UnifiedSyntheticWASM <> system:44 var
+R7701:7703 UnifiedSyntheticWASM <> msg:45 var
+R7707:7710 Coq.Init.Datatypes <> Some constr
+R7712:7720 UnifiedSyntheticWASM <> response1:46 var
+R7778:7783 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R7761:7763 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R7727:7749 UnifiedSyntheticWASM <> process_unified_message def
+R7751:7756 UnifiedSyntheticWASM <> system:44 var
+R7758:7760 UnifiedSyntheticWASM <> msg:45 var
+R7764:7767 Coq.Init.Datatypes <> Some constr
+R7769:7777 UnifiedSyntheticWASM <> response2:47 var
+R7793:7795 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R7784:7792 UnifiedSyntheticWASM <> response1:46 var
+R7796:7804 UnifiedSyntheticWASM <> response2:47 var
+prf 7969:7991 <> synthetic_wasm_pipeline
+binder 8004:8009 <> system:48
+binder 8011:8014 <> path:49
+binder 8016:8021 <> offset:50
+binder 8023:8027 <> count:51
+binder 8029:8035 <> content:52
+binder 8037:8047 <> transformed:53
+R8081:8086 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R8074:8076 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R8052:8068 UnifiedSyntheticWASM <> is_synthetic_path def
+R8070:8073 UnifiedSyntheticWASM <> path:49 var
+R8077:8080 Coq.Init.Datatypes <> true constr
+R8121:8126 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R8114:8116 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R8095:8112 UnifiedSyntheticWASM <> enable_composition proj
+R8087:8092 UnifiedSyntheticWASM <> system:48 var
+R8117:8120 Coq.Init.Datatypes <> true constr
+R8127:8127 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R8250:8256 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R8128:8134 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+R8138:8139 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+binder 8135:8137 <> gen:54
+R8185:8203 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R8174:8176 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R8148:8167 UnifiedSyntheticWASM <> synthetic_generators proj
+R8140:8145 UnifiedSyntheticWASM <> system:48 var
+R8170:8173 UnifiedSyntheticWASM <> path:49 var
+R8177:8180 Coq.Init.Datatypes <> Some constr
+R8182:8184 UnifiedSyntheticWASM <> gen:54 var
+R8235:8237 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R8209:8220 UnifiedSyntheticWASM <> syn_generate proj
+R8204:8206 UnifiedSyntheticWASM <> gen:54 var
+R8223:8228 UnifiedSyntheticWASM <> offset:50 var
+R8230:8234 UnifiedSyntheticWASM <> count:51 var
+R8238:8241 Coq.Init.Datatypes <> Some constr
+R8243:8249 UnifiedSyntheticWASM <> content:52 var
+R8257:8257 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R8412:8418 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R8258:8264 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+R8275:8276 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+binder 8265:8274 <> translator:55
+R8325:8350 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R8307:8309 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R8285:8300 UnifiedSyntheticWASM <> wasm_translators proj
+R8277:8282 UnifiedSyntheticWASM <> system:48 var
+R8303:8306 UnifiedSyntheticWASM <> path:49 var
+R8310:8313 Coq.Init.Datatypes <> Some constr
+R8315:8324 UnifiedSyntheticWASM <> translator:55 var
+R8393:8395 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R8351:8373 UnifiedSyntheticWASM <> execute_wasm_translator def
+R8375:8384 UnifiedSyntheticWASM <> translator:55 var
+R8386:8392 UnifiedSyntheticWASM <> content:52 var
+R8396:8399 Coq.Init.Datatypes <> Some constr
+R8401:8411 UnifiedSyntheticWASM <> transformed:53 var
+R8419:8425 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+R8434:8439 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+binder 8426:8433 <> response:56
+R8627:8634 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R8611:8613 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R8440:8462 UnifiedSyntheticWASM <> process_unified_message def
+R8464:8469 UnifiedSyntheticWASM <> system:48 var
+R8480:8487 UnifiedSyntheticWASM <> msg_type proj
+R8480:8487 UnifiedSyntheticWASM <> msg_type proj
+R8480:8487 UnifiedSyntheticWASM <> msg_type proj
+R8508:8514 UnifiedSyntheticWASM <> msg_fid proj
+R8508:8514 UnifiedSyntheticWASM <> msg_fid proj
+R8532:8541 UnifiedSyntheticWASM <> msg_offset proj
+R8532:8541 UnifiedSyntheticWASM <> msg_offset proj
+R8563:8571 UnifiedSyntheticWASM <> msg_count proj
+R8563:8571 UnifiedSyntheticWASM <> msg_count proj
+R8592:8599 UnifiedSyntheticWASM <> msg_data proj
+R8592:8599 UnifiedSyntheticWASM <> msg_data proj
+R8492:8496 UnifiedSyntheticWASM <> Tread constr
+R8546:8551 UnifiedSyntheticWASM <> offset:50 var
+R8576:8580 UnifiedSyntheticWASM <> count:51 var
+R8604:8607 UnifiedSyntheticWASM <> path:49 var
+R8614:8617 Coq.Init.Datatypes <> Some constr
+R8619:8626 UnifiedSyntheticWASM <> response:56 var
+R8654:8656 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R8645:8652 UnifiedSyntheticWASM <> msg_data proj
+R8635:8642 UnifiedSyntheticWASM <> response:56 var
+R8657:8667 UnifiedSyntheticWASM <> transformed:53 var
+R8861:8868 UnifiedSyntheticWASM <> msg_type proj
+R8861:8868 UnifiedSyntheticWASM <> msg_type proj
+R8861:8868 UnifiedSyntheticWASM <> msg_type proj
+R8891:8897 UnifiedSyntheticWASM <> msg_fid proj
+R8891:8897 UnifiedSyntheticWASM <> msg_fid proj
+R8917:8926 UnifiedSyntheticWASM <> msg_offset proj
+R8917:8926 UnifiedSyntheticWASM <> msg_offset proj
+R8945:8953 UnifiedSyntheticWASM <> msg_count proj
+R8945:8953 UnifiedSyntheticWASM <> msg_count proj
+R8989:8996 UnifiedSyntheticWASM <> msg_data proj
+R8989:8996 UnifiedSyntheticWASM <> msg_data proj
+R8873:8877 UnifiedSyntheticWASM <> Rread constr
+R8958:8963 Coq.Init.Datatypes <> length def
+R8861:8868 UnifiedSyntheticWASM <> msg_type proj
+R8861:8868 UnifiedSyntheticWASM <> msg_type proj
+R8861:8868 UnifiedSyntheticWASM <> msg_type proj
+R8891:8897 UnifiedSyntheticWASM <> msg_fid proj
+R8891:8897 UnifiedSyntheticWASM <> msg_fid proj
+R8917:8926 UnifiedSyntheticWASM <> msg_offset proj
+R8917:8926 UnifiedSyntheticWASM <> msg_offset proj
+R8945:8953 UnifiedSyntheticWASM <> msg_count proj
+R8945:8953 UnifiedSyntheticWASM <> msg_count proj
+R8989:8996 UnifiedSyntheticWASM <> msg_data proj
+R8989:8996 UnifiedSyntheticWASM <> msg_data proj
+R8873:8877 UnifiedSyntheticWASM <> Rread constr
+R8958:8963 Coq.Init.Datatypes <> length def
+prf 9270:9299 <> unified_ninepee_system_correct
+R9322:9341 UnifiedSyntheticWASM <> UnifiedNinePeeSystem rec
+binder 9313:9318 <> system:57
+R9394:9394 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R9511:9517 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+binder 9402:9405 <> path:58
+binder 9407:9409 <> gen:59
+R9457:9480 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R9446:9448 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R9420:9439 UnifiedSyntheticWASM <> synthetic_generators proj
+R9412:9417 UnifiedSyntheticWASM <> system:57 var
+R9442:9445 UnifiedSyntheticWASM <> path:58 var
+R9449:9452 Coq.Init.Datatypes <> Some constr
+R9454:9456 UnifiedSyntheticWASM <> gen:59 var
+R9504:9506 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R9486:9502 UnifiedSyntheticWASM <> syn_deterministic proj
+R9481:9483 UnifiedSyntheticWASM <> gen:59 var
+R9507:9510 Coq.Init.Datatypes <> true constr
+R9518:9518 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R9633:9706 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R10080:10080 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+binder 9526:9529 <> path:60
+binder 9531:9535 <> trans:61
+R9581:9606 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R9568:9570 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R9546:9561 UnifiedSyntheticWASM <> wasm_translators proj
+R9538:9543 UnifiedSyntheticWASM <> system:57 var
+R9564:9567 UnifiedSyntheticWASM <> path:60 var
+R9571:9574 Coq.Init.Datatypes <> Some constr
+R9576:9580 UnifiedSyntheticWASM <> trans:61 var
+R9626:9628 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R9614:9624 UnifiedSyntheticWASM <> wasm_active proj
+R9607:9611 UnifiedSyntheticWASM <> trans:61 var
+R9629:9632 Coq.Init.Datatypes <> true constr
+binder 9714:9716 <> msg:62
+binder 9718:9725 <> response:63
+R9781:9816 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R9765:9767 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R9731:9753 UnifiedSyntheticWASM <> process_unified_message def
+R9755:9760 UnifiedSyntheticWASM <> system:57 var
+R9762:9764 UnifiedSyntheticWASM <> msg:62 var
+R9768:9771 Coq.Init.Datatypes <> Some constr
+R9773:9780 UnifiedSyntheticWASM <> response:63 var
+R9851:9890 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R9835:9837 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R9827:9833 UnifiedSyntheticWASM <> msg_fid proj
+R9817:9824 UnifiedSyntheticWASM <> response:63 var
+R9843:9849 UnifiedSyntheticWASM <> msg_fid proj
+R9838:9840 UnifiedSyntheticWASM <> msg:62 var
+R9891:9891 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R9945:9977 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R10079:10079 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R9914:9917 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R9906:9908 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R9897:9904 UnifiedSyntheticWASM <> msg_type proj
+R9892:9894 UnifiedSyntheticWASM <> msg:62 var
+R9909:9913 UnifiedSyntheticWASM <> Tread constr
+R9937:9939 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R9928:9935 UnifiedSyntheticWASM <> msg_type proj
+R9918:9925 UnifiedSyntheticWASM <> response:63 var
+R9940:9944 UnifiedSyntheticWASM <> Rread constr
+binder 9985:9993 <> response2:64
+R10051:10058 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R10034:10036 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R10000:10022 UnifiedSyntheticWASM <> process_unified_message def
+R10024:10029 UnifiedSyntheticWASM <> system:57 var
+R10031:10033 UnifiedSyntheticWASM <> msg:62 var
+R10037:10040 Coq.Init.Datatypes <> Some constr
+R10042:10050 UnifiedSyntheticWASM <> response2:64 var
+R10067:10069 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R10059:10066 UnifiedSyntheticWASM <> response:63 var
+R10070:10078 UnifiedSyntheticWASM <> response2:64 var
+R10202:10222 UnifiedSyntheticWASM <> unified_preserves_fid thm
+R10202:10222 UnifiedSyntheticWASM <> unified_preserves_fid thm
+R10307:10330 UnifiedSyntheticWASM <> unified_protocol_correct prfax
+R10307:10330 UnifiedSyntheticWASM <> unified_protocol_correct prfax
+R10420:10447 UnifiedSyntheticWASM <> unified_system_deterministic thm
+R10420:10447 UnifiedSyntheticWASM <> unified_system_deterministic thm

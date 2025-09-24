@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>9PE Server Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <h1><i class="fas fa-server"></i> 9PE Server Dashboard</h1>
+                <span class="server-status" id="serverStatus">
+                    <i class="fas fa-circle"></i> Connecting...
+                </span>
+            </div>
+            <div class="header-right">
+                <button class="btn btn-primary" id="startStopBtn">
+                    <i class="fas fa-play"></i> Start Server
+                </button>
+                <button class="btn btn-secondary" id="configBtn">
+                    <i class="fas fa-cog"></i> Config
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Dashboard -->
+        <div class="main-content">
+            <!-- Metrics Grid -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="metric-content">
+                        <h3 id="connectionsCount">0</h3>
+                        <p>Active Connections</p>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-icon">
+                        <i class="fas fa-tachometer-alt"></i>
+                    </div>
+                    <div class="metric-content">
+                        <h3 id="messagesPerSec">0</h3>
+                        <p>Messages/sec</p>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-icon">
+                        <i class="fas fa-download"></i>
+                    </div>
+                    <div class="metric-content">
+                        <h3 id="throughput">0</h3>
+                        <p>Throughput (MB/s)</p>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-icon">
+                        <i class="fas fa-file"></i>
+                    </div>
+                    <div class="metric-content">
+                        <h3 id="openFids">0</h3>
+                        <p>Open FIDs</p>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="metric-content">
+                        <h3 id="errorRate">0%</h3>
+                        <p>Error Rate</p>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-icon">
+                        <i class="fas fa-memory"></i>
+                    </div>
+                    <div class="metric-content">
+                        <h3 id="memoryUsage">0</h3>
+                        <p>Memory (MB)</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts and File Browser -->
+            <div class="dashboard-grid">
+                <!-- Performance Chart -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3><i class="fas fa-chart-line"></i> Performance</h3>
+                    </div>
+                    <div class="panel-content">
+                        <canvas id="performanceChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+
+                <!-- File Browser -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3><i class="fas fa-folder"></i> File Browser</h3>
+                        <div class="path-nav">
+                            <input type="text" id="currentPath" value="/tmp" readonly>
+                            <button class="btn btn-small" id="refreshFiles">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="panel-content">
+                        <div class="file-browser" id="fileBrowser">
+                            <div class="loading">
+                                <i class="fas fa-spinner fa-spin"></i> Loading files...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Server Logs -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3><i class="fas fa-list"></i> Server Logs</h3>
+                        <button class="btn btn-small" id="clearLogs">
+                            <i class="fas fa-trash"></i> Clear
+                        </button>
+                    </div>
+                    <div class="panel-content">
+                        <div class="log-container" id="logContainer">
+                            <div class="log-entry">
+                                <span class="log-time">12:34:56</span>
+                                <span class="log-level info">INFO</span>
+                                <span class="log-message">Dashboard started</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- System Info -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3><i class="fas fa-info-circle"></i> System Info</h3>
+                    </div>
+                    <div class="panel-content">
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <label>Protocol:</label>
+                                <span id="protocolInfo">9P.e</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Port:</label>
+                                <span id="portInfo">5640</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Root Path:</label>
+                                <span id="rootPathInfo">/tmp</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Auth:</label>
+                                <span id="authInfo">Disabled</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Features:</label>
+                                <span id="featuresInfo">WASM, Synthetic</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Uptime:</label>
+                                <span id="uptimeInfo">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Configuration Modal -->
+        <div class="modal" id="configModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-cog"></i> Server Configuration</h3>
+                    <button class="modal-close" id="closeConfigModal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="configProtocol">Protocol:</label>
+                        <select id="configProtocol">
+                            <option value="tcp">TCP</option>
+                            <option value="quic">QUIC</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="configPort">Port:</label>
+                        <input type="number" id="configPort" value="5640" min="1" max="65535">
+                    </div>
+                    <div class="form-group">
+                        <label for="configRootPath">Root Path:</label>
+                        <input type="text" id="configRootPath" value="/tmp">
+                    </div>
+                    <div class="form-group">
+                        <label for="configMaxMsgSize">Max Message Size:</label>
+                        <input type="number" id="configMaxMsgSize" value="65536">
+                    </div>
+                    <div class="form-group">
+                        <label for="configAuth">
+                            <input type="checkbox" id="configAuth"> Enable Authentication
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="cancelConfig">Cancel</button>
+                    <button class="btn btn-primary" id="saveConfig">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

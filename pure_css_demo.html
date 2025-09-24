@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>9P.e Pure CSS Dashboard</title>
+    <!-- Auto-refresh every 2 seconds to simulate synthetic file updates -->
+    <meta http-equiv="refresh" content="5">
+    <style>
+        /* Modern CSS Variables */
+        :root {
+            --primary: #0066cc;
+            --secondary: #6c5ce7;
+            --success: #00b894;
+            --warning: #fdcb6e;
+            --danger: #d63031;
+            --bg: #0f0f23;
+            --surface: #1a1a2e;
+            --text: #eee;
+            --border: #333;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, system-ui, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            font-weight: 300;
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            color: #333;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        }
+
+        .card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            transition: left 0.5s ease;
+        }
+
+        .card:hover::before {
+            left: 0;
+        }
+
+        .card h2 {
+            margin-bottom: 16px;
+            color: #2c3e50;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .metric-value {
+            font-size: 3rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 16px 0;
+        }
+
+        .metric-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .progress {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 16px 0;
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 4px;
+            animation: grow 2s ease-out;
+            position: relative;
+        }
+
+        @keyframes grow {
+            from { width: 0; }
+        }
+
+        /* Live indicator */
+        .live {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #00b894;
+            border-radius: 50%;
+            margin-left: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(0, 184, 148, 0.7);
+            }
+            50% {
+                box-shadow: 0 0 0 10px rgba(0, 184, 148, 0);
+            }
+        }
+
+        .file-content {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'Cascadia Code', 'SF Mono', monospace;
+            white-space: pre;
+            overflow-x: auto;
+            max-height: 300px;
+            font-size: 0.9rem;
+        }
+
+        /* Pure CSS tabs */
+        .tabs {
+            display: flex;
+            gap: 1px;
+            background: #ddd;
+            border-radius: 8px 8px 0 0;
+            overflow: hidden;
+        }
+
+        .tabs input[type="radio"] {
+            display: none;
+        }
+
+        .tabs label {
+            padding: 12px 24px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex: 1;
+            text-align: center;
+            color: #666;
+        }
+
+        .tabs input:checked + label {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 20px;
+            background: white;
+            border-radius: 0 0 8px 8px;
+            animation: fadeIn 0.5s;
+        }
+
+        #tab1:checked ~ .content #content1,
+        #tab2:checked ~ .content #content2,
+        #tab3:checked ~ .content #content3 {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: rgba(255,255,255,0.8);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>9P.e System Monitor <span class="live"></span></h1>
+
+        <div class="grid">
+            <!-- CPU Card -->
+            <div class="card">
+                <h2>🔧 CPU Usage</h2>
+                <div class="metric-value" id="cpu-val">35%</div>
+                <div class="progress">
+                    <div class="progress-bar" style="width: 35%;"></div>
+                </div>
+                <div class="metric-label">4 Cores @ 3.2 GHz</div>
+            </div>
+
+            <!-- Memory Card -->
+            <div class="card">
+                <h2>💾 Memory</h2>
+                <div class="metric-value">8.2 GB</div>
+                <div class="progress">
+                    <div class="progress-bar" style="width: 48%;"></div>
+                </div>
+                <div class="metric-label">16 GB Total</div>
+            </div>
+
+            <!-- Network Card -->
+            <div class="card">
+                <h2>🌐 Network</h2>
+                <div class="metric-value">12</div>
+                <div class="metric-label">Active Connections</div>
+            </div>
+
+            <!-- Timestamp Card -->
+            <div class="card">
+                <h2>⏰ System Time</h2>
+                <div class="metric-value" style="font-size: 1.8rem;" id="timestamp"></div>
+                <div class="metric-label">Unix Timestamp</div>
+            </div>
+        </div>
+
+        <!-- Process List -->
+        <div class="card" style="grid-column: span 2;">
+            <h2>📊 Process List from /proc/list</h2>
+            <div class="file-content">PID     NAME            CPU%    MEM_MB
+1       systemd         0.1     5.2
+100     bash            0.0     2.1
+5641    9pe-server      1.5     45.3
+5647    9pe-server      2.1     52.1
+3001    web-ui          0.8     12.4</div>
+        </div>
+
+        <!-- Tabbed Interface (Pure CSS) -->
+        <div class="card" style="margin-top: 20px;">
+            <input type="radio" name="tabs" id="tab1" checked>
+            <input type="radio" name="tabs" id="tab2">
+            <input type="radio" name="tabs" id="tab3">
+
+            <div class="tabs">
+                <label for="tab1">CPU Info</label>
+                <label for="tab2">Memory Info</label>
+                <label for="tab3">Network Stats</label>
+            </div>
+
+            <div class="content">
+                <div id="content1" class="tab-content">
+                    <div class="file-content">processor       : 0
+vendor_id       : GenuineIntel
+cpu family      : 6
+model           : Intel Core i7
+cpu MHz         : 3200.000
+cache size      : 8192 KB
+cpu cores       : 4</div>
+                </div>
+                <div id="content2" class="tab-content">
+                    <div class="file-content">MemTotal:       16777216 kB
+MemFree:        8388608 kB
+MemAvailable:   10485760 kB
+Buffers:        0 kB
+Cached:         2097152 kB
+SwapTotal:      8388608 kB
+SwapFree:       4194304 kB</div>
+                </div>
+                <div id="content3" class="tab-content">
+                    <div class="file-content">Active Internet connections
+Proto   Local Address           Foreign Address         State
+tcp     0.0.0.0:5641           0.0.0.0:*               LISTEN
+tcp     127.0.0.1:5647         127.0.0.1:42000         ESTABLISHED
+tcp     0.0.0.0:3001           0.0.0.0:*               LISTEN</div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>📡 Auto-refreshing every 5 seconds from synthetic files</p>
+            <p>✨ Pure CSS + HTML • No JavaScript Required</p>
+            <p>🚀 Powered by 9P.e Synthetic File System</p>
+        </footer>
+    </div>
+
+    <script>
+        // Just for the timestamp - in production this would come from /sys/timestamp
+        document.getElementById('timestamp').textContent = Math.floor(Date.now() / 1000);
+
+        // Random CPU value for demo - would come from /sys/cpuinfo
+        const cpu = Math.floor(Math.random() * 60) + 20;
+        document.getElementById('cpu-val').textContent = cpu + '%';
+        document.querySelector('.progress-bar').style.width = cpu + '%';
+    </script>
+</body>
+</html>

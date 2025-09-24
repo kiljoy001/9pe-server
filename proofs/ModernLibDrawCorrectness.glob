@@ -1,0 +1,490 @@
+DIGEST ba782b7c8e0c9b0e2c8e0ed34cf2884a
+FModernLibDrawCorrectness
+R139:152 Coq.Lists.List <> <> lib
+R170:187 Coq.Strings.String <> <> lib
+R205:219 Coq.Arith.Arith <> <> lib
+R237:249 Coq.Bool.Bool <> <> lib
+R267:300 Coq.Logic.FunctionalExtensionality <> <> lib
+R318:320 Coq.micromega.Lia <> <> lib
+R331:343 Coq.Lists.List ListNotations <> mod
+rec 531:535 <> Color
+proj 559:561 <> red
+proj 600:604 <> green
+proj 615:618 <> blue
+proj 630:634 <> alpha
+R567:569 Coq.Init.Datatypes <> nat ind
+R608:610 Coq.Init.Datatypes <> nat ind
+R623:625 Coq.Init.Datatypes <> nat ind
+R638:640 Coq.Init.Datatypes <> nat ind
+def 657:664 <> color_eq
+R675:679 ModernLibDrawCorrectness <> Color rec
+binder 667:668 <> c1:6
+binder 670:671 <> c2:7
+R709:712 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R700:702 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R694:696 ModernLibDrawCorrectness <> red proj
+R698:699 ModernLibDrawCorrectness <> c1:6 var
+R703:705 ModernLibDrawCorrectness <> red proj
+R707:708 ModernLibDrawCorrectness <> c2:7 var
+R732:737 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R721:723 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R713:717 ModernLibDrawCorrectness <> green proj
+R719:720 ModernLibDrawCorrectness <> c1:6 var
+R724:728 ModernLibDrawCorrectness <> green proj
+R730:731 ModernLibDrawCorrectness <> c2:7 var
+R755:758 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R745:747 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R738:741 ModernLibDrawCorrectness <> blue proj
+R743:744 ModernLibDrawCorrectness <> c1:6 var
+R748:751 ModernLibDrawCorrectness <> blue proj
+R753:754 ModernLibDrawCorrectness <> c2:7 var
+R767:769 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R759:763 ModernLibDrawCorrectness <> alpha proj
+R765:766 ModernLibDrawCorrectness <> c1:6 var
+R770:774 ModernLibDrawCorrectness <> alpha proj
+R776:777 ModernLibDrawCorrectness <> c2:7 var
+def 815:825 <> color_black
+R829:833 ModernLibDrawCorrectness <> Color rec
+R838:844 ModernLibDrawCorrectness <> mkColor constr
+def 866:876 <> color_white
+R880:884 ModernLibDrawCorrectness <> Color rec
+R889:895 ModernLibDrawCorrectness <> mkColor constr
+def 917:925 <> color_red
+R931:935 ModernLibDrawCorrectness <> Color rec
+R940:946 ModernLibDrawCorrectness <> mkColor constr
+def 968:984 <> color_transparent
+R988:992 ModernLibDrawCorrectness <> Color rec
+R997:1003 ModernLibDrawCorrectness <> mkColor constr
+def 1058:1068 <> valid_color
+R1075:1079 ModernLibDrawCorrectness <> Color rec
+binder 1071:1071 <> c:8
+R1106:1109 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R1099:1102 Coq.Init.Peano <> ::nat_scope:x_'<='_x not
+R1094:1096 ModernLibDrawCorrectness <> red proj
+R1098:1098 ModernLibDrawCorrectness <> c:8 var
+R1124:1127 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R1117:1120 Coq.Init.Peano <> ::nat_scope:x_'<='_x not
+R1110:1114 ModernLibDrawCorrectness <> green proj
+R1116:1116 ModernLibDrawCorrectness <> c:8 var
+R1141:1144 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R1134:1137 Coq.Init.Peano <> ::nat_scope:x_'<='_x not
+R1128:1131 ModernLibDrawCorrectness <> blue proj
+R1133:1133 ModernLibDrawCorrectness <> c:8 var
+R1152:1155 Coq.Init.Peano <> ::nat_scope:x_'<='_x not
+R1145:1149 ModernLibDrawCorrectness <> alpha proj
+R1151:1151 ModernLibDrawCorrectness <> c:8 var
+prf 1168:1188 <> standard_colors_valid
+R1217:1220 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R1194:1204 ModernLibDrawCorrectness <> valid_color def
+R1206:1216 ModernLibDrawCorrectness <> color_black def
+R1244:1249 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R1221:1231 ModernLibDrawCorrectness <> valid_color def
+R1233:1243 ModernLibDrawCorrectness <> color_white def
+R1271:1274 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R1250:1260 ModernLibDrawCorrectness <> valid_color def
+R1262:1270 ModernLibDrawCorrectness <> color_red def
+R1275:1285 ModernLibDrawCorrectness <> valid_color def
+R1287:1303 ModernLibDrawCorrectness <> color_transparent def
+rec 1459:1463 <> Point
+proj 1487:1487 <> x
+proj 1498:1498 <> y
+R1491:1493 Coq.Init.Datatypes <> nat ind
+R1502:1504 Coq.Init.Datatypes <> nat ind
+rec 1517:1520 <> Rect
+proj 1543:1548 <> rect_x
+proj 1559:1564 <> rect_y
+proj 1575:1579 <> width
+proj 1591:1596 <> height
+R1552:1554 Coq.Init.Datatypes <> nat ind
+R1568:1570 Coq.Init.Datatypes <> nat ind
+R1584:1586 Coq.Init.Datatypes <> nat ind
+R1600:1602 Coq.Init.Datatypes <> nat ind
+def 1619:1626 <> point_eq
+R1637:1641 ModernLibDrawCorrectness <> Point rec
+binder 1629:1630 <> p1:17
+binder 1632:1633 <> p2:18
+R1667:1670 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R1660:1662 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R1656:1656 ModernLibDrawCorrectness <> x proj
+R1658:1659 ModernLibDrawCorrectness <> p1:17 var
+R1663:1663 ModernLibDrawCorrectness <> x proj
+R1665:1666 ModernLibDrawCorrectness <> p2:18 var
+R1675:1677 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R1671:1671 ModernLibDrawCorrectness <> y proj
+R1673:1674 ModernLibDrawCorrectness <> p1:17 var
+R1678:1678 ModernLibDrawCorrectness <> y proj
+R1680:1681 ModernLibDrawCorrectness <> p2:18 var
+def 1696:1702 <> rect_eq
+R1713:1716 ModernLibDrawCorrectness <> Rect rec
+binder 1705:1706 <> r1:19
+binder 1708:1709 <> r2:20
+R1752:1755 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R1740:1742 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R1731:1736 ModernLibDrawCorrectness <> rect_x proj
+R1738:1739 ModernLibDrawCorrectness <> r1:19 var
+R1743:1748 ModernLibDrawCorrectness <> rect_x proj
+R1750:1751 ModernLibDrawCorrectness <> r2:20 var
+R1777:1782 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R1765:1767 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R1756:1761 ModernLibDrawCorrectness <> rect_y proj
+R1763:1764 ModernLibDrawCorrectness <> r1:19 var
+R1768:1773 ModernLibDrawCorrectness <> rect_y proj
+R1775:1776 ModernLibDrawCorrectness <> r2:20 var
+R1802:1805 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R1791:1793 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R1783:1787 ModernLibDrawCorrectness <> width proj
+R1789:1790 ModernLibDrawCorrectness <> r1:19 var
+R1794:1798 ModernLibDrawCorrectness <> width proj
+R1800:1801 ModernLibDrawCorrectness <> r2:20 var
+R1815:1817 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R1806:1811 ModernLibDrawCorrectness <> height proj
+R1813:1814 ModernLibDrawCorrectness <> r1:19 var
+R1818:1823 ModernLibDrawCorrectness <> height proj
+R1825:1826 ModernLibDrawCorrectness <> r2:20 var
+def 1867:1876 <> valid_rect
+R1883:1886 ModernLibDrawCorrectness <> Rect rec
+binder 1879:1879 <> r:21
+R1912:1915 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R1908:1910 Coq.Init.Peano <> ::nat_scope:x_'>'_x not
+R1901:1905 ModernLibDrawCorrectness <> width proj
+R1907:1907 ModernLibDrawCorrectness <> r:21 var
+R1924:1926 Coq.Init.Peano <> ::nat_scope:x_'>'_x not
+R1916:1921 ModernLibDrawCorrectness <> height proj
+R1923:1923 ModernLibDrawCorrectness <> r:21 var
+ind 2042:2052 <> DrawCommand
+constr 2068:2072 <> Clear
+constr 2101:2104 <> Line
+constr 2191:2199 <> Rectangle
+constr 2276:2281 <> Circle
+constr 2371:2374 <> Text
+R2081:2084 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2076:2080 ModernLibDrawCorrectness <> Color rec
+R2085:2095 ModernLibDrawCorrectness <> DrawCommand:22 ind
+R2113:2116 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2108:2112 ModernLibDrawCorrectness <> Point rec
+R2122:2125 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2117:2121 ModernLibDrawCorrectness <> Point rec
+R2131:2134 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2126:2130 ModernLibDrawCorrectness <> Color rec
+R2138:2141 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2135:2137 Coq.Init.Datatypes <> nat ind
+R2142:2152 ModernLibDrawCorrectness <> DrawCommand:22 ind
+R2207:2210 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2203:2206 ModernLibDrawCorrectness <> Rect rec
+R2216:2219 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2211:2215 ModernLibDrawCorrectness <> Color rec
+R2224:2227 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2220:2223 Coq.Init.Datatypes <> bool ind
+R2228:2238 ModernLibDrawCorrectness <> DrawCommand:22 ind
+R2290:2293 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2285:2289 ModernLibDrawCorrectness <> Point rec
+R2297:2300 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2294:2296 Coq.Init.Datatypes <> nat ind
+R2306:2309 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2301:2305 ModernLibDrawCorrectness <> Color rec
+R2314:2317 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2310:2313 Coq.Init.Datatypes <> bool ind
+R2318:2328 ModernLibDrawCorrectness <> DrawCommand:22 ind
+R2383:2386 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2378:2382 ModernLibDrawCorrectness <> Point rec
+R2393:2396 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2387:2392 Coq.Strings.String <> string ind
+R2402:2405 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2397:2401 ModernLibDrawCorrectness <> Color rec
+R2409:2412 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2406:2408 Coq.Init.Datatypes <> nat ind
+R2413:2423 ModernLibDrawCorrectness <> DrawCommand:22 ind
+scheme 2042:2052 <> DrawCommand_rect
+scheme 2042:2052 <> DrawCommand_ind
+scheme 2042:2052 <> DrawCommand_rec
+scheme 2042:2052 <> DrawCommand_sind
+def 2497:2514 <> valid_draw_command
+R2523:2533 ModernLibDrawCorrectness <> DrawCommand ind
+binder 2517:2519 <> cmd:24
+R2554:2556 ModernLibDrawCorrectness <> cmd:24 var
+R2567:2571 ModernLibDrawCorrectness <> Clear constr
+R2578:2588 ModernLibDrawCorrectness <> valid_color def
+R2596:2599 ModernLibDrawCorrectness <> Line constr
+R2627:2630 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R2614:2624 ModernLibDrawCorrectness <> valid_color def
+R2632:2634 Coq.Init.Peano <> ::nat_scope:x_'>'_x not
+R2641:2649 ModernLibDrawCorrectness <> Rectangle constr
+R2673:2676 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R2660:2670 ModernLibDrawCorrectness <> valid_color def
+R2677:2686 ModernLibDrawCorrectness <> valid_rect def
+R2694:2699 ModernLibDrawCorrectness <> Circle constr
+R2730:2733 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R2717:2727 ModernLibDrawCorrectness <> valid_color def
+R2740:2742 Coq.Init.Peano <> ::nat_scope:x_'>'_x not
+R2749:2752 ModernLibDrawCorrectness <> Text constr
+R2781:2784 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R2768:2778 ModernLibDrawCorrectness <> valid_color def
+R2789:2791 Coq.Init.Peano <> ::nat_scope:x_'>'_x not
+def 2852:2871 <> valid_draw_command_b
+R2880:2890 ModernLibDrawCorrectness <> DrawCommand ind
+binder 2874:2876 <> cmd:26
+R2895:2898 Coq.Init.Datatypes <> bool ind
+R2911:2913 ModernLibDrawCorrectness <> cmd:26 var
+R2924:2928 ModernLibDrawCorrectness <> Clear constr
+R2991:2995 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3011:3011 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R2971:2975 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R2990:2990 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R2935:2935 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R2949:2954 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R2970:2970 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R2941:2945 Coq.Arith.PeanoNat <> ::nat_scope:x_'<=?'_x not
+R2936:2938 ModernLibDrawCorrectness <> red proj
+R2962:2966 Coq.Arith.PeanoNat <> ::nat_scope:x_'<=?'_x not
+R2955:2959 ModernLibDrawCorrectness <> green proj
+R2982:2986 Coq.Arith.PeanoNat <> ::nat_scope:x_'<=?'_x not
+R2976:2979 ModernLibDrawCorrectness <> blue proj
+R3003:3007 Coq.Arith.PeanoNat <> ::nat_scope:x_'<=?'_x not
+R2996:3000 ModernLibDrawCorrectness <> alpha proj
+R3017:3020 ModernLibDrawCorrectness <> Line constr
+R3035:3035 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3113:3118 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3125:3125 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3092:3096 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3112:3112 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3072:3076 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3091:3091 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3036:3036 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3050:3055 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3071:3071 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3042:3046 Coq.Arith.PeanoNat <> ::nat_scope:x_'<=?'_x not
+R3037:3039 ModernLibDrawCorrectness <> red proj
+R3063:3067 Coq.Arith.PeanoNat <> ::nat_scope:x_'<=?'_x not
+R3056:3060 ModernLibDrawCorrectness <> green proj
+R3083:3087 Coq.Arith.PeanoNat <> ::nat_scope:x_'<=?'_x not
+R3077:3080 ModernLibDrawCorrectness <> blue proj
+R3104:3108 Coq.Arith.PeanoNat <> ::nat_scope:x_'<=?'_x not
+R3097:3101 ModernLibDrawCorrectness <> alpha proj
+R3120:3123 Coq.Arith.PeanoNat <> ::nat_scope:x_'<?'_x not
+R3131:3139 ModernLibDrawCorrectness <> Rectangle constr
+R3247:3251 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3265:3265 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3150:3150 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3228:3233 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3246:3246 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3207:3211 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3227:3227 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3187:3191 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3206:3206 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3151:3151 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3165:3170 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3186:3186 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3157:3161 Coq.Arith.PeanoNat <> ::nat_scope:x_'<=?'_x not
+R3152:3154 ModernLibDrawCorrectness <> red proj
+R3178:3182 Coq.Arith.PeanoNat <> ::nat_scope:x_'<=?'_x not
+R3171:3175 ModernLibDrawCorrectness <> green proj
+R3198:3202 Coq.Arith.PeanoNat <> ::nat_scope:x_'<=?'_x not
+R3192:3195 ModernLibDrawCorrectness <> blue proj
+R3219:3223 Coq.Arith.PeanoNat <> ::nat_scope:x_'<=?'_x not
+R3212:3216 ModernLibDrawCorrectness <> alpha proj
+R3235:3238 Coq.Arith.PeanoNat <> ::nat_scope:x_'<?'_x not
+R3239:3243 ModernLibDrawCorrectness <> width proj
+R3253:3256 Coq.Arith.PeanoNat <> ::nat_scope:x_'<?'_x not
+R3257:3262 ModernLibDrawCorrectness <> height proj
+R3271:3276 ModernLibDrawCorrectness <> Circle constr
+R3294:3294 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3372:3377 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3389:3389 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3351:3355 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3371:3371 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3331:3335 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3350:3350 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3295:3295 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3309:3314 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3330:3330 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3301:3305 Coq.Arith.PeanoNat <> ::nat_scope:x_'<=?'_x not
+R3296:3298 ModernLibDrawCorrectness <> red proj
+R3322:3326 Coq.Arith.PeanoNat <> ::nat_scope:x_'<=?'_x not
+R3315:3319 ModernLibDrawCorrectness <> green proj
+R3342:3346 Coq.Arith.PeanoNat <> ::nat_scope:x_'<=?'_x not
+R3336:3339 ModernLibDrawCorrectness <> blue proj
+R3363:3367 Coq.Arith.PeanoNat <> ::nat_scope:x_'<=?'_x not
+R3356:3360 ModernLibDrawCorrectness <> alpha proj
+R3379:3382 Coq.Arith.PeanoNat <> ::nat_scope:x_'<?'_x not
+R3395:3398 ModernLibDrawCorrectness <> Text constr
+R3414:3414 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3492:3497 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3507:3507 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3471:3475 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3491:3491 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3451:3455 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3470:3470 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3415:3415 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3429:3434 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3450:3450 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3421:3425 Coq.Arith.PeanoNat <> ::nat_scope:x_'<=?'_x not
+R3416:3418 ModernLibDrawCorrectness <> red proj
+R3442:3446 Coq.Arith.PeanoNat <> ::nat_scope:x_'<=?'_x not
+R3435:3439 ModernLibDrawCorrectness <> green proj
+R3462:3466 Coq.Arith.PeanoNat <> ::nat_scope:x_'<=?'_x not
+R3456:3459 ModernLibDrawCorrectness <> blue proj
+R3483:3487 Coq.Arith.PeanoNat <> ::nat_scope:x_'<=?'_x not
+R3476:3480 ModernLibDrawCorrectness <> alpha proj
+R3499:3502 Coq.Arith.PeanoNat <> ::nat_scope:x_'<?'_x not
+rec 3621:3626 <> Canvas
+proj 3651:3662 <> canvas_width
+proj 3674:3686 <> canvas_height
+proj 3697:3704 <> commands
+proj 3733:3742 <> background
+R3667:3669 Coq.Init.Datatypes <> nat ind
+R3690:3692 Coq.Init.Datatypes <> nat ind
+R3713:3716 Coq.Init.Datatypes <> list ind
+R3718:3728 ModernLibDrawCorrectness <> DrawCommand ind
+R3749:3753 ModernLibDrawCorrectness <> Color rec
+def 3770:3781 <> valid_canvas
+R3793:3798 ModernLibDrawCorrectness <> Canvas rec
+binder 3784:3789 <> canvas:33
+R3836:3841 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R3832:3834 Coq.Init.Peano <> ::nat_scope:x_'>'_x not
+R3813:3824 ModernLibDrawCorrectness <> canvas_width proj
+R3826:3831 ModernLibDrawCorrectness <> canvas:33 var
+R3866:3871 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R3862:3864 Coq.Init.Peano <> ::nat_scope:x_'>'_x not
+R3842:3854 ModernLibDrawCorrectness <> canvas_height proj
+R3856:3861 ModernLibDrawCorrectness <> canvas:33 var
+R3903:3908 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R3872:3882 ModernLibDrawCorrectness <> valid_color def
+R3885:3894 ModernLibDrawCorrectness <> background proj
+R3896:3901 ModernLibDrawCorrectness <> canvas:33 var
+R3909:3914 Coq.Lists.List <> Forall ind
+R3936:3943 ModernLibDrawCorrectness <> commands proj
+R3945:3950 ModernLibDrawCorrectness <> canvas:33 var
+R3916:3933 ModernLibDrawCorrectness <> valid_draw_command def
+def 3991:4001 <> add_command
+R4013:4018 ModernLibDrawCorrectness <> Canvas rec
+binder 4004:4009 <> canvas:34
+R4028:4038 ModernLibDrawCorrectness <> DrawCommand ind
+binder 4022:4024 <> cmd:35
+R4043:4048 ModernLibDrawCorrectness <> Canvas rec
+R4055:4062 ModernLibDrawCorrectness <> mkCanvas constr
+R4065:4076 ModernLibDrawCorrectness <> canvas_width proj
+R4078:4083 ModernLibDrawCorrectness <> canvas:34 var
+R4087:4099 ModernLibDrawCorrectness <> canvas_height proj
+R4101:4106 ModernLibDrawCorrectness <> canvas:34 var
+R4136:4139 Coq.Init.Datatypes <> ::list_scope:x_'++'_x not
+R4121:4128 ModernLibDrawCorrectness <> commands proj
+R4130:4135 ModernLibDrawCorrectness <> canvas:34 var
+R4140:4140 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R4144:4144 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R4141:4143 ModernLibDrawCorrectness <> cmd:35 var
+R4148:4157 ModernLibDrawCorrectness <> background proj
+R4159:4164 ModernLibDrawCorrectness <> canvas:34 var
+def 4180:4191 <> clear_canvas
+R4203:4208 ModernLibDrawCorrectness <> Canvas rec
+binder 4194:4199 <> canvas:36
+R4213:4218 ModernLibDrawCorrectness <> Canvas rec
+R4225:4232 ModernLibDrawCorrectness <> mkCanvas constr
+R4235:4246 ModernLibDrawCorrectness <> canvas_width proj
+R4248:4253 ModernLibDrawCorrectness <> canvas:36 var
+R4257:4269 ModernLibDrawCorrectness <> canvas_height proj
+R4271:4276 ModernLibDrawCorrectness <> canvas:36 var
+R4290:4291 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+R4294:4303 ModernLibDrawCorrectness <> background proj
+R4305:4310 ModernLibDrawCorrectness <> canvas:36 var
+def 4425:4434 <> CanvasName
+R4439:4444 Coq.Strings.String <> string ind
+rec 4455:4461 <> Display
+proj 4487:4494 <> canvases
+proj 4529:4542 <> default_canvas
+R4508:4511 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R4498:4507 ModernLibDrawCorrectness <> CanvasName def
+R4512:4517 Coq.Init.Datatypes <> option ind
+R4519:4524 ModernLibDrawCorrectness <> Canvas rec
+R4546:4555 ModernLibDrawCorrectness <> CanvasName def
+def 4598:4607 <> get_canvas
+R4620:4626 ModernLibDrawCorrectness <> Display rec
+binder 4610:4616 <> display:40
+R4637:4646 ModernLibDrawCorrectness <> CanvasName def
+binder 4630:4633 <> name:41
+R4651:4656 Coq.Init.Datatypes <> option ind
+R4658:4663 ModernLibDrawCorrectness <> Canvas rec
+R4670:4677 ModernLibDrawCorrectness <> canvases proj
+R4679:4685 ModernLibDrawCorrectness <> display:40 var
+R4687:4690 ModernLibDrawCorrectness <> name:41 var
+def 4705:4717 <> update_canvas
+R4730:4736 ModernLibDrawCorrectness <> Display rec
+binder 4720:4726 <> display:42
+R4747:4756 ModernLibDrawCorrectness <> CanvasName def
+binder 4740:4743 <> name:43
+R4769:4774 ModernLibDrawCorrectness <> Canvas rec
+binder 4760:4765 <> canvas:44
+R4779:4785 ModernLibDrawCorrectness <> Display rec
+R4792:4800 ModernLibDrawCorrectness <> mkDisplay constr
+binder 4807:4807 <> n:45
+R4815:4824 Coq.Strings.String <> string_dec def
+R4826:4826 ModernLibDrawCorrectness <> n:45 var
+R4828:4831 ModernLibDrawCorrectness <> name:43 var
+R4855:4862 ModernLibDrawCorrectness <> canvases proj
+R4864:4870 ModernLibDrawCorrectness <> display:42 var
+R4872:4872 ModernLibDrawCorrectness <> n:45 var
+R4838:4841 Coq.Init.Datatypes <> Some constr
+R4843:4848 ModernLibDrawCorrectness <> canvas:44 var
+R4888:4901 ModernLibDrawCorrectness <> default_canvas proj
+R4903:4909 ModernLibDrawCorrectness <> display:42 var
+def 5071:5083 <> parse_command
+R5094:5099 Coq.Strings.String <> string ind
+binder 5086:5090 <> input:46
+R5104:5109 Coq.Init.Datatypes <> option ind
+R5111:5121 ModernLibDrawCorrectness <> DrawCommand ind
+R5128:5131 Coq.Init.Datatypes <> None constr
+def 5250:5264 <> process_command
+R5277:5283 ModernLibDrawCorrectness <> Display rec
+binder 5267:5273 <> display:47
+R5301:5310 ModernLibDrawCorrectness <> CanvasName def
+binder 5287:5297 <> canvas_name:48
+R5353:5358 Coq.Strings.String <> string ind
+binder 5340:5349 <> cmd_string:49
+R5363:5368 Coq.Init.Datatypes <> option ind
+R5370:5376 ModernLibDrawCorrectness <> Display rec
+R5389:5401 ModernLibDrawCorrectness <> parse_command def
+R5403:5412 ModernLibDrawCorrectness <> cmd_string:49 var
+R5423:5426 Coq.Init.Datatypes <> Some constr
+R5447:5456 ModernLibDrawCorrectness <> get_canvas def
+R5458:5464 ModernLibDrawCorrectness <> display:47 var
+R5466:5476 ModernLibDrawCorrectness <> canvas_name:48 var
+R5491:5494 Coq.Init.Datatypes <> Some constr
+R5519:5538 ModernLibDrawCorrectness <> valid_draw_command_b def
+R5642:5645 Coq.Init.Datatypes <> None constr
+R5561:5564 Coq.Init.Datatypes <> Some constr
+R5567:5579 ModernLibDrawCorrectness <> update_canvas def
+R5581:5587 ModernLibDrawCorrectness <> display:47 var
+R5589:5599 ModernLibDrawCorrectness <> canvas_name:48 var
+R5602:5612 ModernLibDrawCorrectness <> add_command def
+R5655:5658 Coq.Init.Datatypes <> None constr
+R5663:5666 Coq.Init.Datatypes <> None constr
+R5682:5685 Coq.Init.Datatypes <> None constr
+R5690:5693 Coq.Init.Datatypes <> None constr
+def 5876:5888 <> command_to_js
+R5897:5907 ModernLibDrawCorrectness <> DrawCommand ind
+binder 5891:5893 <> cmd:50
+R5912:5917 Coq.Strings.String <> string ind
+R5930:5932 ModernLibDrawCorrectness <> cmd:50 var
+R5943:5947 ModernLibDrawCorrectness <> Clear constr
+R5974:5977 ModernLibDrawCorrectness <> Line constr
+R6011:6019 ModernLibDrawCorrectness <> Rectangle constr
+R6085:6090 ModernLibDrawCorrectness <> Circle constr
+R6172:6175 ModernLibDrawCorrectness <> Text constr
+def 6230:6243 <> canvas_to_html
+R6255:6260 ModernLibDrawCorrectness <> Canvas rec
+binder 6246:6251 <> canvas:52
+R6265:6270 Coq.Strings.String <> string ind
+prf 6482:6517 <> add_valid_command_preserves_validity
+binder 6530:6535 <> canvas:53
+binder 6537:6539 <> cmd:54
+R6565:6572 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R6546:6557 ModernLibDrawCorrectness <> valid_canvas def
+R6559:6564 ModernLibDrawCorrectness <> canvas:53 var
+R6595:6602 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R6573:6590 ModernLibDrawCorrectness <> valid_draw_command def
+R6592:6594 ModernLibDrawCorrectness <> cmd:54 var
+R6603:6614 ModernLibDrawCorrectness <> valid_canvas def
+R6617:6627 ModernLibDrawCorrectness <> add_command def
+R6629:6634 ModernLibDrawCorrectness <> canvas:53 var
+R6636:6638 ModernLibDrawCorrectness <> cmd:54 var
+R6706:6717 ModernLibDrawCorrectness <> valid_canvas def
+R6734:6744 ModernLibDrawCorrectness <> add_command def
