@@ -13,6 +13,7 @@ use std::time::Instant;
 use plan9e::protocol::{NinePeeMessage, ProtocolError, NINEPEE_VERSION, LEGACY_VERSION};
 use plan9e::transport::Session;
 use crate::metrics;
+use crate::synthetic::{SyntheticGenerator, CpuInfoGenerator, MemInfoGenerator};
 
 /// File identifier to path mapping
 type FidMap = Arc<RwLock<HashMap<u32, PathBuf>>>;
@@ -30,6 +31,10 @@ pub struct FileSystemServer {
 
     /// Maximum message size
     max_message_size: u32,
+
+    /// Synthetic file generators
+    cpu_info: CpuInfoGenerator,
+    mem_info: MemInfoGenerator,
 }
 
 impl FileSystemServer {
@@ -45,6 +50,8 @@ impl FileSystemServer {
             fids: Arc::new(RwLock::new(HashMap::new())),
             next_fid: Arc::new(RwLock::new(100)), // Start at 100 to avoid conflicts
             max_message_size: 8192 * 1024, // 8MB default
+            cpu_info: CpuInfoGenerator,
+            mem_info: MemInfoGenerator,
         })
     }
 
@@ -203,8 +210,8 @@ impl FileSystemServer {
         let path = fids.get(&fid)
             .ok_or_else(|| anyhow::anyhow!("Unknown fid: {}", fid))?;
 
-        // Check if path exists
-        if !path.exists() {
+        // Check if path exists (real file or synthetic)
+        if !path.exists() && !self.is_synthetic_path(&path) {
             return Ok(NinePeeMessage::Error {
                 ename: "File not found".to_string(),
                 errno: 2,
@@ -243,21 +250,35 @@ impl FileSystemServer {
                 count: (end - start) as u32,
             })
         } else {
-            // Read file content
-            let data = tokio::fs::read(&path).await?;
+            // Check if this is a synthetic file
+            if self.is_synthetic_path(&path) {
+                // Generate synthetic content
+                let data = self.read_synthetic_file(&path, offset, count).await?;
+                let bytes_read = data.len() as u64;
+                metrics::record_file_op("read_synthetic", true, Some(bytes_read));
 
-            // Apply offset and count
-            let start = (offset as usize).min(data.len());
-            let end = (start + count as usize).min(data.len());
+                Ok(NinePeeMessage::Write {
+                    fid,
+                    offset,
+                    data,
+                })
+            } else {
+                // Read real file content
+                let data = tokio::fs::read(&path).await?;
 
-            let bytes_read = (end - start) as u64;
-            metrics::record_file_op("read", true, Some(bytes_read));
+                // Apply offset and count
+                let start = (offset as usize).min(data.len());
+                let end = (start + count as usize).min(data.len());
 
-            Ok(NinePeeMessage::Write {
-                fid,
-                offset,
-                data: data[start..end].to_vec(),
-            })
+                let bytes_read = (end - start) as u64;
+                metrics::record_file_op("read", true, Some(bytes_read));
+
+                Ok(NinePeeMessage::Write {
+                    fid,
+                    offset,
+                    data: data[start..end].to_vec(),
+                })
+            }
         }
     }
 
@@ -353,14 +374,51 @@ impl FileSystemServer {
         Ok(NinePeeMessage::Remove { fid })
     }
 
-    /// Read directory entries
+    /// Check if a path is a synthetic file
+    fn is_synthetic_path(&self, path: &Path) -> bool {
+        let path_str = path.to_string_lossy();
+        path_str.starts_with("/sys/") ||
+        path_str.ends_with("/sys/cpuinfo") ||
+        path_str.ends_with("/sys/meminfo")
+    }
+
+    /// Generate synthetic file content
+    async fn read_synthetic_file(&self, path: &Path, offset: u64, count: u32) -> Result<Vec<u8>> {
+        let path_str = path.to_string_lossy();
+
+        if path_str.ends_with("/sys/cpuinfo") || path_str.ends_with("cpuinfo") {
+            self.cpu_info.generate(offset, count).await
+        } else if path_str.ends_with("/sys/meminfo") || path_str.ends_with("meminfo") {
+            self.mem_info.generate(offset, count).await
+        } else {
+            Err(anyhow::anyhow!("Unknown synthetic file: {}", path_str))
+        }
+    }
+
+    /// Read directory entries (includes synthetic /sys/ directory)
     async fn read_directory(&self, path: &Path) -> Result<Vec<String>> {
         let mut entries = Vec::new();
-        let mut dir = tokio::fs::read_dir(path).await?;
 
-        while let Some(entry) = dir.next_entry().await? {
-            if let Some(name) = entry.file_name().to_str() {
-                entries.push(name.to_string());
+        // Add synthetic /sys directory at root
+        if path == self.root {
+            entries.push("sys".to_string());
+        }
+
+        // If this is /sys, add synthetic files
+        let path_str = path.to_string_lossy();
+        if path_str.ends_with("/sys") {
+            entries.push("cpuinfo".to_string());
+            entries.push("meminfo".to_string());
+            return Ok(entries);
+        }
+
+        // Read real directory entries
+        if path.exists() {
+            let mut dir = tokio::fs::read_dir(path).await?;
+            while let Some(entry) = dir.next_entry().await? {
+                if let Some(name) = entry.file_name().to_str() {
+                    entries.push(name.to_string());
+                }
             }
         }
 

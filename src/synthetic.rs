@@ -5,9 +5,27 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
-use tokio::sync::RwLock;
+use tokio::sync::{RwLock, mpsc};
 use anyhow::Result;
 use async_trait::async_trait;
+
+/// Metric types for chart generation
+#[derive(Debug, Clone)]
+pub enum MetricType {
+    Cpu,
+    Memory,
+    Network,
+    Process,
+}
+
+// Import from sibling module
+#[cfg(not(test))]
+use crate::modern_draw::{ModernDisplay, CanvasHtmlGenerator};
+#[cfg(test)]
+use super::modern_draw::{ModernDisplay, CanvasHtmlGenerator};
+
+// Import Gaussian Splatting system
+// use crate::gaussian_splat::{GaussianSplatGenerator, MetricType};
 
 /// Trait for synthetic file generators
 #[async_trait]
@@ -26,6 +44,7 @@ pub trait SyntheticGenerator: Send + Sync {
 }
 
 /// CPU info synthetic file
+#[derive(Clone)]
 pub struct CpuInfoGenerator;
 
 #[async_trait]
@@ -60,6 +79,7 @@ impl SyntheticGenerator for CpuInfoGenerator {
 }
 
 /// Memory info synthetic file
+#[derive(Clone)]
 pub struct MemInfoGenerator;
 
 #[async_trait]
@@ -237,14 +257,213 @@ impl SyntheticGenerator for ProcessListGenerator {
     }
 }
 
+/// Simple chart generator for dashboard visualizations
+pub struct GaussianSplatChartGenerator {
+    metric_type: MetricType,
+    chart_name: String,
+}
+
+impl GaussianSplatChartGenerator {
+    pub fn new(metric_type: MetricType, chart_name: String) -> Self {
+        Self {
+            metric_type,
+            chart_name,
+        }
+    }
+}
+
+#[async_trait]
+impl SyntheticGenerator for GaussianSplatChartGenerator {
+    async fn generate(&self, offset: u64, count: u32) -> Result<Vec<u8>> {
+        // Generate mock data based on metric type
+        let data = match self.metric_type {
+            MetricType::Cpu => vec![45.0, 32.0, 67.0, 28.0, 55.0, 73.0, 41.0, 29.0],
+            MetricType::Memory => vec![8.2, 6.1, 9.8, 7.3, 8.9, 7.6, 8.4, 9.1],
+            MetricType::Network => vec![120.0, 85.0, 230.0, 67.0, 145.0, 98.0, 176.0, 134.0],
+            MetricType::Process => vec![32.0, 28.0, 41.0, 35.0, 39.0, 33.0, 37.0, 31.0],
+        };
+
+        // Generate chart type identifier
+        let chart_type = match self.metric_type {
+            MetricType::Cpu => "cpu_usage",
+            MetricType::Memory => "memory_usage",
+            MetricType::Network => "network_activity",
+            MetricType::Process => "process_count",
+        };
+
+        // Generate HTML content with embedded chart data
+        let chart_data = format!("<div>Gaussian Splat Chart for {}</div>", self.chart_name);
+
+        // Create HTML wrapper with embedded chart data
+        let html_content = format!(r#"<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gaussian Splat Chart - {}</title>
+    <style>
+        body {{
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, system-ui, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }}
+        .chart-container {{
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }}
+        .chart-title {{
+            color: #2c3e50;
+            margin-bottom: 16px;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }}
+        .gaussian-chart {{
+            width: 100%;
+            height: 400px;
+            border-radius: 8px;
+            background: white;
+            position: relative;
+            overflow: hidden;
+        }}
+        .splat-point {{
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0.7;
+            transition: all 0.3s ease;
+        }}
+        .splat-point:hover {{
+            opacity: 1;
+            transform: scale(1.2);
+        }}
+    </style>
+</head>
+<body>
+    <div class="chart-container">
+        <div class="chart-title">📊 {} - Gaussian Splat Visualization</div>
+        <div class="gaussian-chart" id="chart">
+            {}
+        </div>
+    </div>
+
+    <script>
+        // Auto-refresh every 5 seconds
+        setTimeout(() => {{
+            window.location.reload();
+        }}, 5000);
+    </script>
+</body>
+</html>"#, self.chart_name, self.chart_name, chart_data);
+
+        let bytes = html_content.as_bytes();
+        let start = offset.min(bytes.len() as u64) as usize;
+        let end = (start + count as usize).min(bytes.len());
+        Ok(bytes[start..end].to_vec())
+    }
+
+    async fn size(&self) -> u64 {
+        16384 // Approximate HTML size
+    }
+
+    fn refresh_rate_ms(&self) -> u64 {
+        5000 // Update every 5 seconds for live charts
+    }
+}
+
+/// Service discovery synthetic file generator
+/// Creates files in /srv/ that connect to discovered services
+pub struct ServiceDiscoveryGenerator {
+    /// Map of service name to connection info
+    services: Arc<RwLock<HashMap<String, ServiceInfo>>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ServiceInfo {
+    pub node_id: String,
+    pub service_addr: String,  // e.g., "192.168.1.114:5641"
+    pub capabilities: Vec<String>,
+    pub discovered_at: SystemTime,
+}
+
+impl ServiceDiscoveryGenerator {
+    pub fn new() -> Self {
+        Self {
+            services: Arc::new(RwLock::new(HashMap::new())),
+        }
+    }
+
+    /// Register a discovered service
+    pub async fn register_service(&self, name: String, info: ServiceInfo) {
+        self.services.write().await.insert(name, info);
+    }
+
+    /// Remove a service
+    pub async fn unregister_service(&self, name: &str) {
+        self.services.write().await.remove(name);
+    }
+
+    /// Get all registered services
+    pub async fn list_services(&self) -> Vec<(String, ServiceInfo)> {
+        self.services.read().await
+            .iter()
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect()
+    }
+}
+
+#[async_trait]
+impl SyntheticGenerator for ServiceDiscoveryGenerator {
+    async fn generate(&self, offset: u64, count: u32) -> Result<Vec<u8>> {
+        let services = self.services.read().await;
+
+        // Generate directory listing
+        let mut content = String::new();
+        content.push_str("# Discovered 9P.e Services\n\n");
+
+        if services.is_empty() {
+            content.push_str("No services discovered yet.\n");
+            content.push_str("Services will appear here as they are discovered via mesh networking.\n");
+        } else {
+            for (name, info) in services.iter() {
+                content.push_str(&format!("## {}\n", name));
+                content.push_str(&format!("- Address: {}\n", info.service_addr));
+                content.push_str(&format!("- Node ID: {}\n", info.node_id));
+                content.push_str(&format!("- Capabilities: {}\n", info.capabilities.join(", ")));
+                content.push_str(&format!("- Access: 9pe-client connect {}\n\n", info.service_addr));
+            }
+        }
+
+        let bytes = content.as_bytes();
+        let start = offset.min(bytes.len() as u64) as usize;
+        let end = (start + count as usize).min(bytes.len());
+        Ok(bytes[start..end].to_vec())
+    }
+
+    async fn size(&self) -> u64 {
+        1024 // Directory listing size
+    }
+
+    fn refresh_rate_ms(&self) -> u64 {
+        5000 // Update as services are discovered
+    }
+}
+
 /// Manages all synthetic files in the system
 pub struct SyntheticFileSystem {
     generators: Arc<RwLock<HashMap<String, Arc<dyn SyntheticGenerator>>>>,
+    draw_display: Arc<ModernDisplay>,
+    service_discovery: Arc<ServiceDiscoveryGenerator>,
 }
 
 impl SyntheticFileSystem {
     pub fn new() -> Self {
         let mut generators: HashMap<String, Arc<dyn SyntheticGenerator>> = HashMap::new();
+        let draw_display = Arc::new(ModernDisplay::new());
+        let service_discovery = Arc::new(ServiceDiscoveryGenerator::new());
 
         // Register default synthetic files
         generators.insert("/sys/cpuinfo".to_string(), Arc::new(CpuInfoGenerator));
@@ -256,8 +475,21 @@ impl SyntheticFileSystem {
         generators.insert("/sys/metrics".to_string(), Arc::new(MetricsGenerator));
         generators.insert("/proc/list".to_string(), Arc::new(ProcessListGenerator));
 
+        // Register graphics system files
+        generators.insert("/draw/main/canvas.html".to_string(),
+            Arc::new(CanvasHtmlGenerator::new(draw_display.clone(), "main".to_string())));
+
+        // UI generators removed - less bloat
+
+        // Chart generators removed - less bloat
+
+        // Register service discovery
+        generators.insert("/srv".to_string(), service_discovery.clone() as Arc<dyn SyntheticGenerator>);
+
         Self {
             generators: Arc::new(RwLock::new(generators)),
+            draw_display,
+            service_discovery,
         }
     }
 
@@ -279,6 +511,21 @@ impl SyntheticFileSystem {
     /// List all synthetic files
     pub async fn list(&self) -> Vec<String> {
         self.generators.read().await.keys().cloned().collect()
+    }
+
+    /// Register a discovered service
+    pub async fn register_service(&self, name: String, info: ServiceInfo) {
+        self.service_discovery.register_service(name.clone(), info).await;
+
+        // Also create a synthetic file for direct access
+        let service_file = format!("/srv/{}", name);
+        // This would be a translator that connects to the remote service
+        // For now, it's informational
+    }
+
+    /// Get the service discovery generator
+    pub fn service_discovery(&self) -> Arc<ServiceDiscoveryGenerator> {
+        self.service_discovery.clone()
     }
 }
 

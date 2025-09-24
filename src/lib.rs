@@ -1,13 +1,42 @@
-//! 9P.e Server - Minimal Working Version
+//! 9P.e Server - Everything is a file, and every file is a function
 //!
-//! This version includes only the components that compile without additional work
+//! Core philosophy: Files are lazily-evaluated functions that transform input to output
 
 pub mod server;
 pub mod metrics;
-pub mod web_ui;
+// pub mod web_ui;  // Removed GUI bloat
 
-// Components that compile with minor fixes
+// Core abstractions
 pub mod synthetic;
+pub mod function_files;
+pub mod synthetic_creation;
+pub mod file_operations;
+pub mod modern_draw;
+
+// Native window support - removed
+// #[cfg(feature = "native")]
+// pub mod native_window;
+
+// #[cfg(feature = "gtk")]
+// pub mod gtk_window;
+
+// Pure CSS UI modules - removed
+// pub mod pure_css_ui;
+// pub mod css_ui_generator;
+
+// Consensus and mesh networking
+// pub mod mesh;  // Temporarily disabled due to thread safety issues
+// pub mod mesh_client;  // Depends on mesh
+pub mod ghostdag;
+pub mod consensus;
+pub mod client;
+
+// Advanced features (feature-gated)
+#[cfg(feature = "wasm")]
+pub mod wasm_translator;
+
+#[cfg(feature = "wasm")]
+pub mod settrans;
 
 // Re-export necessary types
 pub use anyhow::{Result, Error};

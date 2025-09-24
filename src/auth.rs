@@ -8,12 +8,11 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::RwLock;
 use anyhow::{Result, Context};
 use serde::{Serialize, Deserialize};
-use ed25519_dalek::{Keypair, PublicKey, Signature, Signer, Verifier};
-use sha2::{Sha256, Digest};
-use rand::rngs::OsRng;
+use ed25519_dalek::{SigningKey, VerifyingKey, Signature, Signer};
+use sha2::Sha256;
 
 /// Permission flags (can be OR'd together)
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Permissions(u32);
 
 impl Permissions {
@@ -31,6 +30,10 @@ impl Permissions {
         (self.0 & perm.0) == perm.0
     }
 
+    pub fn with(self, other: Permissions) -> Permissions {
+        Permissions(self.0 | other.0)
+    }
+
     pub fn add(&mut self, perm: Permissions) {
         self.0 |= perm.0;
     }
@@ -45,7 +48,7 @@ impl Permissions {
 pub enum AuthMethod {
     None,                              // No auth (dangerous!)
     Password(String),                  // Simple password
-    PublicKey(PublicKey),             // Ed25519 public key
+    PublicKey(VerifyingKey),          // Ed25519 public key
     Certificate(Vec<u8>),             // X.509 certificate
     Kerberos(String),                 // Kerberos principal
     OAuth2(String),                   // OAuth2 token
@@ -99,7 +102,7 @@ pub enum Condition {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AclEntry {
     pub principal: String,         // User or group
-    pub permissions: Permissions,
+    pub permissions: u32,  // Permission bits directly
     pub inheritable: bool,
 }
 
@@ -122,14 +125,13 @@ pub struct AuthService {
     acls: Arc<RwLock<HashMap<String, Vec<AclEntry>>>>,
     capabilities: Arc<RwLock<HashMap<String, SignedCapability>>>,
     revoked: Arc<RwLock<HashSet<String>>>,  // Revoked capability IDs
-    server_keypair: Keypair,
-    trusted_keys: Arc<RwLock<HashMap<String, PublicKey>>>,
+    server_keypair: SigningKey,
+    trusted_keys: Arc<RwLock<HashMap<String, VerifyingKey>>>,
 }
 
 impl AuthService {
     pub fn new() -> Self {
-        let mut csprng = OsRng{};
-        let server_keypair = Keypair::generate(&mut csprng);
+        let server_keypair = SigningKey::from_bytes(&rand::random());
 
         Self {
             users: Arc::new(RwLock::new(HashMap::new())),
@@ -166,7 +168,7 @@ impl AuthService {
                 let users = self.users.read().await;
                 for (_, user) in users.iter() {
                     if let Some(key) = &user.public_key {
-                        if key == &pubkey.to_bytes().to_vec() {
+                        if key == &pubkey.to_bytes() {
                             return Ok(user.clone());
                         }
                     }
@@ -212,9 +214,11 @@ impl AuthService {
             .ok_or_else(|| anyhow::anyhow!("Unknown issuer"))?;
 
         let message = serde_json::to_vec(&signed_cap.capability)?;
-        let signature = Signature::from_bytes(&signed_cap.signature)
-            .map_err(|e| anyhow::anyhow!("Invalid signature: {}", e))?;
+        let sig_bytes: [u8; 64] = signed_cap.signature.as_slice().try_into()
+            .map_err(|_| anyhow::anyhow!("Invalid signature length"))?;
+        let signature = Signature::from_bytes(&sig_bytes);
 
+        use ed25519_dalek::Verifier;
         pubkey.verify(&message, &signature)
             .map_err(|e| anyhow::anyhow!("Signature verification failed: {}", e))?;
 
@@ -306,7 +310,7 @@ impl AuthService {
         }
 
         if let Some(entry) = best_match {
-            return Ok(entry.permissions.has(permission));
+            return Ok(Permissions(entry.permissions).has(permission));
         }
 
         Ok(false)
@@ -428,7 +432,7 @@ impl AuthService {
     }
 
     /// Trust a public key
-    pub async fn trust_key(&self, name: String, pubkey: PublicKey) -> Result<()> {
+    pub async fn trust_key(&self, name: String, pubkey: VerifyingKey) -> Result<()> {
         self.trusted_keys.write().await.insert(name, pubkey);
         Ok(())
     }
