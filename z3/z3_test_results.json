@@ -1,0 +1,43 @@
+{
+  "timestamp": "2025-09-24 18:44:50",
+  "total_tests": 5,
+  "passed": 0,
+  "failed": 5,
+  "results": [
+    {
+      "file": "authentication_security.smt2",
+      "name": "authentication_security",
+      "success": false,
+      "execution_time": 0.0252377986907959,
+      "num_tests": 17
+    },
+    {
+      "file": "file_permissions.smt2",
+      "name": "file_permissions",
+      "success": false,
+      "execution_time": 0.01538395881652832,
+      "num_tests": 19
+    },
+    {
+      "file": "ghostdag_consensus.smt2",
+      "name": "ghostdag_consensus",
+      "success": false,
+      "execution_time": 0.020273685455322266,
+      "num_tests": 17
+    },
+    {
+      "file": "protocol_correctness.smt2",
+      "name": "protocol_correctness",
+      "success": false,
+      "execution_time": 0.006799936294555664,
+      "num_tests": 8
+    },
+    {
+      "file": "thread_safety.smt2",
+      "name": "thread_safety",
+      "success": false,
+      "execution_time": 60.11106610298157,
+      "num_tests": 19
+    }
+  ]
+}

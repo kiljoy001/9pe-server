@@ -1,0 +1,558 @@
+DIGEST 341277f9b25f3707015be357c6a89030
+FThread_Safety
+R195:208 Coq.Lists.List <> <> lib
+R226:240 Coq.Arith.Arith <> <> lib
+R258:270 Coq.Bool.Bool <> <> lib
+R288:311 Coq.Logic.Classical_Prop <> <> lib
+R329:345 Coq.micromega.Lia <> <> lib
+R355:367 Coq.Lists.List ListNotations <> mod
+mod 378:389 <> ThreadSafety
+def 468:475 ThreadSafety ThreadId
+R480:482 Coq.Init.Datatypes <> nat ind
+def 520:525 ThreadSafety LockId
+R530:532 Coq.Init.Datatypes <> nat ind
+def 574:583 ThreadSafety ResourceId
+R588:590 Coq.Init.Datatypes <> nat ind
+ind 627:635 ThreadSafety Operation
+constr 651:654 ThreadSafety Read
+constr 677:681 ThreadSafety Write
+constr 704:710 ThreadSafety Acquire
+constr 729:735 ThreadSafety Release
+R661:670 Thread_Safety ThreadSafety ResourceId def
+binder 657:657 <> r:3
+R688:697 Thread_Safety ThreadSafety ResourceId def
+binder 684:684 <> r:4
+R717:722 Thread_Safety ThreadSafety LockId def
+binder 713:713 <> l:5
+R742:747 Thread_Safety ThreadSafety LockId def
+binder 738:738 <> l:6
+scheme 627:635 ThreadSafety Operation_rect
+scheme 627:635 ThreadSafety Operation_ind
+scheme 627:635 ThreadSafety Operation_rec
+scheme 627:635 ThreadSafety Operation_sind
+ind 782:792 ThreadSafety ThreadState
+constr 808:814 ThreadSafety Running
+constr 818:824 ThreadSafety Waiting
+constr 828:837 ThreadSafety Terminated
+scheme 782:792 ThreadSafety ThreadState_rect
+scheme 782:792 ThreadSafety ThreadState_ind
+scheme 782:792 ThreadSafety ThreadState_rec
+scheme 782:792 ThreadSafety ThreadState_sind
+ind 869:877 ThreadSafety LockState
+constr 893:900 ThreadSafety Unlocked
+constr 904:909 ThreadSafety Locked
+R920:927 Thread_Safety ThreadSafety ThreadId def
+binder 912:916 <> owner:11
+scheme 869:877 ThreadSafety LockState_rect
+scheme 869:877 ThreadSafety LockState_ind
+scheme 869:877 ThreadSafety LockState_rec
+scheme 869:877 ThreadSafety LockState_sind
+rec 961:966 ThreadSafety Thread
+proj 991:999 ThreadSafety thread_id
+proj 1015:1026 ThreadSafety thread_state
+proj 1045:1054 ThreadSafety held_locks
+proj 1073:1083 ThreadSafety waiting_for
+R1003:1010 Thread_Safety ThreadSafety ThreadId def
+R1030:1040 Thread_Safety ThreadSafety ThreadState ind
+R1058:1061 Coq.Init.Datatypes <> list ind
+R1063:1068 Thread_Safety ThreadSafety LockId def
+R1087:1092 Coq.Init.Datatypes <> option ind
+R1094:1099 Thread_Safety ThreadSafety LockId def
+rec 1132:1142 ThreadSafety SystemState
+proj 1172:1178 ThreadSafety threads
+proj 1197:1201 ThreadSafety locks
+proj 1234:1242 ThreadSafety resources
+R1182:1185 Coq.Init.Datatypes <> list ind
+R1187:1192 Thread_Safety ThreadSafety Thread rec
+R1205:1208 Coq.Init.Datatypes <> list ind
+R1217:1219 Coq.Init.Datatypes <> ::type_scope:x_'*'_x not
+R1211:1216 Thread_Safety ThreadSafety LockId def
+R1220:1228 Thread_Safety ThreadSafety LockState ind
+R1246:1249 Coq.Init.Datatypes <> list ind
+R1262:1264 Coq.Init.Datatypes <> ::type_scope:x_'*'_x not
+R1252:1261 Thread_Safety ThreadSafety ResourceId def
+R1265:1270 Coq.Init.Datatypes <> option ind
+R1272:1279 Thread_Safety ThreadSafety ThreadId def
+def 1391:1402 ThreadSafety acquire_lock
+R1411:1421 Thread_Safety ThreadSafety SystemState rec
+binder 1405:1407 <> sys:21
+R1431:1438 Thread_Safety ThreadSafety ThreadId def
+binder 1425:1427 <> tid:22
+R1448:1453 Thread_Safety ThreadSafety LockId def
+binder 1442:1444 <> lid:23
+R1458:1463 Coq.Init.Datatypes <> option ind
+R1465:1475 Thread_Safety ThreadSafety SystemState rec
+R1488:1491 Coq.Lists.List <> find def
+R1525:1529 Thread_Safety ThreadSafety locks proj
+R1531:1533 Thread_Safety <> sys:21 var
+binder 1498:1498 <> l:24
+R1503:1509 Coq.Arith.PeanoNat Nat eqb def
+R1512:1514 Coq.Init.Datatypes <> fst def
+R1516:1516 Thread_Safety <> l:24 var
+R1519:1521 Thread_Safety <> lid:23 var
+R1545:1548 Coq.Init.Datatypes <> Some constr
+R1550:1550 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R1552:1553 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R1562:1562 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R1554:1561 Thread_Safety ThreadSafety Unlocked constr
+R1615:1618 Coq.Init.Datatypes <> Some constr
+R1621:1633 Thread_Safety ThreadSafety mkSystemState constr
+R1644:1646 Coq.Lists.List <> map def
+R1793:1799 Thread_Safety ThreadSafety threads proj
+R1801:1803 Thread_Safety <> sys:21 var
+binder 1653:1653 <> t:25
+R1661:1667 Coq.Arith.PeanoNat Nat eqb def
+R1670:1678 Thread_Safety ThreadSafety thread_id proj
+R1680:1680 Thread_Safety <> t:25 var
+R1683:1685 Thread_Safety <> tid:22 var
+R1789:1789 Thread_Safety <> t:25 var
+R1714:1721 Thread_Safety ThreadSafety mkThread constr
+R1723:1725 Thread_Safety <> tid:22 var
+R1727:1733 Thread_Safety ThreadSafety Running constr
+R1739:1742 Coq.Init.Datatypes <> ::list_scope:x_'::'_x not
+R1736:1738 Thread_Safety <> lid:23 var
+R1743:1752 Thread_Safety ThreadSafety held_locks proj
+R1754:1754 Thread_Safety <> t:25 var
+R1757:1760 Coq.Init.Datatypes <> None constr
+R1816:1818 Coq.Lists.List <> map def
+R1929:1933 Thread_Safety ThreadSafety locks proj
+R1935:1937 Thread_Safety <> sys:21 var
+binder 1825:1825 <> l:26
+R1833:1839 Coq.Arith.PeanoNat Nat eqb def
+R1842:1844 Coq.Init.Datatypes <> fst def
+R1846:1846 Thread_Safety <> l:26 var
+R1849:1851 Thread_Safety <> lid:23 var
+R1925:1925 Thread_Safety <> l:26 var
+R1880:1880 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R1884:1885 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R1896:1896 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R1881:1883 Thread_Safety <> lid:23 var
+R1886:1891 Thread_Safety ThreadSafety Locked constr
+R1893:1895 Thread_Safety <> tid:22 var
+R1950:1958 Thread_Safety ThreadSafety resources proj
+R1960:1962 Thread_Safety <> sys:21 var
+R1970:1973 Coq.Init.Datatypes <> Some constr
+R1975:1975 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R1977:1978 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R1991:1991 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R1979:1984 Thread_Safety ThreadSafety Locked constr
+R2005:2011 Coq.Arith.PeanoNat Nat eqb def
+R2019:2021 Thread_Safety <> tid:22 var
+R2134:2137 Coq.Init.Datatypes <> Some constr
+R2140:2152 Thread_Safety ThreadSafety mkSystemState constr
+R2165:2167 Coq.Lists.List <> map def
+R2317:2323 Thread_Safety ThreadSafety threads proj
+R2325:2327 Thread_Safety <> sys:21 var
+binder 2174:2174 <> t:27
+R2182:2188 Coq.Arith.PeanoNat Nat eqb def
+R2191:2199 Thread_Safety ThreadSafety thread_id proj
+R2201:2201 Thread_Safety <> t:27 var
+R2204:2206 Thread_Safety <> tid:22 var
+R2313:2313 Thread_Safety <> t:27 var
+R2237:2244 Thread_Safety ThreadSafety mkThread constr
+R2246:2248 Thread_Safety <> tid:22 var
+R2250:2256 Thread_Safety ThreadSafety Waiting constr
+R2259:2268 Thread_Safety ThreadSafety held_locks proj
+R2270:2270 Thread_Safety <> t:27 var
+R2274:2277 Coq.Init.Datatypes <> Some constr
+R2279:2281 Thread_Safety <> lid:23 var
+R2342:2346 Thread_Safety ThreadSafety locks proj
+R2348:2350 Thread_Safety <> sys:21 var
+R2364:2372 Thread_Safety ThreadSafety resources proj
+R2374:2376 Thread_Safety <> sys:21 var
+R2034:2037 Coq.Init.Datatypes <> None constr
+R2384:2387 Coq.Init.Datatypes <> None constr
+R2392:2395 Coq.Init.Datatypes <> None constr
+def 2472:2483 ThreadSafety release_lock
+R2492:2502 Thread_Safety ThreadSafety SystemState rec
+binder 2486:2488 <> sys:28
+R2512:2519 Thread_Safety ThreadSafety ThreadId def
+binder 2506:2508 <> tid:29
+R2529:2534 Thread_Safety ThreadSafety LockId def
+binder 2523:2525 <> lid:30
+R2539:2544 Coq.Init.Datatypes <> option ind
+R2546:2556 Thread_Safety ThreadSafety SystemState rec
+R2569:2572 Coq.Lists.List <> find def
+R2606:2610 Thread_Safety ThreadSafety locks proj
+R2612:2614 Thread_Safety <> sys:28 var
+binder 2579:2579 <> l:31
+R2584:2590 Coq.Arith.PeanoNat Nat eqb def
+R2593:2595 Coq.Init.Datatypes <> fst def
+R2597:2597 Thread_Safety <> l:31 var
+R2600:2602 Thread_Safety <> lid:30 var
+R2626:2629 Coq.Init.Datatypes <> Some constr
+R2631:2631 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R2633:2634 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R2647:2647 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R2635:2640 Thread_Safety ThreadSafety Locked constr
+R2661:2667 Coq.Arith.PeanoNat Nat eqb def
+R2675:2677 Thread_Safety <> tid:29 var
+R3211:3214 Coq.Init.Datatypes <> None constr
+R2729:2732 Coq.Init.Datatypes <> Some constr
+R2735:2747 Thread_Safety ThreadSafety mkSystemState constr
+R2760:2762 Coq.Lists.List <> map def
+R3021:3027 Thread_Safety ThreadSafety threads proj
+R3029:3031 Thread_Safety <> sys:28 var
+binder 2769:2769 <> t:32
+R2777:2783 Coq.Arith.PeanoNat Nat eqb def
+R2786:2794 Thread_Safety ThreadSafety thread_id proj
+R2796:2796 Thread_Safety <> t:32 var
+R2799:2801 Thread_Safety <> tid:29 var
+R3017:3017 Thread_Safety <> t:32 var
+R2832:2839 Thread_Safety ThreadSafety mkThread constr
+R2841:2843 Thread_Safety <> tid:29 var
+R2845:2851 Thread_Safety ThreadSafety Running constr
+R2891:2896 Coq.Lists.List <> filter def
+R2931:2940 Thread_Safety ThreadSafety held_locks proj
+R2942:2942 Thread_Safety <> t:32 var
+binder 2903:2903 <> l:33
+R2908:2911 Coq.Init.Datatypes <> negb def
+R2914:2920 Coq.Arith.PeanoNat Nat eqb def
+R2922:2922 Thread_Safety <> l:33 var
+R2924:2926 Thread_Safety <> lid:30 var
+R2983:2986 Coq.Init.Datatypes <> None constr
+R3046:3048 Coq.Lists.List <> map def
+R3161:3165 Thread_Safety ThreadSafety locks proj
+R3167:3169 Thread_Safety <> sys:28 var
+binder 3055:3055 <> l:34
+R3063:3069 Coq.Arith.PeanoNat Nat eqb def
+R3072:3074 Coq.Init.Datatypes <> fst def
+R3076:3076 Thread_Safety <> l:34 var
+R3079:3081 Thread_Safety <> lid:30 var
+R3157:3157 Thread_Safety <> l:34 var
+R3112:3112 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R3116:3117 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R3126:3126 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R3113:3115 Thread_Safety <> lid:30 var
+R3118:3125 Thread_Safety ThreadSafety Unlocked constr
+R3184:3192 Thread_Safety ThreadSafety resources proj
+R3194:3196 Thread_Safety <> sys:28 var
+R3245:3248 Coq.Init.Datatypes <> None constr
+def 3359:3375 ThreadSafety no_double_locking
+R3384:3394 Thread_Safety ThreadSafety SystemState rec
+binder 3378:3380 <> sys:35
+binder 3416:3418 <> lid:36
+binder 3420:3422 <> tid:37
+R3435:3438 Coq.Lists.List <> find def
+R3472:3476 Thread_Safety ThreadSafety locks proj
+R3478:3480 Thread_Safety <> sys:35 var
+binder 3445:3445 <> l:38
+R3450:3456 Coq.Arith.PeanoNat Nat eqb def
+R3459:3461 Coq.Init.Datatypes <> fst def
+R3463:3463 Thread_Safety <> l:38 var
+R3466:3468 Thread_Safety <> lid:36 var
+R3494:3497 Coq.Init.Datatypes <> Some constr
+R3499:3499 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R3501:3502 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R3515:3515 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R3503:3508 Thread_Safety ThreadSafety Locked constr
+R3531:3542 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R3525:3527 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R3528:3530 Thread_Safety <> tid:37 var
+R3543:3549 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+R3551:3552 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+binder 3550:3550 <> t:39
+R3571:3591 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R3553:3554 Coq.Lists.List <> In def
+R3559:3565 Thread_Safety ThreadSafety threads proj
+R3567:3569 Thread_Safety <> sys:35 var
+R3556:3556 Thread_Safety <> t:39 var
+R3609:3629 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R3603:3605 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R3592:3600 Thread_Safety ThreadSafety thread_id proj
+R3602:3602 Thread_Safety <> t:39 var
+R3606:3608 Thread_Safety <> tid:37 var
+R3651:3671 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R3630:3631 Coq.Lists.List <> In def
+R3638:3647 Thread_Safety ThreadSafety held_locks proj
+R3649:3649 Thread_Safety <> t:39 var
+R3633:3635 Thread_Safety <> lid:36 var
+R3711:3713 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R3672:3680 Coq.Lists.List <> count_occ def
+R3708:3710 Thread_Safety <> lid:36 var
+R3694:3703 Thread_Safety ThreadSafety held_locks proj
+R3705:3705 Thread_Safety <> t:39 var
+R3682:3691 Coq.Arith.PeanoNat Nat eq_dec thm
+R3727:3730 Coq.Init.Logic <> True ind
+def 3777:3792 ThreadSafety mutual_exclusion
+R3801:3811 Thread_Safety ThreadSafety SystemState rec
+binder 3795:3797 <> sys:40
+binder 3833:3835 <> lid:41
+binder 3837:3840 <> tid1:42
+binder 3842:3845 <> tid2:43
+R3864:3871 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R3856:3859 Coq.Init.Logic <> ::type_scope:x_'<>'_x not
+R3852:3855 Thread_Safety <> tid1:42 var
+R3860:3863 Thread_Safety <> tid2:43 var
+R3878:3881 Coq.Lists.List <> find def
+R3915:3919 Thread_Safety ThreadSafety locks proj
+R3921:3923 Thread_Safety <> sys:40 var
+binder 3888:3888 <> l:44
+R3893:3899 Coq.Arith.PeanoNat Nat eqb def
+R3902:3904 Coq.Init.Datatypes <> fst def
+R3906:3906 Thread_Safety <> l:44 var
+R3909:3911 Thread_Safety <> lid:41 var
+R3937:3940 Coq.Init.Datatypes <> Some constr
+R3942:3942 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R3944:3945 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R3958:3958 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R3946:3951 Thread_Safety ThreadSafety Locked constr
+R3983:3986 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R3976:3978 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R3979:3982 Thread_Safety <> tid1:42 var
+R3992:3995 Coq.Init.Logic <> ::type_scope:x_'<>'_x not
+R3996:3999 Thread_Safety <> tid2:43 var
+R4012:4015 Coq.Init.Logic <> True ind
+def 4072:4084 ThreadSafety no_data_races
+R4093:4103 Thread_Safety ThreadSafety SystemState rec
+binder 4087:4089 <> sys:45
+binder 4125:4127 <> rid:46
+binder 4129:4132 <> tid1:47
+binder 4134:4137 <> tid2:48
+R4156:4163 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R4148:4151 Coq.Init.Logic <> ::type_scope:x_'<>'_x not
+R4144:4147 Thread_Safety <> tid1:47 var
+R4152:4155 Thread_Safety <> tid2:48 var
+R4170:4173 Coq.Lists.List <> find def
+R4207:4215 Thread_Safety ThreadSafety resources proj
+R4217:4219 Thread_Safety <> sys:45 var
+binder 4180:4180 <> r:49
+R4185:4191 Coq.Arith.PeanoNat Nat eqb def
+R4194:4196 Coq.Init.Datatypes <> fst def
+R4198:4198 Thread_Safety <> r:49 var
+R4201:4203 Thread_Safety <> rid:46 var
+R4233:4236 Coq.Init.Datatypes <> Some constr
+R4238:4238 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4240:4241 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4255:4255 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4242:4245 Coq.Init.Datatypes <> Some constr
+R4283:4286 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R4276:4278 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R4279:4282 Thread_Safety <> tid1:47 var
+R4295:4298 Coq.Init.Logic <> ::type_scope:x_'<>'_x not
+R4299:4302 Thread_Safety <> tid2:48 var
+R4315:4318 Coq.Init.Logic <> True ind
+def 4417:4429 ThreadSafety lock_ordering
+R4433:4436 Coq.Init.Datatypes <> list ind
+R4438:4443 Thread_Safety ThreadSafety LockId def
+R4448:4448 Coq.Lists.List ListNotations ::list_scope:'['_x_';'_x_';'_'..'_';'_x_']' not
+R4450:4451 Coq.Lists.List ListNotations ::list_scope:'['_x_';'_x_';'_'..'_';'_x_']' not
+R4453:4454 Coq.Lists.List ListNotations ::list_scope:'['_x_';'_x_';'_'..'_';'_x_']' not
+R4456:4457 Coq.Lists.List ListNotations ::list_scope:'['_x_';'_x_';'_'..'_';'_x_']' not
+R4459:4460 Coq.Lists.List ListNotations ::list_scope:'['_x_';'_x_';'_'..'_';'_x_']' not
+R4462:4462 Coq.Lists.List ListNotations ::list_scope:'['_x_';'_x_';'_'..'_';'_x_']' not
+def 4544:4560 ThreadSafety check_ordered_aux
+R4571:4574 Coq.Init.Datatypes <> list ind
+R4576:4581 Thread_Safety ThreadSafety LockId def
+binder 4563:4567 <> locks:50
+R4586:4589 Coq.Init.Datatypes <> bool ind
+R4602:4606 Thread_Safety <> locks:50 var
+R4617:4618 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+R4623:4626 Coq.Init.Datatypes <> true constr
+R4632:4632 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R4634:4634 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R4639:4642 Coq.Init.Datatypes <> true constr
+R4650:4654 Coq.Init.Datatypes <> ::list_scope:x_'::'_x not
+R4673:4673 Coq.Init.Datatypes <> ::list_scope:x_'::'_x not
+R4657:4660 Coq.Init.Datatypes <> ::list_scope:x_'::'_x not
+R4746:4749 Coq.Lists.List <> find def
+R4775:4787 Thread_Safety ThreadSafety lock_ordering def
+binder 4756:4756 <> x:53
+R4761:4767 Coq.Arith.PeanoNat Nat eqb def
+R4769:4769 Thread_Safety <> x:53 var
+R4690:4693 Coq.Lists.List <> find def
+R4719:4731 Thread_Safety ThreadSafety lock_ordering def
+binder 4700:4700 <> x:54
+R4705:4711 Coq.Arith.PeanoNat Nat eqb def
+R4713:4713 Thread_Safety <> x:54 var
+R4802:4805 Coq.Init.Datatypes <> Some constr
+R4810:4813 Coq.Init.Datatypes <> Some constr
+R4833:4836 Coq.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R4820:4826 Coq.Arith.PeanoNat Nat ltb def
+R4837:4853 Thread_Safety <> check_ordered_aux:51 def
+R4876:4880 Coq.Init.Datatypes <> false constr
+def 4911:4927 ThreadSafety respects_ordering
+R4934:4939 Thread_Safety ThreadSafety Thread rec
+binder 4930:4930 <> t:55
+R4944:4947 Coq.Init.Datatypes <> bool ind
+R4954:4970 Thread_Safety ThreadSafety check_ordered_aux def
+R4973:4982 Thread_Safety ThreadSafety held_locks proj
+R4984:4984 Thread_Safety <> t:55 var
+def 5034:5046 ThreadSafety has_cycle_aux
+R5055:5065 Thread_Safety ThreadSafety SystemState rec
+binder 5049:5051 <> sys:56
+R5085:5092 Thread_Safety ThreadSafety ThreadId def
+binder 5069:5073 <> start:57
+binder 5075:5081 <> current:58
+R5106:5109 Coq.Init.Datatypes <> list ind
+R5111:5118 Thread_Safety ThreadSafety ThreadId def
+binder 5096:5102 <> visited:59
+R5129:5131 Coq.Init.Datatypes <> nat ind
+binder 5122:5125 <> fuel:60
+R5136:5139 Coq.Init.Datatypes <> bool ind
+R5152:5155 Thread_Safety <> fuel:60 var
+R5171:5175 Coq.Init.Datatypes <> false constr
+R5220:5220 Coq.Init.Datatypes <> S constr
+R5240:5246 Coq.Lists.List <> existsb def
+R5266:5272 Thread_Safety <> visited:59 var
+R5249:5255 Coq.Arith.PeanoNat Nat eqb def
+R5257:5263 Thread_Safety <> current:58 var
+R5367:5370 Coq.Lists.List <> find def
+R5414:5420 Thread_Safety ThreadSafety threads proj
+R5422:5424 Thread_Safety <> sys:56 var
+binder 5377:5377 <> t:63
+R5382:5388 Coq.Arith.PeanoNat Nat eqb def
+R5391:5399 Thread_Safety ThreadSafety thread_id proj
+R5401:5401 Thread_Safety <> t:63 var
+R5404:5410 Thread_Safety <> current:58 var
+R5442:5445 Coq.Init.Datatypes <> Some constr
+R5470:5480 Thread_Safety ThreadSafety waiting_for proj
+R5503:5506 Coq.Init.Datatypes <> Some constr
+R5584:5587 Coq.Lists.List <> find def
+R5621:5625 Thread_Safety ThreadSafety locks proj
+R5627:5629 Thread_Safety <> sys:56 var
+binder 5594:5594 <> l:64
+R5599:5605 Coq.Arith.PeanoNat Nat eqb def
+R5608:5610 Coq.Init.Datatypes <> fst def
+R5612:5612 Thread_Safety <> l:64 var
+R5655:5658 Coq.Init.Datatypes <> Some constr
+R5660:5660 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R5662:5663 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R5676:5676 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R5664:5669 Thread_Safety ThreadSafety Locked constr
+R5701:5713 Thread_Safety <> has_cycle_aux:61 def
+R5739:5742 Coq.Init.Datatypes <> ::list_scope:x_'::'_x not
+R5732:5738 Thread_Safety <> current:58 var
+R5743:5749 Thread_Safety <> visited:59 var
+R5719:5723 Thread_Safety <> start:57 var
+R5715:5717 Thread_Safety <> sys:56 var
+R5781:5785 Coq.Init.Datatypes <> false constr
+R5821:5824 Coq.Init.Datatypes <> None constr
+R5829:5833 Coq.Init.Datatypes <> false constr
+R5861:5864 Coq.Init.Datatypes <> None constr
+R5869:5873 Coq.Init.Datatypes <> false constr
+R5285:5291 Coq.Arith.PeanoNat Nat eqb def
+R5293:5299 Thread_Safety <> current:58 var
+R5301:5305 Thread_Safety <> start:57 var
+def 5906:5917 ThreadSafety has_deadlock
+R5926:5936 Thread_Safety ThreadSafety SystemState rec
+binder 5920:5922 <> sys:65
+R5941:5944 Coq.Init.Datatypes <> bool ind
+R5951:5957 Coq.Lists.List <> existsb def
+R6053:6059 Thread_Safety ThreadSafety threads proj
+R6061:6063 Thread_Safety <> sys:65 var
+binder 5964:5964 <> t:66
+R5969:5981 Thread_Safety ThreadSafety has_cycle_aux def
+R5983:5985 Thread_Safety <> sys:65 var
+R5988:5996 Thread_Safety ThreadSafety thread_id proj
+R5998:5998 Thread_Safety <> t:66 var
+R6002:6010 Thread_Safety ThreadSafety thread_id proj
+R6012:6012 Thread_Safety <> t:66 var
+R6015:6016 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+R6019:6024 Coq.Init.Datatypes <> length def
+R6027:6033 Thread_Safety ThreadSafety threads proj
+R6035:6037 Thread_Safety <> sys:65 var
+prf 6153:6178 ThreadSafety mutual_exclusion_preserved
+binder 6191:6193 <> sys:67
+binder 6195:6197 <> tid:68
+binder 6199:6201 <> lid:69
+binder 6203:6206 <> sys':70
+R6233:6240 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R6213:6228 Thread_Safety ThreadSafety mutual_exclusion def
+R6230:6232 Thread_Safety <> sys:67 var
+R6277:6284 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R6265:6267 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R6241:6252 Thread_Safety ThreadSafety acquire_lock def
+R6254:6256 Thread_Safety <> sys:67 var
+R6258:6260 Thread_Safety <> tid:68 var
+R6262:6264 Thread_Safety <> lid:69 var
+R6268:6271 Coq.Init.Datatypes <> Some constr
+R6273:6276 Thread_Safety <> sys':70 var
+R6285:6300 Thread_Safety ThreadSafety mutual_exclusion def
+R6302:6305 Thread_Safety <> sys':70 var
+R6363:6378 Thread_Safety ThreadSafety mutual_exclusion def
+R6425:6436 Thread_Safety ThreadSafety acquire_lock def
+R6459:6462 Coq.Lists.List <> find def
+R6459:6462 Coq.Lists.List <> find def
+R6685:6691 Coq.Arith.PeanoNat Nat eqb def
+R6685:6691 Coq.Arith.PeanoNat Nat eqb def
+R6726:6735 Coq.Arith.PeanoNat Nat eqb_eq thm
+R6726:6735 Coq.Arith.PeanoNat Nat eqb_eq thm
+R7087:7093 Coq.Arith.PeanoNat Nat eqb def
+R7087:7093 Coq.Arith.PeanoNat Nat eqb def
+prf 7282:7312 ThreadSafety lock_ordering_prevents_deadlock
+binder 7325:7327 <> sys:71
+R7334:7334 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R7393:7401 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+binder 7342:7342 <> t:72
+R7363:7366 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R7345:7346 Coq.Lists.List <> In def
+R7351:7357 Thread_Safety ThreadSafety threads proj
+R7359:7361 Thread_Safety <> sys:71 var
+R7348:7348 Thread_Safety <> t:72 var
+R7386:7388 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R7367:7383 Thread_Safety ThreadSafety respects_ordering def
+R7385:7385 Thread_Safety <> t:72 var
+R7389:7392 Coq.Init.Datatypes <> true constr
+R7418:7420 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R7402:7413 Thread_Safety ThreadSafety has_deadlock def
+R7415:7417 Thread_Safety <> sys:71 var
+R7421:7425 Coq.Init.Datatypes <> false constr
+R7468:7479 Thread_Safety ThreadSafety has_deadlock def
+def 8219:8239 ThreadSafety properly_synchronized
+R8248:8258 Thread_Safety ThreadSafety SystemState rec
+binder 8242:8244 <> sys:73
+binder 8280:8282 <> rid:74
+binder 8284:8286 <> tid:75
+R8299:8302 Coq.Lists.List <> find def
+R8336:8344 Thread_Safety ThreadSafety resources proj
+R8346:8348 Thread_Safety <> sys:73 var
+binder 8309:8309 <> r:76
+R8314:8320 Coq.Arith.PeanoNat Nat eqb def
+R8323:8325 Coq.Init.Datatypes <> fst def
+R8327:8327 Thread_Safety <> r:76 var
+R8330:8332 Thread_Safety <> rid:74 var
+R8362:8365 Coq.Init.Datatypes <> Some constr
+R8367:8367 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R8369:8370 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R8384:8384 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R8371:8374 Coq.Init.Datatypes <> Some constr
+R8411:8422 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R8405:8407 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R8408:8410 Thread_Safety <> tid:75 var
+R8423:8429 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+R8431:8432 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+binder 8430:8430 <> t:77
+R8451:8454 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R8433:8434 Coq.Lists.List <> In def
+R8439:8445 Thread_Safety ThreadSafety threads proj
+R8447:8449 Thread_Safety <> sys:73 var
+R8436:8436 Thread_Safety <> t:77 var
+R8472:8492 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R8466:8468 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R8455:8463 Thread_Safety ThreadSafety thread_id proj
+R8465:8465 Thread_Safety <> t:77 var
+R8469:8471 Thread_Safety <> tid:75 var
+R8493:8499 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+R8503:8504 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+binder 8500:8502 <> lid:78
+R8505:8506 Coq.Lists.List <> In def
+R8513:8522 Thread_Safety ThreadSafety held_locks proj
+R8524:8524 Thread_Safety <> t:77 var
+R8508:8510 Thread_Safety <> lid:78 var
+R8538:8541 Coq.Init.Logic <> True ind
+prf 8561:8586 ThreadSafety proper_sync_prevents_races
+binder 8599:8601 <> sys:79
+R8633:8640 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R8608:8628 Thread_Safety ThreadSafety properly_synchronized def
+R8630:8632 Thread_Safety <> sys:79 var
+R8661:8668 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R8641:8656 Thread_Safety ThreadSafety mutual_exclusion def
+R8658:8660 Thread_Safety <> sys:79 var
+R8669:8681 Thread_Safety ThreadSafety no_data_races def
+R8683:8685 Thread_Safety <> sys:79 var
+R8731:8743 Thread_Safety ThreadSafety no_data_races def
+R8746:8766 Thread_Safety ThreadSafety properly_synchronized def
+R8815:8818 Coq.Lists.List <> find def
+R8815:8818 Coq.Lists.List <> find def
+R10269:10280 Thread_Safety ThreadSafety <> mod

@@ -1,0 +1,698 @@
+DIGEST c5d79e42d3eaf35501cc86a0a5d2f68d
+FAuthentication_Security
+R189:202 Coq.Lists.List <> <> lib
+R220:237 Coq.Strings.String <> <> lib
+R255:269 Coq.Arith.Arith <> <> lib
+R287:299 Coq.Bool.Bool <> <> lib
+R317:340 Coq.Logic.Classical_Prop <> <> lib
+R358:374 Coq.micromega.Lia <> <> lib
+R384:396 Coq.Lists.List ListNotations <> mod
+mod 438:449 <> AuthSecurity
+def 523:528 AuthSecurity UserId
+R533:535 Coq.Init.Datatypes <> nat ind
+def 577:586 AuthSecurity ResourceId
+R591:596 Coq.Strings.String <> string ind
+def 638:641 AuthSecurity Time
+R646:648 Coq.Init.Datatypes <> nat ind
+def 688:690 AuthSecurity Key
+R695:697 Coq.Init.Datatypes <> nat ind
+def 729:737 AuthSecurity Signature
+R742:744 Coq.Init.Datatypes <> nat ind
+ind 782:791 AuthSecurity Permission
+constr 807:810 AuthSecurity Read
+constr 814:818 AuthSecurity Write
+constr 822:828 AuthSecurity Execute
+constr 832:837 AuthSecurity Delete
+constr 841:845 AuthSecurity Admin
+constr 849:856 AuthSecurity Traverse
+constr 860:864 AuthSecurity Mount
+scheme 782:791 AuthSecurity Permission_rect
+scheme 782:791 AuthSecurity Permission_ind
+scheme 782:791 AuthSecurity Permission_rec
+scheme 782:791 AuthSecurity Permission_sind
+def 917:927 AuthSecurity perm_to_bit
+R934:943 Authentication_Security AuthSecurity Permission ind
+binder 930:930 <> p:3
+R948:950 Coq.Init.Datatypes <> nat ind
+R963:963 Authentication_Security <> p:3 var
+R974:977 Authentication_Security AuthSecurity Read constr
+R1003:1007 Authentication_Security AuthSecurity Write constr
+R1032:1038 Authentication_Security AuthSecurity Execute constr
+R1061:1066 Authentication_Security AuthSecurity Delete constr
+R1090:1094 Authentication_Security AuthSecurity Admin constr
+R1119:1126 Authentication_Security AuthSecurity Traverse constr
+R1148:1152 Authentication_Security AuthSecurity Mount constr
+def 1227:1239 AuthSecurity PermissionSet
+R1244:1246 Coq.Init.Datatypes <> nat ind
+def 1316:1329 AuthSecurity has_permission
+R1337:1349 Authentication_Security AuthSecurity PermissionSet def
+binder 1332:1333 <> ps:5
+R1357:1366 Authentication_Security AuthSecurity Permission ind
+binder 1353:1353 <> p:6
+R1371:1374 Coq.Init.Datatypes <> bool ind
+R1381:1387 Coq.Arith.PeanoNat Nat eqb def
+R1390:1397 Coq.Arith.PeanoNat Nat land def
+R1399:1400 Authentication_Security <> ps:5 var
+R1403:1413 Authentication_Security AuthSecurity perm_to_bit def
+R1415:1415 Authentication_Security <> p:6 var
+R1420:1430 Authentication_Security AuthSecurity perm_to_bit def
+R1432:1432 Authentication_Security <> p:6 var
+rec 1463:1466 AuthSecurity User
+proj 1489:1495 AuthSecurity user_id
+proj 1509:1517 AuthSecurity user_name
+proj 1531:1541 AuthSecurity user_pubkey
+proj 1552:1562 AuthSecurity user_groups
+R1499:1504 Authentication_Security AuthSecurity UserId def
+R1521:1526 Coq.Strings.String <> string ind
+R1545:1547 Authentication_Security AuthSecurity Key def
+R1566:1569 Coq.Init.Datatypes <> list ind
+R1571:1576 Coq.Strings.String <> string ind
+rec 1613:1622 AuthSecurity Capability
+proj 1651:1656 AuthSecurity cap_id
+proj 1667:1676 AuthSecurity cap_issuer
+proj 1690:1700 AuthSecurity cap_subject
+proj 1714:1725 AuthSecurity cap_resource
+proj 1743:1757 AuthSecurity cap_permissions
+proj 1778:1790 AuthSecurity cap_issued_at
+proj 1802:1815 AuthSecurity cap_expires_at
+proj 1827:1838 AuthSecurity cap_max_uses
+proj 1856:1877 AuthSecurity cap_delegation_allowed
+R1660:1662 Coq.Init.Datatypes <> nat ind
+R1680:1685 Authentication_Security AuthSecurity UserId def
+R1704:1709 Authentication_Security AuthSecurity UserId def
+R1729:1738 Authentication_Security AuthSecurity ResourceId def
+R1761:1773 Authentication_Security AuthSecurity PermissionSet def
+R1794:1797 Authentication_Security AuthSecurity Time def
+R1819:1822 Authentication_Security AuthSecurity Time def
+R1842:1847 Coq.Init.Datatypes <> option ind
+R1849:1851 Coq.Init.Datatypes <> nat ind
+R1881:1884 Coq.Init.Datatypes <> bool ind
+rec 1922:1937 AuthSecurity SignedCapability
+proj 1965:1977 AuthSecurity sc_capability
+proj 1995:2006 AuthSecurity sc_signature
+R1981:1990 Authentication_Security AuthSecurity Capability rec
+R2010:2018 Authentication_Security AuthSecurity Signature def
+ind 2063:2072 AuthSecurity AuthMethod
+constr 2088:2095 AuthSecurity AuthNone
+constr 2101:2112 AuthSecurity AuthPassword
+constr 2131:2143 AuthSecurity AuthPublicKey
+constr 2161:2174 AuthSecurity AuthCapability
+R2122:2124 Coq.Init.Datatypes <> nat ind
+binder 2115:2118 <> hash:27
+R2152:2154 Authentication_Security AuthSecurity Key def
+binder 2146:2148 <> key:28
+R2183:2198 Authentication_Security AuthSecurity SignedCapability rec
+binder 2177:2179 <> cap:29
+scheme 2063:2072 AuthSecurity AuthMethod_rect
+scheme 2063:2072 AuthSecurity AuthMethod_ind
+scheme 2063:2072 AuthSecurity AuthMethod_rec
+scheme 2063:2072 AuthSecurity AuthMethod_sind
+rec 2234:2248 AuthSecurity SecurityContext
+proj 2277:2284 AuthSecurity ctx_user
+proj 2303:2312 AuthSecurity ctx_method
+proj 2330:2345 AuthSecurity ctx_capabilities
+proj 2374:2381 AuthSecurity ctx_time
+proj 2393:2408 AuthSecurity ctx_mfa_verified
+R2288:2293 Coq.Init.Datatypes <> option ind
+R2295:2298 Authentication_Security AuthSecurity User rec
+R2316:2325 Authentication_Security AuthSecurity AuthMethod ind
+R2349:2352 Coq.Init.Datatypes <> list ind
+R2354:2369 Authentication_Security AuthSecurity SignedCapability rec
+R2385:2388 Authentication_Security AuthSecurity Time def
+R2412:2415 Coq.Init.Datatypes <> bool ind
+rec 2456:2463 AuthSecurity ACLEntry
+proj 2490:2502 AuthSecurity acl_principal
+proj 2516:2527 AuthSecurity acl_resource
+proj 2545:2559 AuthSecurity acl_permissions
+R2506:2511 Authentication_Security AuthSecurity UserId def
+R2531:2540 Authentication_Security AuthSecurity ResourceId def
+R2563:2575 Authentication_Security AuthSecurity PermissionSet def
+rec 2608:2617 AuthSecurity AuthSystem
+proj 2646:2654 AuthSecurity sys_users
+proj 2671:2686 AuthSecurity sys_capabilities
+proj 2715:2725 AuthSecurity sys_revoked
+proj 2770:2777 AuthSecurity sys_acls
+proj 2798:2811 AuthSecurity sys_server_key
+proj 2822:2837 AuthSecurity sys_current_time
+R2658:2661 Coq.Init.Datatypes <> list ind
+R2663:2666 Authentication_Security AuthSecurity User rec
+R2690:2693 Coq.Init.Datatypes <> list ind
+R2695:2710 Authentication_Security AuthSecurity SignedCapability rec
+R2729:2732 Coq.Init.Datatypes <> list ind
+R2734:2736 Coq.Init.Datatypes <> nat ind
+R2781:2784 Coq.Init.Datatypes <> list ind
+R2786:2793 Authentication_Security AuthSecurity ACLEntry rec
+R2815:2817 Authentication_Security AuthSecurity Key def
+R2841:2844 Authentication_Security AuthSecurity Time def
+ax 2939:2954 AuthSecurity verify_signature
+R2961:2964 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2958:2960 Authentication_Security AuthSecurity Key def
+R2968:2971 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2965:2967 Coq.Init.Datatypes <> nat ind
+R2981:2984 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2972:2980 Authentication_Security AuthSecurity Signature def
+R2985:2988 Coq.Init.Datatypes <> bool ind
+ax 3036:3050 AuthSecurity verify_password
+R3060:3063 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R3054:3059 Coq.Strings.String <> string ind
+R3067:3070 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R3064:3066 Coq.Init.Datatypes <> nat ind
+R3071:3074 Coq.Init.Datatypes <> bool ind
+ax 3125:3148 AuthSecurity signature_unforgeability
+binder 3161:3163 <> key:51
+binder 3165:3168 <> data:52
+binder 3170:3172 <> sig:53
+R3215:3293 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R3208:3210 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R3179:3194 Authentication_Security AuthSecurity verify_signature defax
+R3196:3198 Authentication_Security <> key:51 var
+R3200:3203 Authentication_Security <> data:52 var
+R3205:3207 Authentication_Security <> sig:53 var
+R3211:3214 Coq.Init.Datatypes <> true constr
+R3294:3301 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+R3319:3321 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+R3316:3318 Authentication_Security AuthSecurity Key def
+binder 3302:3312 <> private_key:54
+R3322:3325 Coq.Init.Logic <> True ind
+def 3424:3439 AuthSecurity valid_capability
+R3448:3457 Authentication_Security AuthSecurity AuthSystem rec
+binder 3442:3444 <> sys:57
+R3467:3476 Authentication_Security AuthSecurity Capability rec
+binder 3461:3463 <> cap:58
+R3532:3537 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R3508:3511 Coq.Init.Peano <> ::nat_scope:x_'<='_x not
+R3491:3503 Authentication_Security AuthSecurity cap_issued_at proj
+R3505:3507 Authentication_Security <> cap:58 var
+R3512:3527 Authentication_Security AuthSecurity sys_current_time proj
+R3529:3531 Authentication_Security <> sys:57 var
+R3580:3585 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R3558:3561 Coq.Init.Peano <> ::nat_scope:x_'<='_x not
+R3538:3553 Authentication_Security AuthSecurity sys_current_time proj
+R3555:3557 Authentication_Security <> sys:57 var
+R3562:3575 Authentication_Security AuthSecurity cap_expires_at proj
+R3577:3579 Authentication_Security <> cap:58 var
+R3586:3586 Coq.Init.Logic <> ::type_scope:'~'_x not
+R3587:3588 Coq.Lists.List <> In def
+R3604:3614 Authentication_Security AuthSecurity sys_revoked proj
+R3616:3618 Authentication_Security <> sys:57 var
+R3591:3596 Authentication_Security AuthSecurity cap_id proj
+R3598:3600 Authentication_Security <> cap:58 var
+def 3665:3687 AuthSecurity valid_signed_capability
+R3696:3705 Authentication_Security AuthSecurity AuthSystem rec
+binder 3690:3692 <> sys:59
+R3716:3731 Authentication_Security AuthSecurity SignedCapability rec
+binder 3709:3712 <> scap:60
+R3787:3792 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R3746:3761 Authentication_Security AuthSecurity valid_capability def
+R3763:3765 Authentication_Security <> sys:59 var
+R3768:3780 Authentication_Security AuthSecurity sc_capability proj
+R3782:3785 Authentication_Security <> scap:60 var
+R3880:3882 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R3793:3808 Authentication_Security AuthSecurity verify_signature defax
+R3811:3824 Authentication_Security AuthSecurity sys_server_key proj
+R3826:3828 Authentication_Security <> sys:59 var
+R3832:3837 Authentication_Security AuthSecurity cap_id proj
+R3840:3852 Authentication_Security AuthSecurity sc_capability proj
+R3854:3857 Authentication_Security <> scap:60 var
+R3862:3873 Authentication_Security AuthSecurity sc_signature proj
+R3875:3878 Authentication_Security <> scap:60 var
+R3883:3886 Coq.Init.Datatypes <> true constr
+ind 3932:3944 AuthSecurity authenticated
+constr 4003:4016 AuthSecurity auth_by_pubkey
+constr 4212:4229 AuthSecurity auth_by_capability
+constr 4495:4510 AuthSecurity auth_by_password
+R3953:3962 Authentication_Security AuthSecurity AuthSystem rec
+binder 3947:3949 <> sys:61
+R3972:3986 Authentication_Security AuthSecurity SecurityContext rec
+binder 3966:3968 <> ctx:62
+binder 4027:4030 <> user:65
+binder 4032:4034 <> key:66
+R4067:4076 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R4055:4057 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R4043:4050 Authentication_Security AuthSecurity ctx_user proj
+R4052:4054 Authentication_Security <> ctx:62 var
+R4058:4061 Coq.Init.Datatypes <> Some constr
+R4063:4066 Authentication_Security <> user:65 var
+R4111:4120 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R4091:4093 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R4077:4086 Authentication_Security AuthSecurity ctx_method proj
+R4088:4090 Authentication_Security <> ctx:62 var
+R4094:4106 Authentication_Security AuthSecurity AuthPublicKey constr
+R4108:4110 Authentication_Security <> key:66 var
+R4143:4152 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R4137:4139 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R4121:4131 Authentication_Security AuthSecurity user_pubkey proj
+R4133:4136 Authentication_Security <> user:65 var
+R4140:4142 Authentication_Security <> key:66 var
+R4176:4185 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R4153:4154 Coq.Lists.List <> In def
+R4162:4170 Authentication_Security AuthSecurity sys_users proj
+R4172:4174 Authentication_Security <> sys:61 var
+R4156:4159 Authentication_Security <> user:65 var
+R4186:4198 Authentication_Security <> authenticated:63 ind
+R4204:4206 Authentication_Security <> ctx:62 var
+R4200:4202 Authentication_Security <> sys:61 var
+binder 4240:4243 <> user:67
+binder 4245:4248 <> scap:68
+R4281:4290 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R4269:4271 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R4257:4264 Authentication_Security AuthSecurity ctx_user proj
+R4266:4268 Authentication_Security <> ctx:62 var
+R4272:4275 Coq.Init.Datatypes <> Some constr
+R4277:4280 Authentication_Security <> user:67 var
+R4327:4336 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R4305:4307 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R4291:4300 Authentication_Security AuthSecurity ctx_method proj
+R4302:4304 Authentication_Security <> ctx:62 var
+R4308:4321 Authentication_Security AuthSecurity AuthCapability constr
+R4323:4326 Authentication_Security <> scap:68 var
+R4369:4378 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R4337:4359 Authentication_Security AuthSecurity valid_signed_capability def
+R4361:4363 Authentication_Security <> sys:61 var
+R4365:4368 Authentication_Security <> scap:68 var
+R4426:4435 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R4391:4393 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R4379:4385 Authentication_Security AuthSecurity user_id proj
+R4387:4390 Authentication_Security <> user:67 var
+R4394:4404 Authentication_Security AuthSecurity cap_subject proj
+R4407:4419 Authentication_Security AuthSecurity sc_capability proj
+R4421:4424 Authentication_Security <> scap:68 var
+R4459:4468 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R4436:4437 Coq.Lists.List <> In def
+R4445:4453 Authentication_Security AuthSecurity sys_users proj
+R4455:4457 Authentication_Security <> sys:61 var
+R4439:4442 Authentication_Security <> user:67 var
+R4469:4481 Authentication_Security <> authenticated:63 ind
+R4487:4489 Authentication_Security <> ctx:62 var
+R4483:4485 Authentication_Security <> sys:61 var
+binder 4521:4524 <> user:69
+binder 4526:4529 <> hash:70
+R4562:4571 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R4550:4552 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R4538:4545 Authentication_Security AuthSecurity ctx_user proj
+R4547:4549 Authentication_Security <> ctx:62 var
+R4553:4556 Coq.Init.Datatypes <> Some constr
+R4558:4561 Authentication_Security <> user:69 var
+R4606:4615 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R4586:4588 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R4572:4581 Authentication_Security AuthSecurity ctx_method proj
+R4583:4585 Authentication_Security <> ctx:62 var
+R4589:4600 Authentication_Security AuthSecurity AuthPassword constr
+R4602:4605 Authentication_Security <> hash:70 var
+R4660:4669 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R4653:4655 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R4616:4630 Authentication_Security AuthSecurity verify_password defax
+R4633:4641 Authentication_Security AuthSecurity user_name proj
+R4643:4646 Authentication_Security <> user:69 var
+R4649:4652 Authentication_Security <> hash:70 var
+R4656:4659 Coq.Init.Datatypes <> true constr
+R4693:4702 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R4670:4671 Coq.Lists.List <> In def
+R4679:4687 Authentication_Security AuthSecurity sys_users proj
+R4689:4691 Authentication_Security <> sys:61 var
+R4673:4676 Authentication_Security <> user:69 var
+R4703:4715 Authentication_Security <> authenticated:63 ind
+R4721:4723 Authentication_Security <> ctx:62 var
+R4717:4719 Authentication_Security <> sys:61 var
+scheme 3932:3944 AuthSecurity authenticated_ind
+scheme 3932:3944 AuthSecurity authenticated_sind
+def 4765:4775 AuthSecurity require_mfa
+R4789:4798 Authentication_Security AuthSecurity ResourceId def
+binder 4778:4785 <> resource:71
+R4803:4806 Coq.Init.Datatypes <> bool ind
+R4819:4826 Authentication_Security <> resource:71 var
+R4849:4852 Coq.Init.Datatypes <> true constr
+R4902:4906 Coq.Init.Datatypes <> false constr
+def 4955:4964 AuthSecurity has_access
+R4973:4982 Authentication_Security AuthSecurity AuthSystem rec
+binder 4967:4969 <> sys:73
+R4992:5006 Authentication_Security AuthSecurity SecurityContext rec
+binder 4986:4988 <> ctx:74
+R5043:5052 Authentication_Security AuthSecurity ResourceId def
+binder 5032:5039 <> resource:75
+R5063:5072 Authentication_Security AuthSecurity Permission ind
+binder 5056:5059 <> perm:76
+R5108:5143 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R5087:5099 Authentication_Security AuthSecurity authenticated ind
+R5101:5103 Authentication_Security <> sys:73 var
+R5105:5107 Authentication_Security <> ctx:74 var
+R5144:5144 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R5203:5210 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R5797:5797 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R5172:5175 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R5165:5167 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R5145:5155 Authentication_Security AuthSecurity require_mfa def
+R5157:5164 Authentication_Security <> resource:75 var
+R5168:5171 Coq.Init.Datatypes <> true constr
+R5196:5198 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R5176:5191 Authentication_Security AuthSecurity ctx_mfa_verified proj
+R5193:5195 Authentication_Security <> ctx:74 var
+R5199:5202 Coq.Init.Datatypes <> true constr
+R5211:5217 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+R5222:5223 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+binder 5218:5221 <> user:77
+R5248:5294 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R5791:5796 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R5236:5238 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R5224:5231 Authentication_Security AuthSecurity ctx_user proj
+R5233:5235 Authentication_Security <> ctx:74 var
+R5239:5242 Coq.Init.Datatypes <> Some constr
+R5244:5247 Authentication_Security <> user:77 var
+R5295:5295 Coq.Init.Logic <> ::type_scope:x_'\/'_x not
+R5549:5583 Coq.Init.Logic <> ::type_scope:x_'\/'_x not
+R5790:5790 Coq.Init.Logic <> ::type_scope:x_'\/'_x not
+R5296:5302 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+R5307:5308 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+binder 5303:5306 <> scap:78
+R5339:5361 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R5309:5310 Coq.Lists.List <> In def
+R5318:5333 Authentication_Security AuthSecurity ctx_capabilities proj
+R5335:5337 Authentication_Security <> ctx:74 var
+R5312:5315 Authentication_Security <> scap:78 var
+R5394:5416 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R5362:5384 Authentication_Security AuthSecurity valid_signed_capability def
+R5386:5388 Authentication_Security <> sys:73 var
+R5390:5393 Authentication_Security <> scap:78 var
+R5461:5483 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R5450:5452 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R5417:5428 Authentication_Security AuthSecurity cap_resource proj
+R5431:5443 Authentication_Security AuthSecurity sc_capability proj
+R5445:5448 Authentication_Security <> scap:78 var
+R5453:5460 Authentication_Security <> resource:75 var
+R5542:5544 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R5484:5497 Authentication_Security AuthSecurity has_permission def
+R5500:5514 Authentication_Security AuthSecurity cap_permissions proj
+R5517:5529 Authentication_Security AuthSecurity sc_capability proj
+R5531:5534 Authentication_Security <> scap:78 var
+R5538:5541 Authentication_Security <> perm:76 var
+R5545:5548 Coq.Init.Datatypes <> true constr
+R5584:5590 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+R5594:5595 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+binder 5591:5593 <> acl:79
+R5617:5638 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R5596:5597 Coq.Lists.List <> In def
+R5604:5611 Authentication_Security AuthSecurity sys_acls proj
+R5613:5615 Authentication_Security <> sys:73 var
+R5599:5601 Authentication_Security <> acl:79 var
+R5671:5692 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R5656:5658 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R5639:5651 Authentication_Security AuthSecurity acl_principal proj
+R5653:5655 Authentication_Security <> acl:79 var
+R5659:5665 Authentication_Security AuthSecurity user_id proj
+R5667:5670 Authentication_Security <> user:77 var
+R5720:5741 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R5709:5711 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R5693:5704 Authentication_Security AuthSecurity acl_resource proj
+R5706:5708 Authentication_Security <> acl:79 var
+R5712:5719 Authentication_Security <> resource:75 var
+R5783:5785 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R5742:5755 Authentication_Security AuthSecurity has_permission def
+R5758:5772 Authentication_Security AuthSecurity acl_permissions proj
+R5774:5776 Authentication_Security <> acl:79 var
+R5779:5782 Authentication_Security <> perm:76 var
+R5786:5789 Coq.Init.Datatypes <> true constr
+prf 5886:5907 AuthSecurity no_access_without_auth
+binder 5920:5922 <> sys:80
+binder 5924:5926 <> ctx:81
+binder 5928:5935 <> resource:82
+binder 5937:5940 <> perm:83
+R5979:5986 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R5947:5956 Authentication_Security AuthSecurity has_access def
+R5958:5960 Authentication_Security <> sys:80 var
+R5962:5964 Authentication_Security <> ctx:81 var
+R5966:5973 Authentication_Security <> resource:82 var
+R5975:5978 Authentication_Security <> perm:83 var
+R5987:5999 Authentication_Security AuthSecurity authenticated ind
+R6001:6003 Authentication_Security <> sys:80 var
+R6005:6007 Authentication_Security <> ctx:81 var
+R6060:6069 Authentication_Security AuthSecurity has_access def
+prf 6186:6213 AuthSecurity expired_capability_no_access
+binder 6226:6228 <> sys:84
+binder 6230:6232 <> ctx:85
+binder 6234:6241 <> resource:86
+binder 6243:6246 <> perm:87
+binder 6248:6251 <> scap:88
+R6316:6323 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R6278:6280 Coq.Init.Peano <> ::nat_scope:x_'>'_x not
+R6258:6273 Authentication_Security AuthSecurity sys_current_time proj
+R6275:6277 Authentication_Security <> sys:84 var
+R6281:6294 Authentication_Security AuthSecurity cap_expires_at proj
+R6297:6309 Authentication_Security AuthSecurity sc_capability proj
+R6311:6314 Authentication_Security <> scap:88 var
+R6324:6325 Coq.Init.Logic <> ::type_scope:'~'_x not
+R6607:6607 Coq.Init.Logic <> ::type_scope:'~'_x not
+R6326:6335 Authentication_Security AuthSecurity has_access def
+R6337:6339 Authentication_Security <> sys:84 var
+R6342:6353 Authentication_Security AuthSecurity mkSecContext constr
+R6356:6363 Authentication_Security AuthSecurity ctx_user proj
+R6365:6367 Authentication_Security <> ctx:85 var
+R6406:6419 Authentication_Security AuthSecurity AuthCapability constr
+R6421:6424 Authentication_Security <> scap:88 var
+R6462:6462 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R6467:6467 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R6463:6466 Authentication_Security <> scap:88 var
+R6505:6512 Authentication_Security AuthSecurity ctx_time proj
+R6514:6516 Authentication_Security <> ctx:85 var
+R6555:6570 Authentication_Security AuthSecurity ctx_mfa_verified proj
+R6572:6574 Authentication_Security <> ctx:85 var
+R6594:6601 Authentication_Security <> resource:86 var
+R6603:6606 Authentication_Security <> perm:87 var
+R6680:6689 Authentication_Security AuthSecurity has_access def
+R6824:6846 Authentication_Security AuthSecurity valid_signed_capability def
+R6849:6864 Authentication_Security AuthSecurity valid_capability def
+prf 7001:7028 AuthSecurity revoked_capability_no_access
+binder 7041:7043 <> sys:89
+binder 7045:7047 <> ctx:90
+binder 7049:7056 <> resource:91
+binder 7058:7061 <> perm:92
+binder 7063:7066 <> scap:93
+R7123:7130 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R7073:7074 Coq.Lists.List <> In def
+R7107:7117 Authentication_Security AuthSecurity sys_revoked proj
+R7119:7121 Authentication_Security <> sys:89 var
+R7077:7082 Authentication_Security AuthSecurity cap_id proj
+R7085:7097 Authentication_Security AuthSecurity sc_capability proj
+R7099:7102 Authentication_Security <> scap:93 var
+R7131:7132 Coq.Init.Logic <> ::type_scope:'~'_x not
+R7414:7414 Coq.Init.Logic <> ::type_scope:'~'_x not
+R7133:7142 Authentication_Security AuthSecurity has_access def
+R7144:7146 Authentication_Security <> sys:89 var
+R7149:7160 Authentication_Security AuthSecurity mkSecContext constr
+R7163:7170 Authentication_Security AuthSecurity ctx_user proj
+R7172:7174 Authentication_Security <> ctx:90 var
+R7213:7226 Authentication_Security AuthSecurity AuthCapability constr
+R7228:7231 Authentication_Security <> scap:93 var
+R7269:7269 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R7274:7274 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R7270:7273 Authentication_Security <> scap:93 var
+R7312:7319 Authentication_Security AuthSecurity ctx_time proj
+R7321:7323 Authentication_Security <> ctx:90 var
+R7362:7377 Authentication_Security AuthSecurity ctx_mfa_verified proj
+R7379:7381 Authentication_Security <> ctx:90 var
+R7401:7408 Authentication_Security <> resource:91 var
+R7410:7413 Authentication_Security <> perm:92 var
+R7487:7496 Authentication_Security AuthSecurity has_access def
+R7631:7653 Authentication_Security AuthSecurity valid_signed_capability def
+R7656:7671 Authentication_Security AuthSecurity valid_capability def
+def 7843:7861 AuthSecurity delegate_capability
+R7870:7879 Authentication_Security AuthSecurity Capability rec
+binder 7864:7866 <> cap:94
+R7897:7902 Authentication_Security AuthSecurity UserId def
+binder 7883:7893 <> new_subject:95
+R7907:7916 Authentication_Security AuthSecurity Capability rec
+R7923:7934 Authentication_Security AuthSecurity mkCapability constr
+R7947:7949 Coq.Init.Peano <> ::nat_scope:x_'+'_x not
+R7937:7942 Authentication_Security AuthSecurity cap_id proj
+R7944:7946 Authentication_Security <> cap:94 var
+R7985:7995 Authentication_Security AuthSecurity cap_subject proj
+R7997:7999 Authentication_Security <> cap:94 var
+R8051:8061 Authentication_Security <> new_subject:95 var
+R8079:8090 Authentication_Security AuthSecurity cap_resource proj
+R8092:8094 Authentication_Security <> cap:94 var
+R8113:8127 Authentication_Security AuthSecurity cap_permissions proj
+R8129:8131 Authentication_Security <> cap:94 var
+R8150:8162 Authentication_Security AuthSecurity cap_issued_at proj
+R8164:8166 Authentication_Security <> cap:94 var
+R8185:8198 Authentication_Security AuthSecurity cap_expires_at proj
+R8200:8202 Authentication_Security <> cap:94 var
+R8221:8232 Authentication_Security AuthSecurity cap_max_uses proj
+R8234:8236 Authentication_Security <> cap:94 var
+R8254:8258 Coq.Init.Datatypes <> false constr
+prf 8332:8350 AuthSecurity delegation_security
+binder 8363:8365 <> sys:96
+binder 8367:8369 <> cap:97
+binder 8371:8381 <> new_subject:98
+R8412:8419 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R8388:8403 Authentication_Security AuthSecurity valid_capability def
+R8405:8407 Authentication_Security <> sys:96 var
+R8409:8411 Authentication_Security <> cap:97 var
+R8453:8536 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R8446:8448 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R8420:8441 Authentication_Security AuthSecurity cap_delegation_allowed proj
+R8443:8445 Authentication_Security <> cap:97 var
+R8449:8452 Coq.Init.Datatypes <> true constr
+R8578:8585 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R8537:8537 Coq.Init.Logic <> ::type_scope:'~'_x not
+R8538:8539 Coq.Lists.List <> In def
+R8562:8572 Authentication_Security AuthSecurity sys_revoked proj
+R8574:8576 Authentication_Security <> sys:96 var
+R8552:8554 Coq.Init.Peano <> ::nat_scope:x_'+'_x not
+R8542:8547 Authentication_Security AuthSecurity cap_id proj
+R8549:8551 Authentication_Security <> cap:97 var
+R8586:8601 Authentication_Security AuthSecurity valid_capability def
+R8603:8605 Authentication_Security <> sys:96 var
+R8608:8626 Authentication_Security AuthSecurity delegate_capability def
+R8628:8630 Authentication_Security <> cap:97 var
+R8632:8642 Authentication_Security <> new_subject:98 var
+R8713:8728 Authentication_Security AuthSecurity valid_capability def
+R8731:8749 Authentication_Security AuthSecurity delegate_capability def
+rec 8994:9002 AuthSecurity RateLimit
+proj 9030:9044 AuthSecurity rl_max_requests
+proj 9055:9068 AuthSecurity rl_time_window
+proj 9080:9098 AuthSecurity rl_current_requests
+proj 9109:9123 AuthSecurity rl_window_start
+R9048:9050 Coq.Init.Datatypes <> nat ind
+R9072:9075 Authentication_Security AuthSecurity Time def
+R9102:9104 Coq.Init.Datatypes <> nat ind
+R9127:9130 Authentication_Security AuthSecurity Time def
+def 9147:9162 AuthSecurity check_rate_limit
+R9170:9178 Authentication_Security AuthSecurity RateLimit rec
+binder 9165:9166 <> rl:104
+R9197:9200 Authentication_Security AuthSecurity Time def
+binder 9182:9193 <> current_time:105
+R9205:9208 Coq.Init.Datatypes <> bool ind
+R9218:9224 Coq.Arith.PeanoNat Nat ltb def
+R9226:9237 Authentication_Security <> current_time:105 var
+R9258:9260 Coq.Init.Peano <> ::nat_scope:x_'+'_x not
+R9240:9254 Authentication_Security AuthSecurity rl_window_start proj
+R9256:9257 Authentication_Security <> rl:104 var
+R9261:9274 Authentication_Security AuthSecurity rl_time_window proj
+R9276:9277 Authentication_Security <> rl:104 var
+R9348:9351 Coq.Init.Datatypes <> true constr
+R9287:9293 Coq.Arith.PeanoNat Nat ltb def
+R9296:9314 Authentication_Security AuthSecurity rl_current_requests proj
+R9316:9317 Authentication_Security <> rl:104 var
+R9321:9335 Authentication_Security AuthSecurity rl_max_requests proj
+R9337:9338 Authentication_Security <> rl:104 var
+prf 9380:9394 AuthSecurity mfa_enforcement
+binder 9407:9409 <> sys:106
+binder 9411:9413 <> ctx:107
+binder 9415:9422 <> resource:108
+binder 9424:9427 <> perm:109
+R9461:9468 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R9454:9456 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R9434:9444 Authentication_Security AuthSecurity require_mfa def
+R9446:9453 Authentication_Security <> resource:108 var
+R9457:9460 Coq.Init.Datatypes <> true constr
+R9501:9508 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R9469:9478 Authentication_Security AuthSecurity has_access def
+R9480:9482 Authentication_Security <> sys:106 var
+R9484:9486 Authentication_Security <> ctx:107 var
+R9488:9495 Authentication_Security <> resource:108 var
+R9497:9500 Authentication_Security <> perm:109 var
+R9529:9531 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R9509:9524 Authentication_Security AuthSecurity ctx_mfa_verified proj
+R9526:9528 Authentication_Security <> ctx:107 var
+R9532:9535 Coq.Init.Datatypes <> true constr
+R9603:9612 Authentication_Security AuthSecurity has_access def
+prf 9825:9846 AuthSecurity no_plaintext_passwords
+binder 9859:9861 <> sys:110
+binder 9863:9866 <> user:111
+binder 9868:9882 <> password_string:112
+R9912:9973 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R9889:9890 Coq.Lists.List <> In def
+R9898:9906 Authentication_Security AuthSecurity sys_users proj
+R9908:9910 Authentication_Security <> sys:110 var
+R9892:9895 Authentication_Security <> user:111 var
+R9974:9975 Coq.Init.Logic <> ::type_scope:'~'_x not
+R10049:10049 Coq.Init.Logic <> ::type_scope:'~'_x not
+R9976:9982 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+R9986:9987 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+binder 9983:9985 <> ctx:113
+R10002:10004 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R9988:9997 Authentication_Security AuthSecurity ctx_method proj
+R9999:10001 Authentication_Security <> ctx:113 var
+R10005:10016 Authentication_Security AuthSecurity AuthPassword constr
+R10019:10031 Coq.Strings.String <> length def
+R10033:10047 Authentication_Security <> password_string:112 var
+def 10249:10267 AuthSecurity minimal_permissions
+R10278:10290 Authentication_Security AuthSecurity PermissionSet def
+binder 10270:10274 <> perms:114
+R10305:10314 Authentication_Security AuthSecurity Permission ind
+binder 10294:10301 <> required:115
+R10365:10370 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R10358:10360 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R10329:10342 Authentication_Security AuthSecurity has_permission def
+R10344:10348 Authentication_Security <> perms:114 var
+R10350:10357 Authentication_Security <> required:115 var
+R10361:10364 Coq.Init.Datatypes <> true constr
+binder 10378:10378 <> p:116
+R10394:10397 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R10382:10385 Coq.Init.Logic <> ::type_scope:x_'<>'_x not
+R10381:10381 Authentication_Security <> p:116 var
+R10386:10393 Authentication_Security <> required:115 var
+R10420:10422 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R10398:10411 Authentication_Security AuthSecurity has_permission def
+R10413:10417 Authentication_Security <> perms:114 var
+R10419:10419 Authentication_Security <> p:116 var
+R10423:10427 Coq.Init.Datatypes <> false constr
+prf 10439:10453 AuthSecurity least_privilege
+binder 10466:10468 <> sys:117
+binder 10470:10472 <> ctx:118
+binder 10474:10481 <> resource:119
+binder 10483:10486 <> perm:120
+R10525:10591 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R10493:10502 Authentication_Security AuthSecurity has_access def
+R10504:10506 Authentication_Security <> sys:117 var
+R10508:10510 Authentication_Security <> ctx:118 var
+R10512:10519 Authentication_Security <> resource:119 var
+R10521:10524 Authentication_Security <> perm:120 var
+R10592:10592 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R10840:10925 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R10593:10599 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+R10604:10605 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+binder 10600:10603 <> scap:121
+R10636:10656 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R10606:10607 Coq.Lists.List <> In def
+R10615:10630 Authentication_Security AuthSecurity ctx_capabilities proj
+R10632:10634 Authentication_Security <> ctx:118 var
+R10609:10612 Authentication_Security <> scap:121 var
+R10689:10709 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R10657:10679 Authentication_Security AuthSecurity valid_signed_capability def
+R10681:10683 Authentication_Security <> sys:117 var
+R10685:10688 Authentication_Security <> scap:121 var
+R10754:10774 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R10743:10745 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R10710:10721 Authentication_Security AuthSecurity cap_resource proj
+R10724:10736 Authentication_Security AuthSecurity sc_capability proj
+R10738:10741 Authentication_Security <> scap:121 var
+R10746:10753 Authentication_Security <> resource:119 var
+R10833:10835 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R10775:10788 Authentication_Security AuthSecurity has_permission def
+R10791:10805 Authentication_Security AuthSecurity cap_permissions proj
+R10808:10820 Authentication_Security AuthSecurity sc_capability proj
+R10822:10825 Authentication_Security <> scap:121 var
+R10829:10832 Authentication_Security <> perm:120 var
+R10836:10839 Coq.Init.Datatypes <> true constr
+R10926:10932 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+R10940:10947 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+binder 10933:10939 <> min_cap:122
+R10981:10990 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R10948:10949 Coq.Lists.List <> In def
+R10960:10975 Authentication_Security AuthSecurity ctx_capabilities proj
+R10977:10979 Authentication_Security <> ctx:118 var
+R10951:10957 Authentication_Security <> min_cap:122 var
+R11038:11047 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R11027:11029 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R10991:11002 Authentication_Security AuthSecurity cap_resource proj
+R11005:11017 Authentication_Security AuthSecurity sc_capability proj
+R11019:11025 Authentication_Security <> min_cap:122 var
+R11030:11037 Authentication_Security <> resource:119 var
+R11109:11111 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R11048:11061 Authentication_Security AuthSecurity has_permission def
+R11064:11078 Authentication_Security AuthSecurity cap_permissions proj
+R11081:11093 Authentication_Security AuthSecurity sc_capability proj
+R11095:11101 Authentication_Security <> min_cap:122 var
+R11105:11108 Authentication_Security <> perm:120 var
+R11112:11115 Coq.Init.Datatypes <> true constr
+R11425:11436 Authentication_Security AuthSecurity <> mod

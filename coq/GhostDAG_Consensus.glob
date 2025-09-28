@@ -1,0 +1,431 @@
+DIGEST ea1e674f8993d3d938ced9bd79f8aec6
+FGhostDAG_Consensus
+R211:224 Coq.Lists.List <> <> lib
+R242:256 Coq.Arith.Arith <> <> lib
+R274:286 Coq.Bool.Bool <> <> lib
+R304:324 Coq.Sorting.Mergesort <> <> lib
+R342:364 Coq.Relations.Relations <> <> lib
+R382:408 Coq.Wellfounded.Wellfounded <> <> lib
+R426:442 Coq.micromega.Lia <> <> lib
+R452:464 Coq.Lists.List ListNotations <> mod
+mod 475:482 <> GhostDAG
+def 542:550 GhostDAG BlockHash
+R555:557 Coq.Init.Datatypes <> nat ind
+rec 591:595 GhostDAG Block
+proj 619:628 GhostDAG block_hash
+proj 645:657 GhostDAG block_parents
+proj 679:690 GhostDAG block_height
+proj 701:715 GhostDAG block_timestamp
+R632:640 GhostDAG_Consensus GhostDAG BlockHash def
+R661:664 Coq.Init.Datatypes <> list ind
+R666:674 GhostDAG_Consensus GhostDAG BlockHash def
+R694:696 Coq.Init.Datatypes <> nat ind
+R719:721 Coq.Init.Datatypes <> nat ind
+def 757:766 GhostDAG BlockGraph
+R771:774 Coq.Init.Datatypes <> list ind
+R776:780 GhostDAG_Consensus GhostDAG Block rec
+def 826:834 GhostDAG BlueScore
+R839:841 Coq.Init.Datatypes <> nat ind
+rec 869:876 GhostDAG DAGState
+proj 903:912 GhostDAG dag_blocks
+proj 930:941 GhostDAG dag_blue_set
+proj 963:977 GhostDAG dag_blue_scores
+R916:925 GhostDAG_Consensus GhostDAG BlockGraph def
+R945:948 Coq.Init.Datatypes <> list ind
+R950:958 GhostDAG_Consensus GhostDAG BlockHash def
+R981:984 Coq.Init.Datatypes <> list ind
+R996:998 Coq.Init.Datatypes <> ::type_scope:x_'*'_x not
+R987:995 GhostDAG_Consensus GhostDAG BlockHash def
+R999:1007 GhostDAG_Consensus GhostDAG BlueScore def
+def 1075:1083 GhostDAG get_block
+R1090:1099 GhostDAG_Consensus GhostDAG BlockGraph def
+binder 1086:1086 <> g:10
+R1107:1115 GhostDAG_Consensus GhostDAG BlockHash def
+binder 1103:1103 <> h:11
+R1120:1125 Coq.Init.Datatypes <> option ind
+R1127:1131 GhostDAG_Consensus GhostDAG Block rec
+R1144:1144 GhostDAG_Consensus <> g:10 var
+R1155:1156 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+R1161:1164 Coq.Init.Datatypes <> None constr
+R1171:1174 Coq.Init.Datatypes <> ::list_scope:x_'::'_x not
+R1186:1192 Coq.Arith.PeanoNat Nat eqb def
+R1195:1204 GhostDAG_Consensus GhostDAG block_hash proj
+R1209:1209 GhostDAG_Consensus <> h:11 var
+R1228:1236 GhostDAG_Consensus <> get_block:12 def
+R1243:1243 GhostDAG_Consensus <> h:11 var
+R1216:1219 Coq.Init.Datatypes <> Some constr
+def 1307:1317 GhostDAG is_ancestor
+R1324:1333 GhostDAG_Consensus GhostDAG BlockGraph def
+binder 1320:1320 <> g:14
+R1354:1362 GhostDAG_Consensus GhostDAG BlockHash def
+binder 1337:1344 <> ancestor:15
+binder 1346:1350 <> child:16
+R1373:1375 Coq.Init.Datatypes <> nat ind
+binder 1366:1369 <> fuel:17
+R1394:1397 Coq.Init.Datatypes <> bool ind
+R1410:1413 GhostDAG_Consensus <> fuel:17 var
+R1429:1433 Coq.Init.Datatypes <> false constr
+R1439:1439 Coq.Init.Datatypes <> S constr
+R1459:1465 Coq.Arith.PeanoNat Nat eqb def
+R1467:1474 GhostDAG_Consensus <> ancestor:15 var
+R1476:1480 GhostDAG_Consensus <> child:16 var
+R1509:1517 GhostDAG_Consensus GhostDAG get_block def
+R1519:1519 GhostDAG_Consensus <> g:14 var
+R1521:1525 GhostDAG_Consensus <> child:16 var
+R1545:1548 Coq.Init.Datatypes <> None constr
+R1553:1557 Coq.Init.Datatypes <> false constr
+R1572:1575 Coq.Init.Datatypes <> Some constr
+R1582:1588 Coq.Lists.List <> existsb def
+R1633:1645 GhostDAG_Consensus GhostDAG block_parents proj
+binder 1595:1595 <> p:20
+R1600:1610 GhostDAG_Consensus <> is_ancestor:18 def
+R1623:1623 GhostDAG_Consensus <> p:20 var
+R1614:1621 GhostDAG_Consensus <> ancestor:15 var
+R1612:1612 GhostDAG_Consensus <> g:14 var
+R1487:1490 Coq.Init.Datatypes <> true constr
+def 1718:1730 GhostDAG get_ancestors
+R1737:1746 GhostDAG_Consensus GhostDAG BlockGraph def
+binder 1733:1733 <> g:21
+R1754:1762 GhostDAG_Consensus GhostDAG BlockHash def
+binder 1750:1750 <> h:22
+R1773:1775 Coq.Init.Datatypes <> nat ind
+binder 1766:1769 <> fuel:23
+R1794:1797 Coq.Init.Datatypes <> list ind
+R1799:1807 GhostDAG_Consensus GhostDAG BlockHash def
+R1820:1823 GhostDAG_Consensus <> fuel:23 var
+R1839:1840 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+R1846:1846 Coq.Init.Datatypes <> S constr
+R1869:1877 GhostDAG_Consensus GhostDAG get_block def
+R1879:1879 GhostDAG_Consensus <> g:21 var
+R1881:1881 GhostDAG_Consensus <> h:22 var
+R1896:1899 Coq.Init.Datatypes <> None constr
+R1904:1905 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+R1915:1918 Coq.Init.Datatypes <> Some constr
+R1926:1929 Coq.Init.Datatypes <> ::list_scope:x_'::'_x not
+R1925:1925 GhostDAG_Consensus <> h:22 var
+R1930:1937 Coq.Lists.List <> flat_map def
+R1975:1987 GhostDAG_Consensus GhostDAG block_parents proj
+binder 1944:1944 <> p:26
+R1949:1961 GhostDAG_Consensus <> get_ancestors:24 def
+R1965:1965 GhostDAG_Consensus <> p:26 var
+R1963:1963 GhostDAG_Consensus <> g:21 var
+def 2119:2142 GhostDAG compute_blue_set_bounded
+R2149:2158 GhostDAG_Consensus GhostDAG BlockGraph def
+binder 2145:2145 <> g:27
+R2168:2176 GhostDAG_Consensus GhostDAG BlockHash def
+binder 2162:2164 <> tip:28
+R2181:2184 Coq.Init.Datatypes <> list ind
+R2186:2194 GhostDAG_Consensus GhostDAG BlockHash def
+R2218:2223 Coq.Init.Datatypes <> length def
+R2225:2225 GhostDAG_Consensus <> g:27 var
+binder 2205:2213 <> max_depth:29
+R2277:2289 GhostDAG_Consensus GhostDAG get_ancestors def
+R2291:2291 GhostDAG_Consensus <> g:27 var
+R2293:2295 GhostDAG_Consensus <> tip:28 var
+R2297:2305 GhostDAG_Consensus <> max_depth:29 var
+binder 2264:2272 <> ancestors:30
+R2375:2380 Coq.Lists.List <> filter def
+R2587:2595 GhostDAG_Consensus <> ancestors:30 var
+binder 2387:2387 <> b:31
+R2392:2398 Coq.Arith.PeanoNat Nat ltb def
+R2401:2406 Coq.Init.Datatypes <> length def
+R2409:2414 Coq.Lists.List <> filter def
+R2508:2516 GhostDAG_Consensus <> ancestors:30 var
+binder 2421:2422 <> b':32
+R2427:2430 Coq.Init.Datatypes <> negb def
+R2433:2443 GhostDAG_Consensus GhostDAG is_ancestor def
+R2445:2445 GhostDAG_Consensus <> g:27 var
+R2447:2447 GhostDAG_Consensus <> b:31 var
+R2449:2450 GhostDAG_Consensus <> b':32 var
+R2452:2460 GhostDAG_Consensus <> max_depth:29 var
+R2548:2555 Coq.Arith.PeanoNat Nat div2 def
+R2558:2563 Coq.Init.Datatypes <> length def
+R2565:2573 GhostDAG_Consensus <> ancestors:30 var
+def 2640:2657 GhostDAG compute_blue_score
+R2664:2673 GhostDAG_Consensus GhostDAG BlockGraph def
+binder 2660:2660 <> g:33
+R2681:2689 GhostDAG_Consensus GhostDAG BlockHash def
+binder 2677:2677 <> h:34
+R2694:2702 GhostDAG_Consensus GhostDAG BlueScore def
+R2709:2714 Coq.Init.Datatypes <> length def
+R2717:2740 GhostDAG_Consensus GhostDAG compute_blue_set_bounded def
+R2742:2742 GhostDAG_Consensus <> g:33 var
+R2744:2744 GhostDAG_Consensus <> h:34 var
+prf 2823:2846 GhostDAG get_ancestors_terminates
+binder 2859:2859 <> g:35
+binder 2861:2861 <> h:36
+binder 2863:2866 <> fuel:37
+R2904:2907 Coq.Init.Peano <> ::nat_scope:x_'<='_x not
+R2873:2878 Coq.Init.Datatypes <> length def
+R2881:2893 GhostDAG_Consensus GhostDAG get_ancestors def
+R2895:2895 GhostDAG_Consensus <> g:35 var
+R2897:2897 GhostDAG_Consensus <> h:36 var
+R2899:2902 GhostDAG_Consensus <> fuel:37 var
+R2912:2914 Coq.Init.Peano <> ::nat_scope:x_'*'_x not
+R2908:2911 GhostDAG_Consensus <> fuel:37 var
+R2915:2920 Coq.Init.Datatypes <> length def
+R2922:2922 GhostDAG_Consensus <> g:35 var
+R3000:3008 GhostDAG_Consensus GhostDAG get_block def
+R3000:3008 GhostDAG_Consensus GhostDAG get_block def
+prf 3322:3340 GhostDAG blue_set_terminates
+binder 3353:3353 <> g:38
+binder 3355:3357 <> tip:39
+R3364:3370 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+R3379:3386 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+binder 3371:3378 <> blue_set:40
+R3395:3397 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R3387:3394 GhostDAG_Consensus <> blue_set:40 var
+R3398:3421 GhostDAG_Consensus GhostDAG compute_blue_set_bounded def
+R3423:3423 GhostDAG_Consensus <> g:38 var
+R3425:3427 GhostDAG_Consensus <> tip:39 var
+R3463:3486 GhostDAG_Consensus GhostDAG compute_blue_set_bounded def
+R3463:3486 GhostDAG_Consensus GhostDAG compute_blue_set_bounded def
+prf 3609:3633 GhostDAG blue_set_subset_ancestors
+binder 3646:3646 <> g:41
+binder 3648:3650 <> tip:42
+binder 3652:3652 <> b:43
+R3696:3703 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R3659:3660 Coq.Lists.List <> In def
+R3665:3688 GhostDAG_Consensus GhostDAG compute_blue_set_bounded def
+R3690:3690 GhostDAG_Consensus <> g:41 var
+R3692:3694 GhostDAG_Consensus <> tip:42 var
+R3662:3662 GhostDAG_Consensus <> b:43 var
+R3704:3705 Coq.Lists.List <> In def
+R3710:3722 GhostDAG_Consensus GhostDAG get_ancestors def
+R3724:3724 GhostDAG_Consensus <> g:41 var
+R3726:3728 GhostDAG_Consensus <> tip:42 var
+R3731:3736 Coq.Init.Datatypes <> length def
+R3738:3738 GhostDAG_Consensus <> g:41 var
+R3707:3707 GhostDAG_Consensus <> b:43 var
+R3779:3802 GhostDAG_Consensus GhostDAG compute_blue_set_bounded def
+R3818:3826 Coq.Lists.List <> filter_In thm
+R3818:3826 Coq.Lists.List <> filter_In thm
+def 3915:3928 GhostDAG anti_monotonic
+R3945:3948 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R3935:3944 GhostDAG_Consensus GhostDAG BlockGraph def
+R3958:3961 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R3949:3957 GhostDAG_Consensus GhostDAG BlockHash def
+R3962:3965 Coq.Init.Datatypes <> list ind
+R3967:3975 GhostDAG_Consensus GhostDAG BlockHash def
+binder 3931:3931 <> f:44
+binder 3997:3997 <> g:45
+binder 3999:4000 <> b1:46
+binder 4002:4003 <> b2:47
+R4047:4054 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R4040:4042 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R4010:4020 GhostDAG_Consensus GhostDAG is_ancestor def
+R4022:4022 GhostDAG_Consensus <> g:45 var
+R4024:4025 GhostDAG_Consensus <> b1:46 var
+R4027:4028 GhostDAG_Consensus <> b2:47 var
+R4031:4036 Coq.Init.Datatypes <> length def
+R4038:4038 GhostDAG_Consensus <> g:45 var
+R4043:4046 Coq.Init.Datatypes <> true constr
+R4055:4058 Coq.Lists.List <> incl def
+R4070:4070 GhostDAG_Consensus <> f:44 var
+R4074:4075 GhostDAG_Consensus <> b1:46 var
+R4072:4072 GhostDAG_Consensus <> g:45 var
+R4061:4061 GhostDAG_Consensus <> f:44 var
+R4065:4066 GhostDAG_Consensus <> b2:47 var
+R4063:4063 GhostDAG_Consensus <> g:45 var
+prf 4140:4161 GhostDAG blue_set_deterministic
+binder 4174:4174 <> g:48
+binder 4176:4178 <> tip:49
+R4215:4217 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R4185:4208 GhostDAG_Consensus GhostDAG compute_blue_set_bounded def
+R4210:4210 GhostDAG_Consensus <> g:48 var
+R4212:4214 GhostDAG_Consensus <> tip:49 var
+R4218:4241 GhostDAG_Consensus GhostDAG compute_blue_set_bounded def
+R4243:4243 GhostDAG_Consensus <> g:48 var
+R4245:4247 GhostDAG_Consensus <> tip:49 var
+def 4358:4364 GhostDAG acyclic
+R4371:4380 GhostDAG_Consensus GhostDAG BlockGraph def
+binder 4367:4367 <> g:50
+binder 4402:4402 <> b:51
+R4411:4418 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R4405:4406 Coq.Lists.List <> In def
+R4410:4410 GhostDAG_Consensus <> g:50 var
+R4408:4408 GhostDAG_Consensus <> b:51 var
+R4473:4475 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R4419:4429 GhostDAG_Consensus GhostDAG is_ancestor def
+R4431:4431 GhostDAG_Consensus <> g:50 var
+R4434:4443 GhostDAG_Consensus GhostDAG block_hash proj
+R4445:4445 GhostDAG_Consensus <> b:51 var
+R4449:4458 GhostDAG_Consensus GhostDAG block_hash proj
+R4460:4460 GhostDAG_Consensus <> b:51 var
+R4464:4469 Coq.Init.Datatypes <> length def
+R4471:4471 GhostDAG_Consensus <> g:50 var
+R4476:4480 Coq.Init.Datatypes <> false constr
+prf 4550:4584 GhostDAG acyclic_prevents_infinite_recursion
+binder 4597:4597 <> g:52
+R4613:4620 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R4604:4610 GhostDAG_Consensus GhostDAG acyclic def
+R4612:4612 GhostDAG_Consensus <> g:52 var
+binder 4628:4630 <> tip:53
+R4633:4639 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+R4641:4642 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+binder 4640:4640 <> n:54
+R4673:4675 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R4643:4648 Coq.Init.Datatypes <> length def
+R4651:4663 GhostDAG_Consensus GhostDAG get_ancestors def
+R4665:4665 GhostDAG_Consensus <> g:52 var
+R4667:4669 GhostDAG_Consensus <> tip:53 var
+R4671:4671 GhostDAG_Consensus <> n:54 var
+R4676:4681 Coq.Init.Datatypes <> length def
+R4684:4696 GhostDAG_Consensus GhostDAG get_ancestors def
+R4698:4698 GhostDAG_Consensus <> g:52 var
+R4700:4702 GhostDAG_Consensus <> tip:53 var
+R4705:4705 Coq.Init.Datatypes <> S constr
+R4707:4707 GhostDAG_Consensus <> n:54 var
+R4754:4759 Coq.Init.Datatypes <> length def
+R4754:4759 Coq.Init.Datatypes <> length def
+def 5364:5381 GhostDAG blue_set_agreement
+R5388:5397 GhostDAG_Consensus GhostDAG BlockGraph def
+binder 5384:5384 <> g:55
+binder 5419:5422 <> tip1:56
+binder 5424:5427 <> tip2:57
+R5434:5434 Coq.Init.Logic <> ::type_scope:x_'\/'_x not
+R5540:5549 Coq.Init.Logic <> ::type_scope:x_'\/'_x not
+R5679:5679 Coq.Init.Logic <> ::type_scope:x_'\/'_x not
+binder 5442:5442 <> b:58
+R5483:5501 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R5445:5446 Coq.Lists.List <> In def
+R5451:5474 GhostDAG_Consensus GhostDAG compute_blue_set_bounded def
+R5476:5476 GhostDAG_Consensus <> g:55 var
+R5478:5481 GhostDAG_Consensus <> tip1:56 var
+R5448:5448 GhostDAG_Consensus <> b:58 var
+R5502:5503 Coq.Lists.List <> In def
+R5508:5531 GhostDAG_Consensus GhostDAG compute_blue_set_bounded def
+R5533:5533 GhostDAG_Consensus <> g:55 var
+R5535:5538 GhostDAG_Consensus <> tip2:57 var
+R5505:5505 GhostDAG_Consensus <> b:58 var
+R5550:5556 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+R5567:5574 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+binder 5557:5566 <> fork_point:59
+R5622:5631 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R5615:5617 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R5575:5585 GhostDAG_Consensus GhostDAG is_ancestor def
+R5587:5587 GhostDAG_Consensus <> g:55 var
+R5589:5598 GhostDAG_Consensus <> fork_point:59 var
+R5600:5603 GhostDAG_Consensus <> tip1:56 var
+R5606:5611 Coq.Init.Datatypes <> length def
+R5613:5613 GhostDAG_Consensus <> g:55 var
+R5618:5621 Coq.Init.Datatypes <> true constr
+R5672:5674 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R5632:5642 GhostDAG_Consensus GhostDAG is_ancestor def
+R5644:5644 GhostDAG_Consensus <> g:55 var
+R5646:5655 GhostDAG_Consensus <> fork_point:59 var
+R5657:5660 GhostDAG_Consensus <> tip2:57 var
+R5663:5668 Coq.Init.Datatypes <> length def
+R5670:5670 GhostDAG_Consensus <> g:55 var
+R5675:5678 Coq.Init.Datatypes <> true constr
+prf 5732:5751 GhostDAG blue_score_monotonic
+binder 5764:5764 <> g:60
+binder 5766:5767 <> b1:61
+binder 5769:5770 <> b2:62
+R5814:5821 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R5807:5809 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R5777:5787 GhostDAG_Consensus GhostDAG is_ancestor def
+R5789:5789 GhostDAG_Consensus <> g:60 var
+R5791:5792 GhostDAG_Consensus <> b1:61 var
+R5794:5795 GhostDAG_Consensus <> b2:62 var
+R5798:5803 Coq.Init.Datatypes <> length def
+R5805:5805 GhostDAG_Consensus <> g:60 var
+R5810:5813 Coq.Init.Datatypes <> true constr
+R5845:5848 Coq.Init.Peano <> ::nat_scope:x_'<='_x not
+R5822:5839 GhostDAG_Consensus GhostDAG compute_blue_score def
+R5841:5841 GhostDAG_Consensus <> g:60 var
+R5843:5844 GhostDAG_Consensus <> b1:61 var
+R5849:5866 GhostDAG_Consensus GhostDAG compute_blue_score def
+R5868:5868 GhostDAG_Consensus <> g:60 var
+R5870:5871 GhostDAG_Consensus <> b2:62 var
+R5913:5930 GhostDAG_Consensus GhostDAG compute_blue_score def
+R6506:6509 Coq.Init.Peano <> ::nat_scope:x_'<='_x not
+R6483:6500 GhostDAG_Consensus GhostDAG compute_blue_score def
+R6510:6527 GhostDAG_Consensus GhostDAG compute_blue_score def
+R6506:6509 Coq.Init.Peano <> ::nat_scope:x_'<='_x not
+R6483:6500 GhostDAG_Consensus GhostDAG compute_blue_score def
+R6510:6527 GhostDAG_Consensus GhostDAG compute_blue_score def
+def 6656:6670 GhostDAG eventually_blue
+R6677:6686 GhostDAG_Consensus GhostDAG BlockGraph def
+binder 6673:6673 <> g:63
+R6705:6713 GhostDAG_Consensus GhostDAG BlockHash def
+binder 6690:6701 <> honest_block:64
+R6728:6734 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+R6745:6750 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+binder 6735:6744 <> future_tip:65
+R6751:6752 Coq.Lists.List <> In def
+R6768:6791 GhostDAG_Consensus GhostDAG compute_blue_set_bounded def
+R6793:6793 GhostDAG_Consensus <> g:63 var
+R6795:6804 GhostDAG_Consensus <> future_tip:65 var
+R6754:6765 GhostDAG_Consensus <> honest_block:64 var
+prf 6852:6871 GhostDAG ghostdag_correctness
+binder 6884:6884 <> g:66
+R6900:6943 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R6891:6897 GhostDAG_Consensus GhostDAG acyclic def
+R6899:6899 GhostDAG_Consensus <> g:66 var
+R6944:6944 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R7015:7068 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+binder 6952:6954 <> tip:67
+R6957:6963 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+R6972:6973 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+binder 6964:6971 <> blue_set:68
+R6982:6984 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R6974:6981 GhostDAG_Consensus <> blue_set:68 var
+R6985:7008 GhostDAG_Consensus GhostDAG compute_blue_set_bounded def
+R7010:7010 GhostDAG_Consensus <> g:66 var
+R7012:7014 GhostDAG_Consensus <> tip:67 var
+R7069:7069 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R7180:7237 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+binder 7077:7079 <> tip:69
+binder 7081:7081 <> b:70
+R7121:7142 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R7084:7085 Coq.Lists.List <> In def
+R7090:7113 GhostDAG_Consensus GhostDAG compute_blue_set_bounded def
+R7115:7115 GhostDAG_Consensus <> g:66 var
+R7117:7119 GhostDAG_Consensus <> tip:69 var
+R7087:7087 GhostDAG_Consensus <> b:70 var
+R7143:7144 Coq.Lists.List <> In def
+R7149:7161 GhostDAG_Consensus GhostDAG get_ancestors def
+R7163:7163 GhostDAG_Consensus <> g:66 var
+R7165:7167 GhostDAG_Consensus <> tip:69 var
+R7170:7175 Coq.Init.Datatypes <> length def
+R7177:7177 GhostDAG_Consensus <> g:66 var
+R7146:7146 GhostDAG_Consensus <> b:70 var
+R7238:7238 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R7314:7362 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R7487:7487 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+binder 7246:7248 <> tip:71
+R7281:7283 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R7251:7274 GhostDAG_Consensus GhostDAG compute_blue_set_bounded def
+R7276:7276 GhostDAG_Consensus <> g:66 var
+R7278:7280 GhostDAG_Consensus <> tip:71 var
+R7284:7307 GhostDAG_Consensus GhostDAG compute_blue_set_bounded def
+R7309:7309 GhostDAG_Consensus <> g:66 var
+R7311:7313 GhostDAG_Consensus <> tip:71 var
+binder 7370:7371 <> b1:72
+binder 7373:7374 <> b2:73
+R7414:7436 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R7407:7409 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R7377:7387 GhostDAG_Consensus GhostDAG is_ancestor def
+R7389:7389 GhostDAG_Consensus <> g:66 var
+R7391:7392 GhostDAG_Consensus <> b1:72 var
+R7394:7395 GhostDAG_Consensus <> b2:73 var
+R7398:7403 Coq.Init.Datatypes <> length def
+R7405:7405 GhostDAG_Consensus <> g:66 var
+R7410:7413 Coq.Init.Datatypes <> true constr
+R7460:7463 Coq.Init.Peano <> ::nat_scope:x_'<='_x not
+R7437:7454 GhostDAG_Consensus GhostDAG compute_blue_score def
+R7456:7456 GhostDAG_Consensus <> g:66 var
+R7458:7459 GhostDAG_Consensus <> b1:72 var
+R7464:7481 GhostDAG_Consensus GhostDAG compute_blue_score def
+R7483:7483 GhostDAG_Consensus <> g:66 var
+R7485:7486 GhostDAG_Consensus <> b2:73 var
+R7569:7587 GhostDAG_Consensus GhostDAG blue_set_terminates thm
+R7569:7587 GhostDAG_Consensus GhostDAG blue_set_terminates thm
+R7614:7638 GhostDAG_Consensus GhostDAG blue_set_subset_ancestors thm
+R7614:7638 GhostDAG_Consensus GhostDAG blue_set_subset_ancestors thm
+R7663:7684 GhostDAG_Consensus GhostDAG blue_set_deterministic thm
+R7663:7684 GhostDAG_Consensus GhostDAG blue_set_deterministic thm
+R7711:7730 GhostDAG_Consensus GhostDAG blue_score_monotonic prfax
+R7711:7730 GhostDAG_Consensus GhostDAG blue_score_monotonic prfax
+R8154:8161 GhostDAG_Consensus GhostDAG <> mod
