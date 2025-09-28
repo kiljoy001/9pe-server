@@ -47,6 +47,9 @@ if-addrs = "0.10"
 # System interface
 libc = "0.2"
 
+# Local 9P.e protocol implementation
+ninepee = { path = "../9PE" }
+
 # UUID generation
 uuid = { version = "1.0", features = ["v4", "serde"] }
 
@@ -54,7 +57,30 @@ uuid = { version = "1.0", features = ["v4", "serde"] }
 directories = "5.0"
 
 # Date/time handling
-chrono = "0.4"
+chrono = { version = "0.4", features = ["serde"] }
+
+# WASM support for translators
+wasmtime = "27.0"
+wasmtime-wasi = "27.0"
+wasm-encoder = "0.38"
+wasmparser = "0.118"
+
+# Additional dependencies for translator system
+futures = "0.3"
+regex = "1.10"
+once_cell = "1.19"
+toml = "0.8"
+bincode = "1.3"
+rand = "0.8"
+
+# FUSE filesystem support for mounting
+fuser = "0.14"
+
+# Hex encoding
+hex = "0.4"
+
+# Pattern matching
+lazy_static = "1.4"
 
 [dev-dependencies]
 # Testing

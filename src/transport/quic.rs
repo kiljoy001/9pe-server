@@ -71,7 +71,10 @@ pub struct QuicListener {
 #[async_trait]
 impl ConnectionListener for QuicListener {
     async fn accept(&self) -> Result<Box<dyn Connection>> {
+        // Mock implementation: block indefinitely since we don't have real QUIC
         // In real implementation: accept from quinn endpoint
+        tokio::time::sleep(tokio::time::Duration::from_secs(86400)).await;
+
         Ok(Box::new(QuicConnection {
             peer_addr: self.addr,
         }))

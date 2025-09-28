@@ -18,6 +18,8 @@ pub struct ServerBuilder {
     mesh_port: u16,
     metrics_enabled: bool,
     metrics_port: u16,
+    translator_directory: Option<PathBuf>,
+    settrans_directory: Option<PathBuf>,
 }
 
 impl ServerBuilder {
@@ -32,6 +34,8 @@ impl ServerBuilder {
             mesh_port: 9650,
             metrics_enabled: true,
             metrics_port: 9090,
+            translator_directory: None,
+            settrans_directory: None,
         }
     }
 
@@ -80,6 +84,16 @@ impl ServerBuilder {
         self
     }
 
+    pub fn translator_directory(mut self, path: PathBuf) -> Self {
+        self.translator_directory = Some(path);
+        self
+    }
+
+    pub fn settrans_directory(mut self, path: PathBuf) -> Self {
+        self.settrans_directory = Some(path);
+        self
+    }
+
     pub async fn build(self) -> Result<Server> {
         let config = ServerConfig {
             network: self.network_config.unwrap_or_default(),
@@ -91,6 +105,8 @@ impl ServerBuilder {
             mesh_port: self.mesh_port,
             metrics_enabled: self.metrics_enabled,
             metrics_port: self.metrics_port,
+            translator_directory: self.translator_directory.unwrap_or_else(|| PathBuf::from("/srv/translators")),
+            settrans_directory: self.settrans_directory.unwrap_or_else(|| PathBuf::from("/settrans")),
         };
 
         Server::new(config).await

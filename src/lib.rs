@@ -45,7 +45,9 @@ pub mod cli;
 pub mod error;
 pub mod network;
 pub mod server;
+pub mod settrans;
 pub mod transport;
+pub mod wasm;
 
 // Re-export commonly used types for convenience
 pub use server::{Server, ServerConfig};
