@@ -2,6 +2,10 @@
 //!
 //! This server bridges the formally-verified 9PE protocol to actual filesystem operations
 
+#![allow(unused_imports)]
+#![allow(unused_variables)]
+#![allow(dead_code)]
+
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 use std::net::SocketAddr;
@@ -11,7 +15,7 @@ use anyhow::{Result, Context};
 use tracing::{info, warn, error};
 use tracing_subscriber::{
     self, EnvFilter, Layer,
-    fmt::{format::Format, time::SystemTime},
+    fmt,
     layer::SubscriberExt,
     util::SubscriberInitExt,
 };
@@ -33,6 +37,7 @@ mod rate_limit;
 mod session;
 mod security_headers;
 mod simple_fuse;
+mod fuse_mount;  // FUSE client for mounting 9P servers
 // mod integrated_server;  // Disabled - needs protocol API updates
 mod global_event_chain;  // Global event ordering
 // mod blockchain_mesh;     // Deprecated - use namespace_consensus instead
@@ -59,7 +64,6 @@ mod wasm_translator;
 mod settrans;
 
 // Use the basic filesystem server for now
-use server::FileSystemServer;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -847,7 +851,15 @@ async fn serve_directory(
         }
     };
 
-    // Mount namespace filesystem for /srv and /n/ directories
+    // Initialize Plan 9 namespace directories (/srv and /n/)
+    info!("📁 Initializing Plan 9 namespace directories");
+    if let Err(e) = crate::fuse_mount::initialize_plan9_namespace().await {
+        warn!("Failed to initialize Plan 9 namespace directories: {}", e);
+    } else {
+        info!("✅ Plan 9 namespace directories initialized (/srv and /n/)");
+    }
+
+    // Mount namespace filesystem for service discovery (optional)
     let fuse_mounted = if mesh_peers.is_some() {
         info!("📁 Mounting namespace filesystem at /tmp/9pe-namespace");
 
@@ -944,6 +956,14 @@ async fn start_tcp_server(path: PathBuf, addr: SocketAddr, fuse_mounted: bool) -
             // Handle shutdown signal
             _ = shutdown_clone.notified() => {
                 info!("🛑 Shutting down TCP server gracefully...");
+
+                // Cleanup Plan 9 namespace directories
+                info!("🧹 Cleaning up Plan 9 namespace directories");
+                if let Err(e) = crate::fuse_mount::cleanup_plan9_namespace().await {
+                    error!("Failed to cleanup Plan 9 namespace directories: {}", e);
+                } else {
+                    info!("✅ Plan 9 namespace directories cleaned up (/srv and /n/)");
+                }
 
                 // Cleanup FUSE mount if it was created
                 if fuse_mounted {
@@ -1068,7 +1088,7 @@ async fn handle_authenticated_tcp_connection(
     peer_addr: std::net::SocketAddr
 ) -> Result<()> {
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
-    use plan9e::protocol::NinePeeMessage;
+    use ninepee::NinePeeMessage;
     use tokio::time::{timeout, Duration};
 
     info!("Starting authenticated 9P.e session from {}", peer_addr);
@@ -1319,6 +1339,14 @@ async fn start_quic_server(path: PathBuf, addr: SocketAddr, server_name: String,
             _ = shutdown_clone.notified() => {
                 info!("🛑 Shutting down QUIC server gracefully...");
 
+                // Cleanup Plan 9 namespace directories
+                info!("🧹 Cleaning up Plan 9 namespace directories");
+                if let Err(e) = crate::fuse_mount::cleanup_plan9_namespace().await {
+                    error!("Failed to cleanup Plan 9 namespace directories: {}", e);
+                } else {
+                    info!("✅ Plan 9 namespace directories cleaned up (/srv and /n/)");
+                }
+
                 // Cleanup FUSE mount if it was created
                 if fuse_mounted {
                     info!("🔧 Unmounting FUSE filesystem...");
@@ -1404,7 +1432,7 @@ async fn handle_authenticated_quic_stream(
     fs_server: Arc<server::FileSystemServer>,
     auth_service: Arc<auth::AuthService>
 ) -> Result<()> {
-    use plan9e::protocol::NinePeeMessage;
+    use ninepee::NinePeeMessage;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
     info!("Handling new authenticated QUIC stream");
@@ -1881,7 +1909,7 @@ async fn show_status() -> Result<()> {
 
     // System info
     println!("\n🖥️  System Information:");
-    println!("  Host: {}", whoami::hostname());
+    println!("  Host: {}", whoami::fallible::hostname().unwrap_or_else(|_| "unknown".to_string()));
     println!("  User: {}", whoami::username());
     println!("  Platform: {}", std::env::consts::OS);
     println!("  Architecture: {}", std::env::consts::ARCH);

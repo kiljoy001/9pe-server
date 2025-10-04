@@ -7,7 +7,8 @@ use std::collections::HashMap;
 use tokio::sync::RwLock;
 use anyhow::{Result, Context};
 use sha2::{Sha256, Digest};
-use ed25519_dalek::{PublicKey, Signature, Verifier};
+use ed25519_dalek::{VerifyingKey, Signature, Verifier};
+use base64::{Engine as _, engine::general_purpose};
 
 use crate::auth::{AuthService, Permissions, SignedCapability};
 use crate::wasm_composition::{WasmComposer, WasmTranslator};
@@ -28,7 +29,7 @@ pub struct WasmSecurityPolicy {
     /// Required signatures for module loading
     pub require_signed_modules: bool,
     /// Trusted signers (public keys)
-    pub trusted_signers: Vec<PublicKey>,
+    pub trusted_signers: Vec<VerifyingKey>,
 }
 
 #[derive(Debug, Clone)]
@@ -118,8 +119,8 @@ impl WasmModuleRegistry {
 
         // 3. Verify signature if required
         if self.policy.require_signed_modules {
-            let signature = signature.ok_or_else(|| anyhow::anyhow!("Module signature required"))?;
-            self.verify_module_signature(&bytes, &signature)?;
+            let sig = signature.as_ref().ok_or_else(|| anyhow::anyhow!("Module signature required"))?;
+            self.verify_module_signature(&bytes, sig)?;
         }
 
         // 4. Validate WASM module structure
@@ -305,8 +306,8 @@ impl SyntheticFile for WasmCtlFile {
                 }
 
                 let name = parts[1].to_string();
-                let wasm_bytes = base64::decode(parts[2])?;
-                let signature = base64::decode(parts[3]).ok();
+                let wasm_bytes = general_purpose::STANDARD.decode(parts[2])?;
+                let signature = general_purpose::STANDARD.decode(parts[3]).ok();
                 let cap_json = parts[4..].join(" ");
                 let capability: SignedCapability = serde_json::from_str(&cap_json)?;
 

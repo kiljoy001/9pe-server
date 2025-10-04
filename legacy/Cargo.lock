@@ -4121,6 +4121,7 @@ checksum = "650eef8c711430f1a879fdd01d4745a7deea475becfb90269c06775983bbf086"
 [[package]]
 name = "ninepee"
 version = "1.0.0"
+source = "git+https://github.com/kiljoy001/9PE.git?branch=main#13c022f812145dcc8593231a93c03c176b939a74"
 dependencies = [
  "bincode",
  "blake3",

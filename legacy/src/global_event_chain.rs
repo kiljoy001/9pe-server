@@ -10,7 +10,7 @@ use anyhow::Result;
 use tracing::{info, warn, debug};
 use serde::{Serialize, Deserialize};
 
-use crate::ghostdag::{GhostDAG, Block, BlockHash, hash_to_string};
+use crate::ghostdag::{GhostDAG, BlockHash, hash_to_string};
 use crate::mesh::{MeshMessage, MeshNetwork};
 
 /// Global event that needs ordering

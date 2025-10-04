@@ -9,11 +9,11 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 use anyhow::{Result, Context, bail};
 use serde::{Serialize, Deserialize};
-use tracing::{info, warn, error, debug};
+use tracing::{info, debug};
 use uuid::Uuid;
 
 #[cfg(feature = "wasm")]
-use wasmtime::{Engine, Module, Store, Instance, Func, TypedFunc};
+use wasmtime::{Engine, Module, Store, Instance};
 
 /// Translator manifest embedded in WASM modules
 #[derive(Debug, Clone, Serialize, Deserialize)]

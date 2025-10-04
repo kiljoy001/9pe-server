@@ -1,0 +1,1813 @@
+//! Message handler - implements actual 9P.e protocol processing
+
+use anyhow::Result;
+use std::path::{Path, PathBuf};
+use std::fs::{self, File, OpenOptions};
+use std::io::{Read, Write, Seek, SeekFrom};
+use std::sync::Arc;
+use std::collections::HashMap;
+use tokio::sync::RwLock;
+use tracing::{debug, error, warn, info};
+use ninepee::protocol::{
+    NinePeeMessage, ConnectionState, FileHandle,
+    NINEPEE_VERSION, LEGACY_VERSION, MAX_MESSAGE_SIZE
+};
+use crate::wasm::ThreadSafeTranslatorRegistry;
+use crate::settrans::VirtualSettransSystem;
+use crate::synth::SyntheticFilesystem;
+
+/// Stream state for async streaming with flow control
+#[derive(Debug, Clone)]
+struct StreamState {
+    stream_id: u32,
+    fid: u32,
+    mode: u8,
+    chunks_received: std::collections::BTreeSet<u32>,
+    expected_chunks: u32,
+    data_buffer: Vec<u8>,
+    buffer_limit: usize,
+    flow_control_window: u32,
+    created_at: std::time::Instant,
+    last_activity: std::time::Instant,
+}
+
+/// Capability entry with permission flags
+#[derive(Debug, Clone)]
+struct Capability {
+    cap_id: u64,
+    fid: u32,
+    permissions: CapabilityPermissions,
+    granted_at: std::time::Instant,
+    expires_at: Option<std::time::Instant>,
+    scope: CapabilityScope,
+}
+
+/// Permission flags for capabilities
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct CapabilityPermissions {
+    flags: u32,
+}
+
+impl CapabilityPermissions {
+    const READ: u32 = 0x01;
+    const WRITE: u32 = 0x02;
+    const EXECUTE: u32 = 0x04;
+    const DELETE: u32 = 0x08;
+    const CREATE: u32 = 0x10;
+    const ADMIN: u32 = 0x20;
+    const STREAM: u32 = 0x40;
+    const TRANSLATOR: u32 = 0x80;
+
+    fn new(flags: u32) -> Self {
+        Self { flags }
+    }
+
+    fn can_read(self) -> bool {
+        self.flags & Self::READ != 0
+    }
+
+    fn can_write(self) -> bool {
+        self.flags & Self::WRITE != 0
+    }
+
+    fn can_execute(self) -> bool {
+        self.flags & Self::EXECUTE != 0
+    }
+
+    fn can_delete(self) -> bool {
+        self.flags & Self::DELETE != 0
+    }
+
+    fn can_create(self) -> bool {
+        self.flags & Self::CREATE != 0
+    }
+
+    fn can_admin(self) -> bool {
+        self.flags & Self::ADMIN != 0
+    }
+
+    fn can_stream(self) -> bool {
+        self.flags & Self::STREAM != 0
+    }
+
+    fn can_manage_translators(self) -> bool {
+        self.flags & Self::TRANSLATOR != 0
+    }
+}
+
+/// Scope of capability application
+#[derive(Debug, Clone)]
+enum CapabilityScope {
+    Global,
+    Path(String),
+    Fid(u32),
+    Directory(String),
+}
+
+/// GHOSTDAG block information for consensus
+#[derive(Debug, Clone)]
+struct ConsensusBlock {
+    hash: [u8; 32],
+    parents: Vec<[u8; 32]>,
+    blue_score: u64,
+    is_blue: bool,
+    votes_for: u32,
+    votes_against: u32,
+    proposed_at: std::time::Instant,
+    status: BlockStatus,
+}
+
+/// Status of a consensus block
+#[derive(Debug, Clone, PartialEq)]
+enum BlockStatus {
+    Proposed,
+    Voting,
+    Accepted,
+    Rejected,
+    Committed,
+}
+
+/// GHOSTDAG consensus state
+#[derive(Debug)]
+struct ConsensusState {
+    blocks: std::collections::HashMap<[u8; 32], ConsensusBlock>,
+    tip_hashes: std::collections::HashSet<[u8; 32]>,
+    virtual_block_blue_score: u64,
+    vote_threshold: u32, // Minimum votes needed to accept
+    finality_depth: u32, // Blocks need this many confirmations to be final
+}
+
+/// Multiplex channel state
+#[derive(Debug, Clone)]
+struct MultiplexChannel {
+    channel_id: u32,
+    priority: u8,
+    created_at: std::time::Instant,
+}
+
+/// Handles 9P.e protocol messages with actual filesystem operations
+pub struct MessageHandler {
+    root: PathBuf,
+    max_message_size: u32,
+    connection_state: ConnectionState,
+    next_fid: u32,
+    translator_registry: Arc<ThreadSafeTranslatorRegistry>,
+    settrans_system: Arc<VirtualSettransSystem>,
+    synth_fs: Arc<SyntheticFilesystem>,
+    // 9P.e extension state
+    streams: Arc<RwLock<HashMap<u32, StreamState>>>,
+    capabilities: Arc<RwLock<HashMap<u64, Capability>>>,
+    channels: Arc<RwLock<HashMap<u32, MultiplexChannel>>>,
+    active_translators: Arc<RwLock<HashMap<u32, PathBuf>>>,
+    // GHOSTDAG consensus state
+    consensus_state: Arc<RwLock<ConsensusState>>,
+}
+
+impl MessageHandler {
+    /// Check if the current session has the required capability for the operation
+    async fn check_capability(&self, fid: u32, required_permission: fn(CapabilityPermissions) -> bool) -> Result<bool> {
+        let capabilities = self.capabilities.read().await;
+        let now = std::time::Instant::now();
+
+        for capability in capabilities.values() {
+            // Check if capability has expired
+            if let Some(expires_at) = capability.expires_at {
+                if now > expires_at {
+                    continue; // Skip expired capabilities
+                }
+            }
+
+            // Check if capability applies to this fid
+            let applies = match &capability.scope {
+                CapabilityScope::Global => true,
+                CapabilityScope::Fid(cap_fid) => *cap_fid == fid,
+                CapabilityScope::Path(path) => {
+                    if let Some(handle) = self.connection_state.get_fid(fid) {
+                        handle.path.starts_with(path)
+                    } else {
+                        false
+                    }
+                },
+                CapabilityScope::Directory(dir) => {
+                    if let Some(handle) = self.connection_state.get_fid(fid) {
+                        handle.path.starts_with(dir)
+                    } else {
+                        false
+                    }
+                },
+            };
+
+            if applies && required_permission(capability.permissions) {
+                return Ok(true);
+            }
+        }
+
+        Ok(false)
+    }
+    pub fn new(
+        root: PathBuf,
+        max_message_size: u32,
+        translator_registry: Arc<ThreadSafeTranslatorRegistry>,
+        settrans_system: Arc<VirtualSettransSystem>,
+        synth_fs: Arc<SyntheticFilesystem>,
+    ) -> Result<Self> {
+        let connection_state = ConnectionState::new(
+            0, // connection_id will be set by server
+            NINEPEE_VERSION,
+            max_message_size.min(MAX_MESSAGE_SIZE)
+        );
+
+        Ok(Self {
+            root,
+            max_message_size: max_message_size.min(MAX_MESSAGE_SIZE),
+            connection_state,
+            next_fid: 1,
+            translator_registry,
+            settrans_system,
+            synth_fs,
+            streams: Arc::new(RwLock::new(HashMap::new())),
+            capabilities: Arc::new(RwLock::new(HashMap::new())),
+            channels: Arc::new(RwLock::new(HashMap::new())),
+            active_translators: Arc::new(RwLock::new(HashMap::new())),
+            consensus_state: Arc::new(RwLock::new(ConsensusState {
+                blocks: std::collections::HashMap::new(),
+                tip_hashes: std::collections::HashSet::new(),
+                virtual_block_blue_score: 0,
+                vote_threshold: 2, // Require at least 2 votes
+                finality_depth: 6, // 6 confirmations for finality
+            })),
+        })
+    }
+
+    /// Check if a path is virtual (handled by synthetic filesystem)
+    fn is_virtual_path(&self, path: &str) -> bool {
+        path.starts_with("/srv/") || path == "/srv"
+    }
+
+    /// Check if a path should be handled by a WASM translator
+    async fn get_translator_for_path(&self, path: &str) -> Option<String> {
+        if path.starts_with("/srv/") {
+            let path_buf = std::path::PathBuf::from(path);
+            if let Some(translator) = self.translator_registry.get_translator(&path_buf).await {
+                return Some(translator.name().to_string());
+            }
+        }
+        None
+    }
+
+    /// Process a 9P.e message and return response
+    pub async fn handle_message(&mut self, message: NinePeeMessage) -> Result<NinePeeMessage> {
+        debug!("Processing message: {:?}", message);
+
+        match message {
+            NinePeeMessage::Version { msize, version } => {
+                self.handle_version(msize, version).await
+            }
+            NinePeeMessage::Auth { afid, uname, aname, password } => {
+                self.handle_auth(afid, uname, aname, password).await
+            }
+            NinePeeMessage::Attach { fid, afid, uname, aname } => {
+                self.handle_attach(fid, afid, uname, aname).await
+            }
+            NinePeeMessage::Walk { fid, newfid, wnames } => {
+                self.handle_walk(fid, newfid, wnames).await
+            }
+            NinePeeMessage::Open { fid, mode } => {
+                self.handle_open(fid, mode).await
+            }
+            NinePeeMessage::Create { fid, name, perm, mode } => {
+                self.handle_create(fid, name, perm, mode).await
+            }
+            NinePeeMessage::Read { fid, offset, count } => {
+                self.handle_read(fid, offset, count).await
+            }
+            NinePeeMessage::Write { fid, offset, data } => {
+                self.handle_write(fid, offset, data).await
+            }
+            NinePeeMessage::Clunk { fid } => {
+                self.handle_clunk(fid).await
+            }
+            NinePeeMessage::Remove { fid } => {
+                self.handle_remove(fid).await
+            }
+            NinePeeMessage::Stat { fid } => {
+                self.handle_stat(fid).await
+            }
+            NinePeeMessage::Wstat { fid, stat } => {
+                self.handle_wstat(fid, stat).await
+            }
+            // 9P.e extensions
+            NinePeeMessage::StreamInit { stream_id, fid, mode } => {
+                self.handle_stream_init(stream_id, fid, mode).await
+            }
+            NinePeeMessage::StreamData { stream_id, chunk_id, data } => {
+                self.handle_stream_data(stream_id, chunk_id, data).await
+            }
+            NinePeeMessage::StreamEnd { stream_id, final_chunk } => {
+                self.handle_stream_end(stream_id, final_chunk).await
+            }
+            NinePeeMessage::MultiplexChannel { channel_id, priority } => {
+                self.handle_multiplex_channel(channel_id, priority).await
+            }
+            NinePeeMessage::CapabilityGrant { cap_id, fid, permissions } => {
+                self.handle_capability_grant(cap_id, fid, permissions).await
+            }
+            NinePeeMessage::CapabilityRevoke { cap_id } => {
+                self.handle_capability_revoke(cap_id).await
+            }
+            NinePeeMessage::CapabilityCheck { cap_id } => {
+                self.handle_capability_check(cap_id).await
+            }
+            NinePeeMessage::SyntheticCreate { fid, generator, params } => {
+                self.handle_synthetic_create(fid, generator, params).await
+            }
+            NinePeeMessage::SyntheticUpdate { fid, new_params } => {
+                self.handle_synthetic_update(fid, new_params).await
+            }
+            NinePeeMessage::SyntheticRefresh { fid, force } => {
+                self.handle_synthetic_refresh(fid, force).await
+            }
+            NinePeeMessage::TranslatorSpawn { translator_id, code, config } => {
+                self.handle_translator_spawn(translator_id, code, config).await
+            }
+            NinePeeMessage::TranslatorMessage { translator_id, data } => {
+                self.handle_translator_message(translator_id, data).await
+            }
+            NinePeeMessage::TranslatorKill { translator_id } => {
+                self.handle_translator_kill(translator_id).await
+            }
+            NinePeeMessage::ConsensusPropose { block_hash, parent_hashes } => {
+                self.handle_consensus_propose(block_hash, parent_hashes).await
+            }
+            NinePeeMessage::ConsensusVote { block_hash, vote } => {
+                self.handle_consensus_vote(block_hash, vote).await
+            }
+            NinePeeMessage::ConsensusCommit { block_hash, blue_score } => {
+                self.handle_consensus_commit(block_hash, blue_score).await
+            }
+            _ => {
+                error!("Unimplemented message type");
+                Ok(NinePeeMessage::Error {
+                    ename: "Operation not implemented".to_string(),
+                    errno: 95, // EOPNOTSUPP
+                })
+            }
+        }
+    }
+
+    /// Handle version negotiation
+    async fn handle_version(&mut self, msize: u32, version: String) -> Result<NinePeeMessage> {
+        debug!("Version negotiation: msize={}, version={}", msize, version);
+
+        // Negotiate protocol version
+        let negotiated_version = if version == NINEPEE_VERSION || version == LEGACY_VERSION {
+            version
+        } else {
+            LEGACY_VERSION.to_string() // Fall back to 9P2000
+        };
+
+        // Negotiate message size
+        let negotiated_msize = msize.min(self.max_message_size);
+
+        // Update connection state
+        self.connection_state.protocol_version = negotiated_version.clone();
+        self.connection_state.max_message_size = negotiated_msize;
+
+        Ok(NinePeeMessage::Version {
+            msize: negotiated_msize,
+            version: negotiated_version,
+        })
+    }
+
+    /// Handle authentication (simplified for now)
+    async fn handle_auth(&mut self, afid: u32, uname: String, aname: String, _password: Option<String>) -> Result<NinePeeMessage> {
+        debug!("Auth request: afid={}, uname={}, aname={}", afid, uname, aname);
+
+        // For now, just mark as authenticated
+        // In real implementation: verify credentials, create auth fid
+        self.connection_state.authenticated = true;
+
+        Ok(NinePeeMessage::Version {
+            msize: self.connection_state.max_message_size,
+            version: self.connection_state.protocol_version.clone(),
+        })
+    }
+
+    /// Handle attach to filesystem root
+    async fn handle_attach(&mut self, fid: u32, afid: u32, uname: String, aname: String) -> Result<NinePeeMessage> {
+        debug!("Attach: fid={}, afid={}, uname={}, aname={}", fid, afid, uname, aname);
+
+        // Create file handle for root directory
+        let handle = FileHandle {
+            fid,
+            path: "/".to_string(),
+            mode: 0, // Directory
+            offset: 0,
+            synthetic: false,
+            translator_id: None,
+        };
+
+        self.connection_state.add_fid(fid, handle);
+
+        // Get root directory stats
+        let root_metadata = match std::fs::metadata(&self.root) {
+            Ok(meta) => meta,
+            Err(e) => return Ok(NinePeeMessage::Error {
+                ename: format!("Failed to stat root: {}", e),
+                errno: 2, // ENOENT
+            }),
+        };
+
+        let stat_data = self.format_stat_data(&root_metadata, "/", "/");
+        Ok(NinePeeMessage::Stat { fid })
+    }
+
+    /// Handle walk through directory tree
+    async fn handle_walk(&mut self, fid: u32, newfid: u32, wnames: Vec<String>) -> Result<NinePeeMessage> {
+        debug!("Walk: fid={}, newfid={}, wnames={:?}", fid, newfid, wnames);
+
+        // Get the starting file handle
+        let start_handle = match self.connection_state.get_fid(fid) {
+            Some(handle) => handle.clone(),
+            None => return Ok(NinePeeMessage::Error {
+                ename: "Invalid fid".to_string(),
+                errno: 9, // EBADF
+            }),
+        };
+
+        let mut current_path = PathBuf::from(&start_handle.path);
+
+        // Walk through each name component
+        for wname in &wnames {
+            if wname == ".." {
+                current_path.pop();
+            } else if wname != "." {
+                current_path.push(wname);
+            }
+
+            // Check if path exists
+            let full_path = self.root.join(current_path.strip_prefix("/").unwrap_or(&current_path));
+            if !full_path.exists() {
+                return Ok(NinePeeMessage::Error {
+                    ename: format!("No such file: {}", wname),
+                    errno: 2, // ENOENT
+                });
+            }
+        }
+
+        // Create new file handle
+        let new_handle = FileHandle {
+            fid: newfid,
+            path: current_path.to_string_lossy().to_string(),
+            mode: start_handle.mode,
+            offset: 0,
+            synthetic: false,
+            translator_id: None,
+        };
+
+        self.connection_state.add_fid(newfid, new_handle);
+
+        Ok(NinePeeMessage::Walk {
+            fid,
+            newfid,
+            wnames,
+        })
+    }
+
+    /// Handle open file
+    async fn handle_open(&mut self, fid: u32, mode: u8) -> Result<NinePeeMessage> {
+        debug!("Open: fid={}, mode={}", fid, mode);
+
+        // Update file handle with open mode
+        if let Some(mut handle) = self.connection_state.remove_fid(fid) {
+            handle.mode = mode;
+            self.connection_state.add_fid(fid, handle);
+
+            Ok(NinePeeMessage::Open { fid, mode })
+        } else {
+            Ok(NinePeeMessage::Error {
+                ename: "Invalid fid".to_string(),
+                errno: 9, // EBADF
+            })
+        }
+    }
+
+    /// Handle create file with capability checking
+    async fn handle_create(&mut self, fid: u32, name: String, perm: u32, mode: u8) -> Result<NinePeeMessage> {
+        debug!("Create: fid={}, name={}, perm={:#o}, mode={}", fid, name, perm, mode);
+
+        let handle = match self.connection_state.get_fid(fid) {
+            Some(h) => h.clone(),
+            None => return Ok(NinePeeMessage::Error {
+                ename: "Invalid fid".to_string(),
+                errno: 9, // EBADF
+            }),
+        };
+
+        // Check create capability
+        if !self.check_capability(fid, CapabilityPermissions::can_create).await? {
+            return Ok(NinePeeMessage::Error {
+                ename: "Permission denied: create capability required".to_string(),
+                errno: 13, // EACCES
+            });
+        }
+
+        let parent_path = self.root.join(handle.path.strip_prefix("/").unwrap_or(&handle.path));
+        let new_file_path = parent_path.join(&name);
+
+        // Create the file or directory
+        let result = if perm & 0o040000 != 0 { // Directory
+            fs::create_dir(&new_file_path)
+        } else {
+            File::create(&new_file_path).map(|_| ())
+        };
+
+        match result {
+            Ok(()) => {
+                // Update fid to point to new file
+                let new_handle = FileHandle {
+                    fid,
+                    path: format!("{}/{}", handle.path.trim_end_matches('/'), name),
+                    mode,
+                    offset: 0,
+                    synthetic: false,
+                    translator_id: None,
+                };
+
+                self.connection_state.add_fid(fid, new_handle);
+
+                Ok(NinePeeMessage::Create { fid, name, perm, mode })
+            }
+            Err(e) => {
+                warn!("Failed to create file {}: {}", name, e);
+                Ok(NinePeeMessage::Error {
+                    ename: format!("Create failed: {}", e),
+                    errno: 1, // EPERM
+                })
+            }
+        }
+    }
+
+    /// Handle read from file with capability checking
+    async fn handle_read(&mut self, fid: u32, offset: u64, count: u32) -> Result<NinePeeMessage> {
+        debug!("Read: fid={}, offset={}, count={}", fid, offset, count);
+
+        let handle = match self.connection_state.get_fid(fid) {
+            Some(h) => h.clone(),
+            None => return Ok(NinePeeMessage::Error {
+                ename: "Invalid fid".to_string(),
+                errno: 9, // EBADF
+            }),
+        };
+
+        // Check read capability
+        if !self.check_capability(fid, CapabilityPermissions::can_read).await? {
+            return Ok(NinePeeMessage::Error {
+                ename: "Permission denied: read capability required".to_string(),
+                errno: 13, // EACCES
+            });
+        }
+
+        // Check if this is a virtual path
+        if self.is_virtual_path(&handle.path) {
+            // Try synthetic filesystem first
+            if self.synth_fs.exists(std::path::Path::new(&handle.path)).await {
+                match self.synth_fs.read_file(std::path::Path::new(&handle.path)).await {
+                    Ok(data) => {
+                        let start = offset as usize;
+                        let end = (start + count as usize).min(data.len());
+                        let slice = if start < data.len() { &data[start..end] } else { &[] };
+                        return Ok(NinePeeMessage::Write {
+                            fid,
+                            offset,
+                            data: slice.to_vec(),
+                        });
+                    }
+                    Err(e) => return Ok(NinePeeMessage::Error {
+                        ename: format!("Virtual file read failed: {}", e),
+                        errno: 5, // EIO
+                    })
+                }
+            }
+
+            // Try WASM translator
+            if let Some(_translator_name) = self.get_translator_for_path(&handle.path).await {
+                let path_buf = std::path::PathBuf::from(&handle.path);
+                if let Some(translator) = self.translator_registry.get_translator(&path_buf).await {
+                    match translator.read_file(&handle.path).await {
+                        Ok(data) => {
+                            let start = offset as usize;
+                            let end = (start + count as usize).min(data.len());
+                            let slice = if start < data.len() { &data[start..end] } else { &[] };
+                            return Ok(NinePeeMessage::Write {
+                                fid,
+                                offset,
+                                data: slice.to_vec(),
+                            });
+                        }
+                        Err(e) => return Ok(NinePeeMessage::Error {
+                            ename: format!("Translator read failed: {}", e),
+                            errno: 5, // EIO
+                        })
+                    }
+                }
+            }
+
+            // Virtual path not found
+            return Ok(NinePeeMessage::Error {
+                ename: "File not found in virtual filesystem".to_string(),
+                errno: 2, // ENOENT
+            });
+        }
+
+        // Handle physical filesystem
+        let file_path = self.root.join(handle.path.strip_prefix("/").unwrap_or(&handle.path));
+
+        // Check if it's a directory first
+        match fs::metadata(&file_path) {
+            Ok(metadata) => {
+                if metadata.is_dir() {
+                    // Handle directory read - return directory entries as stat data
+                    return self.handle_directory_read(&file_path, &handle.path, fid, offset, count).await;
+                } else {
+                    // Handle regular file read
+                    match fs::File::open(&file_path) {
+                        Ok(mut file) => {
+                            if let Err(e) = file.seek(SeekFrom::Start(offset)) {
+                                return Ok(NinePeeMessage::Error {
+                                    ename: format!("Seek failed: {}", e),
+                                    errno: 22, // EINVAL
+                                });
+                            }
+
+                            let mut buffer = vec![0u8; count.min(self.max_message_size - 64) as usize];
+                            match file.read(&mut buffer) {
+                                Ok(bytes_read) => {
+                                    buffer.truncate(bytes_read);
+                                    Ok(NinePeeMessage::Write {
+                                        fid,
+                                        offset,
+                                        data: buffer,
+                                    })
+                                }
+                                Err(e) => Ok(NinePeeMessage::Error {
+                                    ename: format!("Read failed: {}", e),
+                                    errno: 5, // EIO
+                                })
+                            }
+                        }
+                        Err(e) => Ok(NinePeeMessage::Error {
+                            ename: format!("Open failed: {}", e),
+                            errno: 2, // ENOENT
+                        })
+                    }
+                }
+            }
+            Err(e) => Ok(NinePeeMessage::Error {
+                ename: format!("Metadata failed: {}", e),
+                errno: 2, // ENOENT
+            })
+        }
+    }
+
+    /// Handle write to file with capability checking
+    async fn handle_write(&mut self, fid: u32, offset: u64, data: Vec<u8>) -> Result<NinePeeMessage> {
+        debug!("Write: fid={}, offset={}, len={}", fid, offset, data.len());
+
+        let handle = match self.connection_state.get_fid(fid) {
+            Some(h) => h.clone(),
+            None => return Ok(NinePeeMessage::Error {
+                ename: "Invalid fid".to_string(),
+                errno: 9, // EBADF
+            }),
+        };
+
+        // Check write capability
+        if !self.check_capability(fid, CapabilityPermissions::can_write).await? {
+            return Ok(NinePeeMessage::Error {
+                ename: "Permission denied: write capability required".to_string(),
+                errno: 13, // EACCES
+            });
+        }
+
+        let file_path = self.root.join(handle.path.strip_prefix("/").unwrap_or(&handle.path));
+
+        match OpenOptions::new().write(true).open(&file_path) {
+            Ok(mut file) => {
+                if let Err(e) = file.seek(SeekFrom::Start(offset)) {
+                    return Ok(NinePeeMessage::Error {
+                        ename: format!("Seek failed: {}", e),
+                        errno: 22, // EINVAL
+                    });
+                }
+
+                match file.write(&data) {
+                    Ok(bytes_written) => {
+                        Ok(NinePeeMessage::Write {
+                            fid,
+                            offset,
+                            data: vec![0u8; bytes_written], // Response data not typically needed
+                        })
+                    }
+                    Err(e) => Ok(NinePeeMessage::Error {
+                        ename: format!("Write failed: {}", e),
+                        errno: 5, // EIO
+                    })
+                }
+            }
+            Err(e) => Ok(NinePeeMessage::Error {
+                ename: format!("Open for write failed: {}", e),
+                errno: 13, // EACCES
+            })
+        }
+    }
+
+    /// Handle close file
+    async fn handle_clunk(&mut self, fid: u32) -> Result<NinePeeMessage> {
+        debug!("Clunk: fid={}", fid);
+
+        if self.connection_state.remove_fid(fid).is_some() {
+            Ok(NinePeeMessage::Clunk { fid })
+        } else {
+            Ok(NinePeeMessage::Error {
+                ename: "Invalid fid".to_string(),
+                errno: 9, // EBADF
+            })
+        }
+    }
+
+    /// Handle remove file with capability checking
+    async fn handle_remove(&mut self, fid: u32) -> Result<NinePeeMessage> {
+        debug!("Remove: fid={}", fid);
+
+        // Check delete capability before removing fid
+        if !self.check_capability(fid, CapabilityPermissions::can_delete).await? {
+            return Ok(NinePeeMessage::Error {
+                ename: "Permission denied: delete capability required".to_string(),
+                errno: 13, // EACCES
+            });
+        }
+
+        let handle = match self.connection_state.remove_fid(fid) {
+            Some(h) => h,
+            None => return Ok(NinePeeMessage::Error {
+                ename: "Invalid fid".to_string(),
+                errno: 9, // EBADF
+            }),
+        };
+
+        let file_path = self.root.join(handle.path.strip_prefix("/").unwrap_or(&handle.path));
+
+        let result = if file_path.is_dir() {
+            fs::remove_dir(&file_path)
+        } else {
+            fs::remove_file(&file_path)
+        };
+
+        match result {
+            Ok(()) => Ok(NinePeeMessage::Remove { fid }),
+            Err(e) => Ok(NinePeeMessage::Error {
+                ename: format!("Remove failed: {}", e),
+                errno: 1, // EPERM
+            })
+        }
+    }
+
+    /// Format stat data in 9P format
+    fn format_stat_data(&self, metadata: &std::fs::Metadata, name: &str, path: &str) -> Vec<u8> {
+        let mut stat = Vec::new();
+
+        // stat[n] format for 9P2000:
+        // size[2] type[2] dev[4] qid.type[1] qid.vers[4] qid.path[8]
+        // mode[4] atime[4] mtime[4] length[8] name[s] uid[s] gid[s] muid[s]
+
+        let file_type = if metadata.is_dir() { 0x80 } else { 0x00 };
+        let mode: u32 = if metadata.is_dir() { 0o040755 } else { 0o100644 };
+        let length = metadata.len();
+        let mtime = metadata.modified()
+            .unwrap_or(std::time::SystemTime::UNIX_EPOCH)
+            .duration_since(std::time::SystemTime::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs() as u32;
+
+        // Calculate total size first (excluding the size field itself)
+        let name_bytes = name.as_bytes();
+        let uid_bytes = b"user";
+        let gid_bytes = b"user";
+        let muid_bytes = b"user";
+
+        let total_size = 2 + 4 + 1 + 4 + 8 + 4 + 4 + 4 + 8 +
+                        2 + name_bytes.len() +
+                        2 + uid_bytes.len() +
+                        2 + gid_bytes.len() +
+                        2 + muid_bytes.len();
+
+        // size[2] - total size of stat structure (excluding this field)
+        stat.extend_from_slice(&(total_size as u16 - 2).to_le_bytes());
+
+        // type[2] - server type (always 0)
+        stat.extend_from_slice(&0u16.to_le_bytes());
+
+        // dev[4] - device number (always 0)
+        stat.extend_from_slice(&0u32.to_le_bytes());
+
+        // qid.type[1] - file type
+        stat.push(file_type);
+
+        // qid.vers[4] - version number
+        stat.extend_from_slice(&0u32.to_le_bytes());
+
+        // qid.path[8] - unique path identifier (use hash of path)
+        let path_hash = path.as_bytes().iter().fold(0u64, |acc, &b| acc.wrapping_mul(31).wrapping_add(b as u64));
+        stat.extend_from_slice(&path_hash.to_le_bytes());
+
+        // mode[4] - permissions and file type
+        stat.extend_from_slice(&mode.to_le_bytes());
+
+        // atime[4] - access time (same as mtime for simplicity)
+        stat.extend_from_slice(&mtime.to_le_bytes());
+
+        // mtime[4] - modification time
+        stat.extend_from_slice(&mtime.to_le_bytes());
+
+        // length[8] - file size
+        stat.extend_from_slice(&length.to_le_bytes());
+
+        // name[s] - file name (length-prefixed string)
+        stat.extend_from_slice(&(name_bytes.len() as u16).to_le_bytes());
+        stat.extend_from_slice(name_bytes);
+
+        // uid[s] - user name
+        stat.extend_from_slice(&(uid_bytes.len() as u16).to_le_bytes());
+        stat.extend_from_slice(uid_bytes);
+
+        // gid[s] - group name
+        stat.extend_from_slice(&(gid_bytes.len() as u16).to_le_bytes());
+        stat.extend_from_slice(gid_bytes);
+
+        // muid[s] - modifier user name
+        stat.extend_from_slice(&(muid_bytes.len() as u16).to_le_bytes());
+        stat.extend_from_slice(muid_bytes);
+
+        stat
+    }
+
+    /// Handle directory read - return directory entries as stat data
+    async fn handle_directory_read(
+        &self,
+        dir_path: &std::path::Path,
+        logical_path: &str,
+        fid: u32,
+        offset: u64,
+        count: u32,
+    ) -> Result<NinePeeMessage> {
+        debug!("Directory read: path={:?}, offset={}, count={}", dir_path, offset, count);
+
+        // Read directory entries
+        let entries = match fs::read_dir(dir_path) {
+            Ok(entries) => entries,
+            Err(e) => return Ok(NinePeeMessage::Error {
+                ename: format!("Failed to read directory: {}", e),
+                errno: 2, // ENOENT
+            }),
+        };
+
+        // Build directory data as concatenated stat structures
+        let mut dir_data = Vec::new();
+
+        // Add "." entry (current directory)
+        if let Ok(metadata) = fs::metadata(dir_path) {
+            let dot_stat = self.format_stat_data(&metadata, ".", logical_path);
+            dir_data.extend_from_slice(&dot_stat);
+        }
+
+        // Add ".." entry (parent directory)
+        if let Ok(metadata) = fs::metadata(dir_path.parent().unwrap_or(dir_path)) {
+            let dotdot_stat = self.format_stat_data(&metadata, "..", logical_path);
+            dir_data.extend_from_slice(&dotdot_stat);
+        }
+
+        // Add all directory entries
+        for entry in entries {
+            if let Ok(entry) = entry {
+                if let Ok(metadata) = entry.metadata() {
+                    let name_owned = entry.file_name().to_string_lossy().to_string();
+                    let child_path = if logical_path == "/" {
+                        format!("/{}", name_owned)
+                    } else {
+                        format!("{}/{}", logical_path, name_owned)
+                    };
+                    let stat_data = self.format_stat_data(&metadata, &name_owned, &child_path);
+                    dir_data.extend_from_slice(&stat_data);
+                }
+            }
+        }
+
+        // Handle offset and count
+        let start = offset as usize;
+        let end = (start + count as usize).min(dir_data.len());
+        let slice = if start < dir_data.len() { &dir_data[start..end] } else { &[] };
+
+        Ok(NinePeeMessage::Write {
+            fid,
+            offset,
+            data: slice.to_vec(),
+        })
+    }
+
+    /// Handle stat file
+    async fn handle_stat(&mut self, fid: u32) -> Result<NinePeeMessage> {
+        debug!("Stat: fid={}", fid);
+
+        let handle = match self.connection_state.get_fid(fid) {
+            Some(h) => h.clone(),
+            None => return Ok(NinePeeMessage::Error {
+                ename: "Invalid fid".to_string(),
+                errno: 9, // EBADF
+            }),
+        };
+
+        // Check if this is a virtual path
+        if self.is_virtual_path(&handle.path) {
+            // Try synthetic filesystem first
+            if let Some(node) = self.synth_fs.get_node(std::path::Path::new(&handle.path)).await {
+                let name = std::path::Path::new(&handle.path)
+                    .file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy();
+
+                // Create virtual metadata
+                let is_dir = matches!(node.node_type, crate::synth::SynthNodeType::Directory { .. });
+                let size = match &node.node_type {
+                    crate::synth::SynthNodeType::File { content, .. } => content.len() as u64,
+                    _ => 0,
+                };
+
+                // Format virtual stat data
+                let mut stat = Vec::new();
+                let total_size = 47 + name.len() + 12; // Basic stat + name + 3 × "user"
+                stat.extend_from_slice(&(total_size as u16 - 2).to_le_bytes());
+                stat.extend_from_slice(&0u16.to_le_bytes()); // type
+                stat.extend_from_slice(&0u32.to_le_bytes()); // dev
+                stat.push(if is_dir { 0x80 } else { 0x00 }); // qid.type
+                stat.extend_from_slice(&0u32.to_le_bytes()); // qid.vers
+                stat.extend_from_slice(&handle.path.as_bytes().iter().fold(0u64, |acc, &b| acc.wrapping_mul(31).wrapping_add(b as u64)).to_le_bytes()); // qid.path
+                stat.extend_from_slice(&(if is_dir { 0o040755u32 } else { 0o100644u32 }).to_le_bytes()); // mode
+                let now = std::time::SystemTime::now().duration_since(std::time::SystemTime::UNIX_EPOCH).unwrap_or_default().as_secs() as u32;
+                stat.extend_from_slice(&now.to_le_bytes()); // atime
+                stat.extend_from_slice(&now.to_le_bytes()); // mtime
+                stat.extend_from_slice(&size.to_le_bytes()); // length
+
+                let name_bytes = name.as_bytes();
+                stat.extend_from_slice(&(name_bytes.len() as u16).to_le_bytes());
+                stat.extend_from_slice(name_bytes);
+
+                let user_bytes = b"user";
+                for _ in 0..3 { // uid, gid, muid
+                    stat.extend_from_slice(&(user_bytes.len() as u16).to_le_bytes());
+                    stat.extend_from_slice(user_bytes);
+                }
+
+                return Ok(NinePeeMessage::Write {
+                    fid,
+                    offset: 0,
+                    data: stat,
+                });
+            }
+
+            // Virtual path not found
+            return Ok(NinePeeMessage::Error {
+                ename: "File not found in virtual filesystem".to_string(),
+                errno: 2, // ENOENT
+            });
+        }
+
+        // Handle physical filesystem
+        let file_path = self.root.join(handle.path.strip_prefix("/").unwrap_or(&handle.path));
+
+        match fs::metadata(&file_path) {
+            Ok(metadata) => {
+                let name = file_path.file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy();
+                let stat_data = self.format_stat_data(&metadata, &name, &handle.path);
+
+                Ok(NinePeeMessage::Write {
+                    fid,
+                    offset: 0,
+                    data: stat_data,
+                })
+            }
+            Err(e) => Ok(NinePeeMessage::Error {
+                ename: format!("Stat failed: {}", e),
+                errno: 2, // ENOENT
+            })
+        }
+    }
+
+    /// Handle set file attributes
+    async fn handle_wstat(&mut self, fid: u32, stat: Vec<u8>) -> Result<NinePeeMessage> {
+        debug!("Wstat: fid={}, stat_len={}", fid, stat.len());
+
+        // For now, just acknowledge the wstat operation
+        // In real implementation: parse stat data and apply changes
+        Ok(NinePeeMessage::Wstat { fid, stat })
+    }
+
+    /// Handle stream initialization (9P.e extension)
+    async fn handle_stream_init(&mut self, stream_id: u32, fid: u32, mode: u8) -> Result<NinePeeMessage> {
+        debug!("StreamInit: stream_id={}, fid={}, mode={}", stream_id, fid, mode);
+
+        if !self.connection_state.supports_extensions() {
+            return Ok(NinePeeMessage::Error {
+                ename: "Extensions not supported".to_string(),
+                errno: 95, // EOPNOTSUPP
+            });
+        }
+
+        // Validate fid exists
+        if self.connection_state.get_fid(fid).is_none() {
+            return Ok(NinePeeMessage::Error {
+                ename: "Invalid fid for stream".to_string(),
+                errno: 9, // EBADF
+            });
+        }
+
+        // Check if stream already exists
+        let streams = self.streams.read().await;
+        if streams.contains_key(&stream_id) {
+            return Ok(NinePeeMessage::Error {
+                ename: "Stream already exists".to_string(),
+                errno: 17, // EEXIST
+            });
+        }
+        drop(streams);
+
+        // Create new stream with flow control
+        let now = std::time::Instant::now();
+        let stream_state = StreamState {
+            stream_id,
+            fid,
+            mode,
+            chunks_received: std::collections::BTreeSet::new(),
+            expected_chunks: 0,
+            data_buffer: Vec::new(),
+            buffer_limit: 1024 * 1024, // 1MB buffer limit
+            flow_control_window: 256, // Allow 256 outstanding chunks
+            created_at: now,
+            last_activity: now,
+        };
+
+        let mut streams = self.streams.write().await;
+        streams.insert(stream_id, stream_state);
+        drop(streams);
+
+        info!("Initialized stream {} for fid {} with mode {}", stream_id, fid, mode);
+        Ok(NinePeeMessage::StreamInit { stream_id, fid, mode })
+    }
+
+    /// Serialize message to bytes for transmission
+    pub async fn serialize_message(&self, message: &NinePeeMessage) -> Result<Vec<u8>> {
+        message.serialize().map_err(|e| anyhow::anyhow!("Serialization failed: {}", e))
+    }
+
+    /// Deserialize message from bytes
+    pub async fn deserialize_message(&self, data: Vec<u8>) -> Result<NinePeeMessage> {
+        NinePeeMessage::deserialize(data).map_err(|e| anyhow::anyhow!("Deserialization failed: {}", e))
+    }
+
+    // ========== 9P.e Extension Handlers ==========
+
+    /// Handle stream data chunk with flow control and validation
+    async fn handle_stream_data(&mut self, stream_id: u32, chunk_id: u32, data: Vec<u8>) -> Result<NinePeeMessage> {
+        debug!("StreamData: stream_id={}, chunk_id={}, data_len={}", stream_id, chunk_id, data.len());
+
+        if !self.connection_state.supports_extensions() {
+            return Ok(NinePeeMessage::Error {
+                ename: "Extensions not supported".to_string(),
+                errno: 95, // EOPNOTSUPP
+            });
+        }
+
+        // Validate data size
+        if data.len() > 65536 { // 64KB max chunk size
+            return Ok(NinePeeMessage::Error {
+                ename: "Chunk too large".to_string(),
+                errno: 90, // EMSGSIZE
+            });
+        }
+
+        let mut streams = self.streams.write().await;
+        if let Some(stream_state) = streams.get_mut(&stream_id) {
+            // Update activity timestamp
+            stream_state.last_activity = std::time::Instant::now();
+
+            // Check for duplicate chunks
+            if stream_state.chunks_received.contains(&chunk_id) {
+                debug!("Duplicate chunk {} for stream {}", chunk_id, stream_id);
+                return Ok(NinePeeMessage::StreamData { stream_id, chunk_id, data: vec![] });
+            }
+
+            // Check buffer limit
+            if stream_state.data_buffer.len() + data.len() > stream_state.buffer_limit {
+                return Ok(NinePeeMessage::Error {
+                    ename: "Stream buffer overflow".to_string(),
+                    errno: 12, // ENOMEM
+                });
+            }
+
+            // Check flow control window
+            if stream_state.chunks_received.len() as u32 >= stream_state.flow_control_window {
+                return Ok(NinePeeMessage::Error {
+                    ename: "Flow control limit exceeded".to_string(),
+                    errno: 11, // EAGAIN
+                });
+            }
+
+            // Store chunk data with proper ordering
+            stream_state.chunks_received.insert(chunk_id);
+
+            // For now, append data (in real implementation, we'd sort by chunk_id)
+            stream_state.data_buffer.extend_from_slice(&data);
+
+            debug!("Received chunk {} for stream {} ({} chunks total)",
+                   chunk_id, stream_id, stream_state.chunks_received.len());
+
+            Ok(NinePeeMessage::StreamData { stream_id, chunk_id, data: vec![] }) // Echo with empty data
+        } else {
+            Ok(NinePeeMessage::Error {
+                ename: "Invalid stream ID".to_string(),
+                errno: 22, // EINVAL
+            })
+        }
+    }
+
+    /// Handle stream end with data integrity validation
+    async fn handle_stream_end(&mut self, stream_id: u32, final_chunk: u32) -> Result<NinePeeMessage> {
+        debug!("StreamEnd: stream_id={}, final_chunk={}", stream_id, final_chunk);
+
+        if !self.connection_state.supports_extensions() {
+            return Ok(NinePeeMessage::Error {
+                ename: "Extensions not supported".to_string(),
+                errno: 95,
+            });
+        }
+
+        let mut streams = self.streams.write().await;
+        if let Some(stream_state) = streams.remove(&stream_id) {
+            // Validate chunk sequence integrity
+            let expected_chunks: std::collections::BTreeSet<u32> = (0..=final_chunk).collect();
+            let missing_chunks: Vec<u32> = expected_chunks.difference(&stream_state.chunks_received).cloned().collect();
+
+            if !missing_chunks.is_empty() {
+                warn!("Stream {} incomplete: missing chunks {:?}", stream_id, missing_chunks);
+                return Ok(NinePeeMessage::Error {
+                    ename: format!("Missing chunks: {:?}", missing_chunks),
+                    errno: 5, // EIO
+                });
+            }
+
+            // Process completed stream data
+            if stream_state.mode == 1 { // Write mode
+                // Write accumulated data to file
+                if let Some(handle) = self.connection_state.get_fid(stream_state.fid) {
+                    let file_path = self.root.join(handle.path.strip_prefix("/").unwrap_or(&handle.path));
+                    if let Err(e) = std::fs::write(&file_path, &stream_state.data_buffer) {
+                        error!("Failed to write stream data to file: {}", e);
+                        return Ok(NinePeeMessage::Error {
+                            ename: format!("Write failed: {}", e),
+                            errno: 5, // EIO
+                        });
+                    }
+                    info!("Wrote {} bytes from stream {} to {:?}",
+                          stream_state.data_buffer.len(), stream_id, file_path);
+                }
+            }
+
+            info!("Stream {} completed with {} chunks ({} bytes total)",
+                  stream_id, final_chunk + 1, stream_state.data_buffer.len());
+            Ok(NinePeeMessage::StreamEnd { stream_id, final_chunk })
+        } else {
+            Ok(NinePeeMessage::Error {
+                ename: "Invalid stream ID".to_string(),
+                errno: 22,
+            })
+        }
+    }
+
+    /// Handle multiplex channel creation
+    async fn handle_multiplex_channel(&mut self, channel_id: u32, priority: u8) -> Result<NinePeeMessage> {
+        debug!("MultiplexChannel: channel_id={}, priority={}", channel_id, priority);
+
+        if !self.connection_state.supports_extensions() {
+            return Ok(NinePeeMessage::Error {
+                ename: "Extensions not supported".to_string(),
+                errno: 95,
+            });
+        }
+
+        let mut channels = self.channels.write().await;
+        channels.insert(channel_id, MultiplexChannel {
+            channel_id,
+            priority,
+            created_at: std::time::Instant::now(),
+        });
+
+        info!("Created multiplex channel {} with priority {}", channel_id, priority);
+        Ok(NinePeeMessage::MultiplexChannel { channel_id, priority })
+    }
+
+    /// Handle capability grant
+    async fn handle_capability_grant(&mut self, cap_id: u64, fid: u32, permissions: u32) -> Result<NinePeeMessage> {
+        debug!("CapabilityGrant: cap_id={}, fid={}, permissions={}", cap_id, fid, permissions);
+
+        if !self.connection_state.supports_extensions() {
+            return Ok(NinePeeMessage::Error {
+                ename: "Extensions not supported".to_string(),
+                errno: 95,
+            });
+        }
+
+        // Validate permission flags
+        let cap_permissions = CapabilityPermissions::new(permissions);
+
+        // Get scope from fid handle
+        let scope = if let Some(handle) = self.connection_state.get_fid(fid) {
+            if handle.path.starts_with("/srv/") {
+                CapabilityScope::Path(handle.path.clone())
+            } else {
+                CapabilityScope::Fid(fid)
+            }
+        } else {
+            CapabilityScope::Global
+        };
+
+        // Calculate expiration (24 hours from now)
+        let expires_at = Some(std::time::Instant::now() + std::time::Duration::from_secs(24 * 3600));
+
+        let mut capabilities = self.capabilities.write().await;
+        capabilities.insert(cap_id, Capability {
+            cap_id,
+            fid,
+            permissions: cap_permissions,
+            granted_at: std::time::Instant::now(),
+            expires_at,
+            scope,
+        });
+
+        info!("Granted capability {} for fid {} with permissions {}", cap_id, fid, permissions);
+        Ok(NinePeeMessage::CapabilityGrant { cap_id, fid, permissions })
+    }
+
+    /// Handle capability revoke
+    async fn handle_capability_revoke(&mut self, cap_id: u64) -> Result<NinePeeMessage> {
+        debug!("CapabilityRevoke: cap_id={}", cap_id);
+
+        if !self.connection_state.supports_extensions() {
+            return Ok(NinePeeMessage::Error {
+                ename: "Extensions not supported".to_string(),
+                errno: 95,
+            });
+        }
+
+        let mut capabilities = self.capabilities.write().await;
+        if capabilities.remove(&cap_id).is_some() {
+            info!("Revoked capability {}", cap_id);
+            Ok(NinePeeMessage::CapabilityRevoke { cap_id })
+        } else {
+            Ok(NinePeeMessage::Error {
+                ename: "Invalid capability ID".to_string(),
+                errno: 22,
+            })
+        }
+    }
+
+    /// Handle capability check
+    async fn handle_capability_check(&mut self, cap_id: u64) -> Result<NinePeeMessage> {
+        debug!("CapabilityCheck: cap_id={}", cap_id);
+
+        if !self.connection_state.supports_extensions() {
+            return Ok(NinePeeMessage::Error {
+                ename: "Extensions not supported".to_string(),
+                errno: 95,
+            });
+        }
+
+        let mut capabilities = self.capabilities.write().await;
+        if let Some(capability) = capabilities.get(&cap_id) {
+            // Check if capability has expired
+            if let Some(expires_at) = capability.expires_at {
+                if std::time::Instant::now() > expires_at {
+                    capabilities.remove(&cap_id);
+                    return Ok(NinePeeMessage::Error {
+                        ename: "Capability expired".to_string(),
+                        errno: 13, // EACCES
+                    });
+                }
+            }
+
+            info!("Capability {} is valid (expires: {:?})", cap_id, capability.expires_at);
+            Ok(NinePeeMessage::CapabilityCheck { cap_id })
+        } else {
+            Ok(NinePeeMessage::Error {
+                ename: "Capability not found".to_string(),
+                errno: 2, // ENOENT
+            })
+        }
+    }
+
+    /// Handle synthetic file creation
+    async fn handle_synthetic_create(&mut self, fid: u32, generator: String, params: Vec<u8>) -> Result<NinePeeMessage> {
+        debug!("SyntheticCreate: fid={}, generator={}, params_len={}", fid, generator, params.len());
+
+        if !self.connection_state.supports_extensions() {
+            return Ok(NinePeeMessage::Error {
+                ename: "Extensions not supported".to_string(),
+                errno: 95,
+            });
+        }
+
+        // Create synthetic file in synthetic filesystem
+        let path = format!("/synth/{}/{}", generator, fid);
+        let content = format!("Generated by {} with {} bytes of params", generator, params.len());
+
+        if let Err(e) = self.synth_fs.create_file(Path::new(&path), content.as_bytes().to_vec(), true).await {
+            return Ok(NinePeeMessage::Error {
+                ename: format!("Failed to create synthetic file: {}", e),
+                errno: 5, // EIO
+            });
+        }
+
+        // Update file handle to mark as synthetic
+        if let Some(mut handle) = self.connection_state.remove_fid(fid) {
+            handle.synthetic = true;
+            handle.path = path;
+            self.connection_state.add_fid(fid, handle);
+        }
+
+        info!("Created synthetic file for fid {} with generator {}", fid, generator);
+        Ok(NinePeeMessage::SyntheticCreate { fid, generator, params })
+    }
+
+    /// Handle synthetic file update
+    async fn handle_synthetic_update(&mut self, fid: u32, new_params: Vec<u8>) -> Result<NinePeeMessage> {
+        debug!("SyntheticUpdate: fid={}, new_params_len={}", fid, new_params.len());
+
+        if !self.connection_state.supports_extensions() {
+            return Ok(NinePeeMessage::Error {
+                ename: "Extensions not supported".to_string(),
+                errno: 95,
+            });
+        }
+
+        let handle = self.connection_state.get_fid(fid);
+        if let Some(handle) = handle {
+            if handle.synthetic {
+                // Update synthetic file content
+                let new_content = format!("Updated with {} bytes of params", new_params.len());
+                if let Err(e) = self.synth_fs.write_file(Path::new(&handle.path), new_content.as_bytes().to_vec()).await {
+                    return Ok(NinePeeMessage::Error {
+                        ename: format!("Failed to update synthetic file: {}", e),
+                        errno: 5,
+                    });
+                }
+                Ok(NinePeeMessage::SyntheticUpdate { fid, new_params })
+            } else {
+                Ok(NinePeeMessage::Error {
+                    ename: "Not a synthetic file".to_string(),
+                    errno: 22,
+                })
+            }
+        } else {
+            Ok(NinePeeMessage::Error {
+                ename: "Invalid fid".to_string(),
+                errno: 9,
+            })
+        }
+    }
+
+    /// Handle synthetic file refresh
+    async fn handle_synthetic_refresh(&mut self, fid: u32, force: bool) -> Result<NinePeeMessage> {
+        debug!("SyntheticRefresh: fid={}, force={}", fid, force);
+
+        if !self.connection_state.supports_extensions() {
+            return Ok(NinePeeMessage::Error {
+                ename: "Extensions not supported".to_string(),
+                errno: 95,
+            });
+        }
+
+        let handle = self.connection_state.get_fid(fid);
+        if let Some(handle) = handle {
+            if handle.synthetic {
+                // Trigger refresh of synthetic content
+                let refreshed_content = format!("Refreshed at {:?} (force={})", std::time::SystemTime::now(), force);
+                if let Err(e) = self.synth_fs.write_file(Path::new(&handle.path), refreshed_content.as_bytes().to_vec()).await {
+                    return Ok(NinePeeMessage::Error {
+                        ename: format!("Failed to refresh synthetic file: {}", e),
+                        errno: 5,
+                    });
+                }
+                info!("Refreshed synthetic file fid {} (force={})", fid, force);
+                Ok(NinePeeMessage::SyntheticRefresh { fid, force })
+            } else {
+                Ok(NinePeeMessage::Error {
+                    ename: "Not a synthetic file".to_string(),
+                    errno: 22,
+                })
+            }
+        } else {
+            Ok(NinePeeMessage::Error {
+                ename: "Invalid fid".to_string(),
+                errno: 9,
+            })
+        }
+    }
+
+    /// Handle translator spawn
+    async fn handle_translator_spawn(&mut self, translator_id: u32, code: Vec<u8>, config: Vec<u8>) -> Result<NinePeeMessage> {
+        debug!("TranslatorSpawn: translator_id={}, code_len={}, config_len={}",
+               translator_id, code.len(), config.len());
+
+        if !self.connection_state.supports_extensions() {
+            return Ok(NinePeeMessage::Error {
+                ename: "Extensions not supported".to_string(),
+                errno: 95,
+            });
+        }
+
+        // Create mount point for translator
+        let mount_point = PathBuf::from(format!("/srv/translator_{}", translator_id));
+        let name = format!("translator_{}", translator_id);
+
+        // Load translator into registry
+        if let Err(e) = self.translator_registry.load_translator(
+            name.clone(),
+            mount_point.clone(),
+            code.clone()
+        ).await {
+            return Ok(NinePeeMessage::Error {
+                ename: format!("Failed to spawn translator: {}", e),
+                errno: 5,
+            });
+        }
+
+        // Track active translator
+        let mut active = self.active_translators.write().await;
+        active.insert(translator_id, mount_point.clone());
+
+        info!("Spawned translator {} at {:?}", translator_id, mount_point);
+        Ok(NinePeeMessage::TranslatorSpawn { translator_id, code, config })
+    }
+
+    /// Handle translator message
+    async fn handle_translator_message(&mut self, translator_id: u32, data: Vec<u8>) -> Result<NinePeeMessage> {
+        debug!("TranslatorMessage: translator_id={}, data_len={}", translator_id, data.len());
+
+        if !self.connection_state.supports_extensions() {
+            return Ok(NinePeeMessage::Error {
+                ename: "Extensions not supported".to_string(),
+                errno: 95,
+            });
+        }
+
+        let active = self.active_translators.read().await;
+        if let Some(mount_point) = active.get(&translator_id) {
+            // Get translator from registry
+            if let Some(translator) = self.translator_registry.get_translator(mount_point).await {
+                // For now, just write the data as a file through the translator
+                let path = format!("message_{}.dat", std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs());
+
+                if let Err(e) = translator.write_file(&path, data.clone()).await {
+                    return Ok(NinePeeMessage::Error {
+                        ename: format!("Failed to send message to translator: {}", e),
+                        errno: 5,
+                    });
+                }
+
+                Ok(NinePeeMessage::TranslatorMessage { translator_id, data })
+            } else {
+                Ok(NinePeeMessage::Error {
+                    ename: "Translator not found in registry".to_string(),
+                    errno: 2,
+                })
+            }
+        } else {
+            Ok(NinePeeMessage::Error {
+                ename: "Invalid translator ID".to_string(),
+                errno: 22,
+            })
+        }
+    }
+
+    /// Handle translator kill
+    async fn handle_translator_kill(&mut self, translator_id: u32) -> Result<NinePeeMessage> {
+        debug!("TranslatorKill: translator_id={}", translator_id);
+
+        if !self.connection_state.supports_extensions() {
+            return Ok(NinePeeMessage::Error {
+                ename: "Extensions not supported".to_string(),
+                errno: 95,
+            });
+        }
+
+        let mut active = self.active_translators.write().await;
+        if let Some(mount_point) = active.remove(&translator_id) {
+            // Remove translator from registry
+            if let Err(e) = self.translator_registry.remove_translator(&mount_point).await {
+                error!("Failed to remove translator from registry: {}", e);
+            }
+
+            info!("Killed translator {}", translator_id);
+            Ok(NinePeeMessage::TranslatorKill { translator_id })
+        } else {
+            Ok(NinePeeMessage::Error {
+                ename: "Invalid translator ID".to_string(),
+                errno: 22,
+            })
+        }
+    }
+
+    /// Handle consensus propose (GHOSTDAG)
+    async fn handle_consensus_propose(&mut self, block_hash: [u8; 32], parent_hashes: Vec<[u8; 32]>) -> Result<NinePeeMessage> {
+        debug!("ConsensusPropose: block_hash={:?}, parents={}",
+               hex::encode(&block_hash[..8]), parent_hashes.len());
+
+        if !self.connection_state.supports_extensions() {
+            return Ok(NinePeeMessage::Error {
+                ename: "Extensions not supported".to_string(),
+                errno: 95,
+            });
+        }
+
+        let mut consensus = self.consensus_state.write().await;
+
+        // Check if block already exists
+        if consensus.blocks.contains_key(&block_hash) {
+            return Ok(NinePeeMessage::Error {
+                ename: "Block already proposed".to_string(),
+                errno: 17, // EEXIST
+            });
+        }
+
+        // Validate parent blocks exist
+        for parent in &parent_hashes {
+            if !parent.iter().all(|&b| b == 0) && !consensus.blocks.contains_key(parent) {
+                return Ok(NinePeeMessage::Error {
+                    ename: "Unknown parent block".to_string(),
+                    errno: 2, // ENOENT
+                });
+            }
+        }
+
+        // Calculate blue score using GHOSTDAG algorithm
+        let blue_score = self.calculate_blue_score(&consensus, &parent_hashes).await;
+
+        // Create new block
+        let block = ConsensusBlock {
+            hash: block_hash,
+            parents: parent_hashes.clone(),
+            blue_score,
+            is_blue: true, // New blocks start as blue
+            votes_for: 0,
+            votes_against: 0,
+            proposed_at: std::time::Instant::now(),
+            status: BlockStatus::Proposed,
+        };
+
+        // Add to blocks and update tips
+        consensus.blocks.insert(block_hash, block);
+        self.update_tips(&mut consensus, block_hash, &parent_hashes).await;
+
+        info!("Proposed block {:?} with blue score {} and {} parents",
+              hex::encode(&block_hash[..8]), blue_score, parent_hashes.len());
+
+        Ok(NinePeeMessage::ConsensusPropose { block_hash, parent_hashes })
+    }
+
+    /// Handle consensus vote
+    async fn handle_consensus_vote(&mut self, block_hash: [u8; 32], vote: bool) -> Result<NinePeeMessage> {
+        debug!("ConsensusVote: block_hash={:?}, vote={}",
+               hex::encode(&block_hash[..8]), vote);
+
+        if !self.connection_state.supports_extensions() {
+            return Ok(NinePeeMessage::Error {
+                ename: "Extensions not supported".to_string(),
+                errno: 95,
+            });
+        }
+
+        let mut consensus = self.consensus_state.write().await;
+        let vote_threshold = consensus.vote_threshold;
+
+        // Find the block to vote on
+        let block = match consensus.blocks.get_mut(&block_hash) {
+            Some(b) => b,
+            None => return Ok(NinePeeMessage::Error {
+                ename: "Block not found".to_string(),
+                errno: 2, // ENOENT
+            }),
+        };
+
+        // Check if block is still in voting phase
+        if block.status != BlockStatus::Proposed && block.status != BlockStatus::Voting {
+            return Ok(NinePeeMessage::Error {
+                ename: "Block not in voting phase".to_string(),
+                errno: 22, // EINVAL
+            });
+        }
+
+        // Update vote counts
+        if vote {
+            block.votes_for += 1;
+        } else {
+            block.votes_against += 1;
+        }
+
+        // Update status to voting if it was just proposed
+        if block.status == BlockStatus::Proposed {
+            block.status = BlockStatus::Voting;
+        }
+
+        // Check if we have enough votes to make a decision
+        let total_votes = block.votes_for + block.votes_against;
+        let votes_for = block.votes_for;
+        let votes_against = block.votes_against;
+
+        if total_votes >= vote_threshold {
+            if votes_for > votes_against {
+                block.status = BlockStatus::Accepted;
+                info!("Block {:?} ACCEPTED ({} for, {} against)",
+                      hex::encode(&block_hash[..8]), votes_for, votes_against);
+            } else {
+                block.status = BlockStatus::Rejected;
+                block.is_blue = false;
+                info!("Block {:?} REJECTED ({} for, {} against)",
+                      hex::encode(&block_hash[..8]), votes_for, votes_against);
+            }
+        }
+
+        info!("Received {} vote for block {:?} (votes: {} for, {} against)",
+              if vote { "positive" } else { "negative" },
+              hex::encode(&block_hash[..8]), block.votes_for, block.votes_against);
+
+        Ok(NinePeeMessage::ConsensusVote { block_hash, vote })
+    }
+
+    /// Handle consensus commit
+    async fn handle_consensus_commit(&mut self, block_hash: [u8; 32], blue_score: u64) -> Result<NinePeeMessage> {
+        debug!("ConsensusCommit: block_hash={:?}, blue_score={}",
+               hex::encode(&block_hash[..8]), blue_score);
+
+        if !self.connection_state.supports_extensions() {
+            return Ok(NinePeeMessage::Error {
+                ename: "Extensions not supported".to_string(),
+                errno: 95,
+            });
+        }
+
+        let mut consensus = self.consensus_state.write().await;
+        let finality_depth = consensus.finality_depth;
+
+        // Calculate confirmation depth first (before mutable borrow)
+        let confirmation_depth = self.calculate_confirmation_depth(&consensus, &block_hash).await;
+
+        // Find the block to commit
+        let block = match consensus.blocks.get_mut(&block_hash) {
+            Some(b) => b,
+            None => return Ok(NinePeeMessage::Error {
+                ename: "Block not found".to_string(),
+                errno: 2, // ENOENT
+            }),
+        };
+
+        // Check if block is ready to commit (must be accepted)
+        if block.status != BlockStatus::Accepted {
+            return Ok(NinePeeMessage::Error {
+                ename: "Block not ready for commit".to_string(),
+                errno: 22, // EINVAL
+            });
+        }
+
+        // Validate blue score matches expected value
+        if blue_score != block.blue_score {
+            return Ok(NinePeeMessage::Error {
+                ename: "Blue score mismatch".to_string(),
+                errno: 22, // EINVAL
+            });
+        }
+
+        // Check finality depth - ensure block has enough confirmations
+        if confirmation_depth < finality_depth {
+            return Ok(NinePeeMessage::Error {
+                ename: format!("Insufficient confirmations: {} < {}", confirmation_depth, finality_depth),
+                errno: 11, // EAGAIN
+            });
+        }
+
+        // Commit the block
+        block.status = BlockStatus::Committed;
+        consensus.virtual_block_blue_score = consensus.virtual_block_blue_score.max(blue_score + 1);
+
+        info!("COMMITTED block {:?} with blue score {} (depth: {})",
+              hex::encode(&block_hash[..8]), blue_score, confirmation_depth);
+
+        Ok(NinePeeMessage::ConsensusCommit { block_hash, blue_score })
+    }
+
+    /// Calculate blue score using GHOSTDAG algorithm
+    async fn calculate_blue_score(&self, consensus: &ConsensusState, parent_hashes: &[[u8; 32]]) -> u64 {
+        if parent_hashes.is_empty() {
+            return 0;
+        }
+
+        // Find the highest blue score among parents
+        let mut max_blue_score = 0;
+        for parent_hash in parent_hashes {
+            if let Some(parent_block) = consensus.blocks.get(parent_hash) {
+                if parent_block.is_blue {
+                    max_blue_score = max_blue_score.max(parent_block.blue_score);
+                }
+            }
+        }
+
+        // In GHOSTDAG, new block's blue score is max parent blue score + 1
+        max_blue_score + 1
+    }
+
+    /// Update tip set after adding a new block
+    async fn update_tips(&self, consensus: &mut ConsensusState, new_block: [u8; 32], parents: &[[u8; 32]]) {
+        // Remove parents from tips (they're no longer tips)
+        for parent in parents {
+            consensus.tip_hashes.remove(parent);
+        }
+
+        // Add new block as a tip
+        consensus.tip_hashes.insert(new_block);
+    }
+
+    /// Calculate confirmation depth for finality
+    async fn calculate_confirmation_depth(&self, consensus: &ConsensusState, block_hash: &[u8; 32]) -> u32 {
+        // Simple implementation: count blocks that reference this block in their ancestry
+        let mut depth = 0;
+        let mut visited = std::collections::HashSet::new();
+        let mut queue = std::collections::VecDeque::new();
+
+        // Start from tips and work backwards
+        for tip in &consensus.tip_hashes {
+            queue.push_back(*tip);
+        }
+
+        while let Some(current) = queue.pop_front() {
+            if visited.contains(&current) {
+                continue;
+            }
+            visited.insert(current);
+
+            if current == *block_hash {
+                continue; // Don't count the block itself
+            }
+
+            if let Some(block) = consensus.blocks.get(&current) {
+                // Check if this block has our target in its ancestry
+                if self.has_ancestor(consensus, &current, block_hash).await {
+                    depth += 1;
+                }
+
+                // Add parents to queue for further exploration
+                for parent in &block.parents {
+                    if !visited.contains(parent) {
+                        queue.push_back(*parent);
+                    }
+                }
+            }
+        }
+
+        depth
+    }
+
+    /// Check if a block has another block as an ancestor
+    fn has_ancestor<'a>(&'a self, consensus: &'a ConsensusState, descendant: &'a [u8; 32], ancestor: &'a [u8; 32]) -> std::pin::Pin<Box<dyn std::future::Future<Output = bool> + Send + 'a>> {
+        Box::pin(async move {
+            if descendant == ancestor {
+                return true;
+            }
+
+            if let Some(block) = consensus.blocks.get(descendant) {
+                for parent in &block.parents {
+                    if parent == ancestor {
+                        return true;
+                    }
+                    if self.has_ancestor(consensus, parent, ancestor).await {
+                        return true;
+                    }
+                }
+            }
+
+            false
+        })
+    }
+}

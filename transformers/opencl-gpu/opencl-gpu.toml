@@ -1,0 +1,36 @@
+[transformer]
+name = "opencl-gpu"
+version = "0.1.0"
+description = "OpenCL GPU compute transformer for 9P.e"
+author = "9P.e Team"
+
+[capabilities]
+# Files this transformer can handle
+paths = ["/gpu", "/gpu/*"]
+operations = ["stat", "read", "write", "readdir"]
+
+[exports]
+# WASM functions exported by this transformer
+init = "init"
+handle_stat = "handle_stat"
+handle_read = "handle_read"
+handle_write = "handle_write"
+handle_readdir = "handle_readdir"
+handle_special_op = "handle_special_op"
+get_result_ptr = "get_result_ptr"
+get_result_len = "get_result_len"
+alloc = "alloc"
+dealloc = "dealloc"
+
+[resources]
+# Resource limits for this transformer
+max_memory = 268435456  # 256MB
+max_fuel = 100000000
+stack_size = 262144  # 256KB
+
+[features]
+# OpenCL specific features
+devices = ["gpu", "cpu", "accelerator"]
+kernels = ["matrix_multiply", "vector_add", "fft", "reduce"]
+max_buffer_size = 1073741824  # 1GB
+async_execution = true

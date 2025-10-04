@@ -10,8 +10,8 @@ categories = ["network-programming", "filesystem"]
 authors = ["9PE Team"]
 
 [dependencies]
-# 9PE core protocol
-plan9e = { path = "../9PE", package = "ninepee" }
+# 9PE core protocol - using git dependency to avoid path issues
+ninepee = { git = "https://github.com/kiljoy001/9PE.git", branch = "main" }
 
 # Core async runtime
 tokio = { version = "1.0", features = ["full"] }
@@ -144,7 +144,7 @@ rand = "0.8"
 uuid = { version = "1.0", features = ["v4"] }
 
 [features]
-default = []
+default = ["advanced", "wasm", "grid"]
 testing = []
 advanced = []  # Enables synthetic files, translators, auth
 wasm = ["wasmtime", "wasmtime-wasi", "wasm-encoder", "wasmparser"]

@@ -20,6 +20,7 @@ pub struct ServerBuilder {
     metrics_port: u16,
     translator_directory: Option<PathBuf>,
     settrans_directory: Option<PathBuf>,
+    auto_mount_enabled: bool,
 }
 
 impl ServerBuilder {
@@ -36,6 +37,7 @@ impl ServerBuilder {
             metrics_port: 9090,
             translator_directory: None,
             settrans_directory: None,
+            auto_mount_enabled: true, // Auto-mount enabled by default
         }
     }
 
@@ -94,6 +96,11 @@ impl ServerBuilder {
         self
     }
 
+    pub fn auto_mount_enabled(mut self, enabled: bool) -> Self {
+        self.auto_mount_enabled = enabled;
+        self
+    }
+
     pub async fn build(self) -> Result<Server> {
         let config = ServerConfig {
             network: self.network_config.unwrap_or_default(),
@@ -106,7 +113,8 @@ impl ServerBuilder {
             metrics_enabled: self.metrics_enabled,
             metrics_port: self.metrics_port,
             translator_directory: self.translator_directory.unwrap_or_else(|| PathBuf::from("/srv/translators")),
-            settrans_directory: self.settrans_directory.unwrap_or_else(|| PathBuf::from("/settrans")),
+            settrans_directory: self.settrans_directory.unwrap_or_else(|| PathBuf::from("/srv/settrans")),
+            auto_mount_enabled: self.auto_mount_enabled,
         };
 
         Server::new(config).await

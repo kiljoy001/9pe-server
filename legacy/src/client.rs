@@ -11,7 +11,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use anyhow::{Result, Context};
 use tracing::{info, warn, error, debug};
 
-use plan9e::protocol::NinePeeMessage;
+use ninepee::NinePeeMessage;
 
 /// File identifier to path mapping (client-side)
 type ClientFidMap = Arc<RwLock<HashMap<u32, PathBuf>>>;
@@ -63,18 +63,17 @@ impl NinePeeClient {
         client.negotiate_version().await?;
 
         // 2. Authentication
-        let auth_msg = plan9e::protocol::NinePeeMessage::Auth {
+        let auth_msg = NinePeeMessage::Auth {
             afid: 0,
             uname: username.to_string(),
             aname: "/".to_string(),
-            password: Some(password.to_string()),
         };
 
         let auth_response = client.send_message(auth_msg).await?;
 
         // Check for proper auth response
         match auth_response {
-            plan9e::protocol::NinePeeMessage::Error { ename, .. } => {
+            NinePeeMessage::Error { ename, .. } => {
                 return Err(anyhow::anyhow!("Authentication failed: {}", ename));
             }
             _ => {
@@ -84,7 +83,7 @@ impl NinePeeClient {
 
         // 3. Attach to root with authenticated user
         let root_fid = client.allocate_fid().await;
-        let attach_msg = plan9e::protocol::NinePeeMessage::Attach {
+        let attach_msg = NinePeeMessage::Attach {
             fid: root_fid,
             afid: 0,  // We already authenticated
             uname: username.to_string(),

@@ -6,7 +6,7 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use anyhow::{Result, Context};
+use anyhow::Result;
 use serde::{Serialize, Deserialize};
 // Temporarily disable ed25519_dalek for MVP - will use string placeholders
 // use ed25519_dalek::{PublicKey, Signature, Keypair, Signer, Verifier};

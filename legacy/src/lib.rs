@@ -58,6 +58,9 @@ pub use server::FileSystemServer;
 pub mod auth;
 
 #[cfg(feature = "advanced")]
+pub mod validation;
+
+#[cfg(feature = "advanced")]
 pub mod synthetic_advanced;
 
 #[cfg(feature = "advanced")]

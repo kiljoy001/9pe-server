@@ -8,7 +8,9 @@ use tracing::{info, debug, error};
 use crate::network::NetworkConfig;
 use crate::transport::{TransportType, TransportFactory, ConnectionListener};
 use crate::wasm::ThreadSafeTranslatorRegistry;
-use crate::settrans::SettransSystem;
+use crate::settrans::VirtualSettransSystem;
+use crate::synth::SyntheticFilesystem;
+use crate::auto_mount::AutoMountDaemon;
 
 pub mod builder;
 pub mod handler;
@@ -23,7 +25,9 @@ pub struct Server {
     listener: Box<dyn ConnectionListener>,
     session_manager: Arc<SessionManager>,
     translator_registry: Arc<ThreadSafeTranslatorRegistry>,
-    settrans_system: Arc<SettransSystem>,
+    settrans_system: Arc<VirtualSettransSystem>,
+    synth_fs: Arc<SyntheticFilesystem>,
+    auto_mount_daemon: Option<AutoMountDaemon>,
 }
 
 /// Server configuration
@@ -40,6 +44,7 @@ pub struct ServerConfig {
     pub metrics_port: u16,
     pub translator_directory: PathBuf,
     pub settrans_directory: PathBuf,
+    pub auto_mount_enabled: bool,
 }
 
 impl Server {
@@ -65,21 +70,27 @@ impl Server {
         // Create session manager
         let session_manager = Arc::new(SessionManager::new());
 
-        // Initialize thread-safe translator registry
-        let translator_registry = Arc::new(ThreadSafeTranslatorRegistry::new(config.translator_directory.clone()));
+        // Initialize synthetic filesystem for virtual directories
+        let synth_fs = Arc::new(SyntheticFilesystem::new());
+        info!("Synthetic filesystem initialized for virtual directories");
 
-        // Note: ThreadSafeTranslatorRegistry doesn't have scan_and_load method yet
-        // This will be handled by the settrans system
+        // Initialize thread-safe translator registry and load existing translators
+        let translator_registry = Arc::new(ThreadSafeTranslatorRegistry::new(config.translator_directory.clone()));
         info!("Thread-safe WASM translator registry initialized at {:?}", config.translator_directory);
 
-        // Initialize settrans system for filesystem-based translator management
+        // Scan and load existing WASM translators from disk
+        if let Err(e) = translator_registry.scan_and_load().await {
+            error!("Failed to load existing translators: {}", e);
+        }
+
+        // Initialize virtual settrans system with synthetic filesystem
         let settrans_system = Arc::new(
-            SettransSystem::new(
-                config.settrans_directory.clone(),
+            VirtualSettransSystem::new(
+                synth_fs.clone(),
                 translator_registry.clone(),
-            ).await.context("Failed to initialize settrans system")?
+            ).await.context("Failed to initialize virtual settrans system")?
         );
-        info!("Settrans system initialized at {:?}", config.settrans_directory);
+        info!("Virtual settrans system initialized at /srv/settrans (virtual only, no physical directories)");
 
         // Start mesh networking if enabled
         if config.mesh_enabled {
@@ -93,12 +104,31 @@ impl Server {
             // Metrics initialization here
         }
 
+        // Initialize auto-mount daemon if enabled
+        let auto_mount_daemon = if config.auto_mount_enabled {
+            info!("Auto-mount enabled - starting transparent /n/ namespace daemon");
+            match crate::auto_mount::initialize_auto_mount().await {
+                Ok(daemon) => {
+                    info!("Auto-mount daemon started successfully");
+                    Some(daemon)
+                }
+                Err(e) => {
+                    error!("Failed to start auto-mount daemon: {}", e);
+                    None
+                }
+            }
+        } else {
+            None
+        };
+
         Ok(Self {
             config,
             listener,
             session_manager,
             translator_registry,
             settrans_system,
+            synth_fs,
+            auto_mount_daemon,
         })
     }
 
@@ -123,6 +153,11 @@ impl Server {
                     let max_message_size = self.config.max_message_size;
                     let session_mgr = Arc::clone(&self.session_manager);
 
+                    // Clone components for the handler
+                    let translator_registry = Arc::clone(&self.translator_registry);
+                    let settrans_system = Arc::clone(&self.settrans_system);
+                    let synth_fs = Arc::clone(&self.synth_fs);
+
                     // Spawn handler task
                     tokio::spawn(async move {
                         if let Err(e) = Self::handle_connection(
@@ -130,6 +165,9 @@ impl Server {
                             root_path,
                             max_message_size,
                             session_mgr,
+                            translator_registry,
+                            settrans_system,
+                            synth_fs,
                         )
                         .await
                         {
@@ -151,6 +189,9 @@ impl Server {
         root_path: std::path::PathBuf,
         max_message_size: u32,
         session_mgr: Arc<SessionManager>,
+        translator_registry: Arc<ThreadSafeTranslatorRegistry>,
+        settrans_system: Arc<VirtualSettransSystem>,
+        synth_fs: Arc<SyntheticFilesystem>,
     ) -> Result<()> {
         let peer = connection.peer_addr()?;
         info!(
@@ -162,8 +203,14 @@ impl Server {
         // Create session
         let session_id = session_mgr.create_session(peer).await?;
 
-        // Create message handler for this connection
-        let mut handler = crate::server::handler::MessageHandler::new(root_path, max_message_size)?;
+        // Create message handler for this connection with all components
+        let mut handler = crate::server::handler::MessageHandler::new(
+            root_path,
+            max_message_size,
+            translator_registry,
+            settrans_system,
+            synth_fs,
+        )?;
 
         use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
@@ -193,7 +240,7 @@ impl Server {
             }
 
             // Deserialize 9P message
-            let message = match handler.deserialize_message(message_buf).await {
+            let message = match handler.deserialize_ninepee_message(message_buf).await {
                 Ok(msg) => msg,
                 Err(e) => {
                     error!("Failed to deserialize message: {}", e);
@@ -201,14 +248,14 @@ impl Server {
                 }
             };
 
-            debug!("Received message: {:?}", message);
+            debug!("Received message - deserializing as NinePeeMessage");
 
             // Process message and get response
             let response = match handler.handle_message(message).await {
                 Ok(resp) => resp,
                 Err(e) => {
                     error!("Failed to handle message: {}", e);
-                    ninepee::protocol::NinePeeMessage::Error {
+                    crate::protocol::NinePeeMessage::Error {
                         ename: format!("Internal error: {}", e),
                         errno: 5, // EIO
                     }
@@ -218,7 +265,8 @@ impl Server {
             debug!("Sending response: {:?}", response);
 
             // Serialize response
-            let response_data = match handler.serialize_message(&response).await {
+            // Serialize response using bincode for now
+            let response_data = match bincode::serialize(&response) {
                 Ok(data) => data,
                 Err(e) => {
                     error!("Failed to serialize response: {}", e);

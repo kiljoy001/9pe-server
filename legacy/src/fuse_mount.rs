@@ -2,6 +2,10 @@
 //!
 //! Provides seamless filesystem access through FUSE
 
+#![allow(unused_imports)]
+#![allow(unused_variables)]
+#![allow(dead_code)]
+
 use std::ffi::OsStr;
 use std::path::Path;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -60,7 +64,7 @@ impl NinePeeFuse {
         ];
 
         // Create and run FUSE session (blocking)
-        let session = Session::new(self, mount_point, &options)?;
+        let mut session = Session::new(self, mount_point, &options)?;
 
         info!("✅ FUSE session starting at {:?}", mount_point);
         session.run()?;
@@ -332,6 +336,119 @@ pub async fn unmount(mount_point: &Path) -> Result<()> {
 /// Check if FUSE is available on the system
 pub fn is_fuse_available() -> bool {
     Path::new("/dev/fuse").exists()
+}
+
+/// Initialize Plan 9 style namespace directories
+pub async fn initialize_plan9_namespace() -> Result<()> {
+    info!("🗂️ Initializing Plan 9 namespace directories");
+
+    // Create /srv directory for service files
+    let srv_dir = Path::new("/srv");
+    if !srv_dir.exists() {
+        tokio::fs::create_dir_all(srv_dir).await
+            .context("Failed to create /srv directory")?;
+        info!("📁 Created /srv directory");
+    }
+
+    // Create /n directory for namespace mounts
+    let n_dir = Path::new("/n");
+    if !n_dir.exists() {
+        tokio::fs::create_dir_all(n_dir).await
+            .context("Failed to create /n directory")?;
+        info!("📁 Created /n directory");
+    }
+
+    // Set appropriate permissions and group ownership
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        use std::process::Command;
+
+        // Try to create the ninepee group if it doesn't exist
+        // This will fail silently if the group already exists or if we don't have permissions
+        let _ = Command::new("groupadd")
+            .args(&["-f", "ninepee"])  // -f flag: exit successfully if group already exists
+            .output();
+
+        // Set permissions: owner and group can read/write/execute, others can only read/execute
+        // 0o775 = rwxrwxr-x (owner: rwx, group: rwx, others: r-x)
+        let perms = std::fs::Permissions::from_mode(0o775);
+        std::fs::set_permissions(srv_dir, perms.clone())
+            .context("Failed to set /srv permissions")?;
+        std::fs::set_permissions(n_dir, perms)
+            .context("Failed to set /n permissions")?;
+
+        // Try to set group ownership to ninepee
+        // This will fail silently if the group doesn't exist or we don't have permissions
+        let _ = Command::new("chgrp")
+            .args(&["ninepee", "/srv"])
+            .output();
+        let _ = Command::new("chgrp")
+            .args(&["ninepee", "/n"])
+            .output();
+
+        // Set the sticky bit on group permissions so new files inherit the group
+        let _ = Command::new("chmod")
+            .args(&["g+s", "/srv"])
+            .output();
+        let _ = Command::new("chmod")
+            .args(&["g+s", "/n"])
+            .output();
+
+        info!("📁 Set permissions 0775 and attempted to set group ownership to 'ninepee'");
+        info!("💡 Add users to 'ninepee' group with: sudo usermod -a -G ninepee <username>");
+    }
+
+    info!("✅ Plan 9 namespace directories initialized");
+    Ok(())
+}
+
+/// Cleanup Plan 9 style namespace directories and their contents
+pub async fn cleanup_plan9_namespace() -> Result<()> {
+    info!("🧹 Cleaning up Plan 9 namespace directories");
+
+    // Unmount all active mounts in /n
+    let n_dir = Path::new("/n");
+    if n_dir.exists() {
+        if let Ok(mut entries) = tokio::fs::read_dir(n_dir).await {
+            while let Ok(Some(entry)) = entries.next_entry().await {
+                let path = entry.path();
+                if path.is_dir() {
+                    info!("🔄 Unmounting {:?}", path);
+                    let _ = unmount(&path).await;
+                }
+            }
+        }
+
+        // Remove the /n directory
+        match tokio::fs::remove_dir_all(n_dir).await {
+            Ok(_) => info!("🗑️ Removed /n directory"),
+            Err(e) => warn!("Failed to remove /n directory: {}", e),
+        }
+    }
+
+    // Clean up service files in /srv
+    let srv_dir = Path::new("/srv");
+    if srv_dir.exists() {
+        if let Ok(mut entries) = tokio::fs::read_dir(srv_dir).await {
+            while let Ok(Some(entry)) = entries.next_entry().await {
+                let path = entry.path();
+                if path.is_file() && path.extension().map_or(false, |ext| ext == "9pe") {
+                    info!("🗑️ Removing service file {:?}", path);
+                    let _ = tokio::fs::remove_file(path).await;
+                }
+            }
+        }
+
+        // Remove the /srv directory
+        match tokio::fs::remove_dir_all(srv_dir).await {
+            Ok(_) => info!("🗑️ Removed /srv directory"),
+            Err(e) => warn!("Failed to remove /srv directory: {}", e),
+        }
+    }
+
+    info!("✅ Plan 9 namespace cleanup complete");
+    Ok(())
 }
 
 /// Mount helper that creates the mount point

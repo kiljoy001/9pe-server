@@ -4,12 +4,12 @@
 //! Factorizes common functionality to enable easy creation of new translator types.
 
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use anyhow::{Result, Context};
 use serde::{Serialize, Deserialize};
-use tracing::{info, warn, error, debug};
+use tracing::info;
 use uuid::Uuid;
 use async_trait::async_trait;
 

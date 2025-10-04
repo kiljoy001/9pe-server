@@ -1,0 +1,264 @@
+//! Synthetic filesystem implementation for virtual directories
+//!
+//! Provides in-memory virtual filesystem that exists only in the 9P namespace.
+//! No physical directories are created on disk.
+
+use anyhow::Result;
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use tokio::sync::RwLock;
+use chrono::{DateTime, Utc};
+
+/// Virtual file or directory in the synthetic filesystem
+#[derive(Debug, Clone)]
+pub struct SynthNode {
+    pub name: String,
+    pub path: PathBuf,
+    pub node_type: SynthNodeType,
+    pub permissions: u32,
+    pub created: DateTime<Utc>,
+    pub modified: DateTime<Utc>,
+    pub accessed: DateTime<Utc>,
+}
+
+#[derive(Clone)]
+pub enum SynthNodeType {
+    Directory { children: Vec<String> },
+    File { content: Vec<u8>, writable: bool },
+    ControlFile { handler: Arc<dyn ControlHandler> },
+}
+
+impl std::fmt::Debug for SynthNodeType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Directory { children } => f.debug_struct("Directory")
+                .field("children", children)
+                .finish(),
+            Self::File { content, writable } => f.debug_struct("File")
+                .field("content_len", &content.len())
+                .field("writable", writable)
+                .finish(),
+            Self::ControlFile { .. } => f.debug_struct("ControlFile").finish(),
+        }
+    }
+}
+
+/// Handler for control files that execute operations
+pub trait ControlHandler: Send + Sync {
+    fn read(&self) -> Result<Vec<u8>>;
+    fn write(&self, data: &[u8]) -> Result<()>;
+}
+
+/// Synthetic filesystem that maintains virtual directories and files
+pub struct SyntheticFilesystem {
+    nodes: Arc<RwLock<HashMap<PathBuf, SynthNode>>>,
+}
+
+impl SyntheticFilesystem {
+    pub fn new() -> Self {
+        Self {
+            nodes: Arc::new(RwLock::new(HashMap::new())),
+        }
+    }
+
+    /// Create a virtual directory
+    pub async fn create_directory(&self, path: &Path) -> Result<()> {
+        let mut nodes = self.nodes.write().await;
+
+        // Create parent directories if needed
+        let mut current = PathBuf::new();
+        for component in path.components() {
+            current.push(component);
+
+            if !nodes.contains_key(&current) {
+                let name = current.file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .to_string();
+
+                let node = SynthNode {
+                    name,
+                    path: current.clone(),
+                    node_type: SynthNodeType::Directory { children: Vec::new() },
+                    permissions: 0o755,
+                    created: Utc::now(),
+                    modified: Utc::now(),
+                    accessed: Utc::now(),
+                };
+
+                nodes.insert(current.clone(), node);
+
+                // Update parent's children list
+                if let Some(parent_path) = current.parent() {
+                    if let Some(parent_node) = nodes.get_mut(parent_path) {
+                        if let SynthNodeType::Directory { ref mut children } = parent_node.node_type {
+                            let child_name = current.file_name()
+                                .unwrap_or_default()
+                                .to_string_lossy()
+                                .to_string();
+                            if !children.contains(&child_name) {
+                                children.push(child_name);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Create a virtual file
+    pub async fn create_file(&self, path: &Path, content: Vec<u8>, writable: bool) -> Result<()> {
+        // Ensure parent directory exists
+        if let Some(parent) = path.parent() {
+            self.create_directory(parent).await?;
+        }
+
+        let mut nodes = self.nodes.write().await;
+
+        let name = path.file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_string();
+
+        let node = SynthNode {
+            name: name.clone(),
+            path: path.to_path_buf(),
+            node_type: SynthNodeType::File { content, writable },
+            permissions: if writable { 0o644 } else { 0o444 },
+            created: Utc::now(),
+            modified: Utc::now(),
+            accessed: Utc::now(),
+        };
+
+        nodes.insert(path.to_path_buf(), node);
+
+        // Update parent's children
+        if let Some(parent_path) = path.parent() {
+            if let Some(parent_node) = nodes.get_mut(parent_path) {
+                if let SynthNodeType::Directory { ref mut children } = parent_node.node_type {
+                    if !children.contains(&name) {
+                        children.push(name);
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Create a control file with custom handler
+    pub async fn create_control_file(
+        &self,
+        path: &Path,
+        handler: Arc<dyn ControlHandler>
+    ) -> Result<()> {
+        // Ensure parent directory exists
+        if let Some(parent) = path.parent() {
+            self.create_directory(parent).await?;
+        }
+
+        let mut nodes = self.nodes.write().await;
+
+        let name = path.file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_string();
+
+        let node = SynthNode {
+            name: name.clone(),
+            path: path.to_path_buf(),
+            node_type: SynthNodeType::ControlFile { handler },
+            permissions: 0o644,
+            created: Utc::now(),
+            modified: Utc::now(),
+            accessed: Utc::now(),
+        };
+
+        nodes.insert(path.to_path_buf(), node);
+
+        // Update parent's children
+        if let Some(parent_path) = path.parent() {
+            if let Some(parent_node) = nodes.get_mut(parent_path) {
+                if let SynthNodeType::Directory { ref mut children } = parent_node.node_type {
+                    if !children.contains(&name) {
+                        children.push(name);
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Check if a path exists in the synthetic filesystem
+    pub async fn exists(&self, path: &Path) -> bool {
+        let nodes = self.nodes.read().await;
+        nodes.contains_key(path)
+    }
+
+    /// Get a node by path
+    pub async fn get_node(&self, path: &Path) -> Option<SynthNode> {
+        let nodes = self.nodes.read().await;
+        nodes.get(path).cloned()
+    }
+
+    /// List directory contents
+    pub async fn list_directory(&self, path: &Path) -> Result<Vec<String>> {
+        let nodes = self.nodes.read().await;
+
+        if let Some(node) = nodes.get(path) {
+            if let SynthNodeType::Directory { ref children } = node.node_type {
+                return Ok(children.clone());
+            }
+        }
+
+        Ok(Vec::new())
+    }
+
+    /// Read file contents
+    pub async fn read_file(&self, path: &Path) -> Result<Vec<u8>> {
+        let nodes = self.nodes.read().await;
+
+        if let Some(node) = nodes.get(path) {
+            match &node.node_type {
+                SynthNodeType::File { content, .. } => {
+                    return Ok(content.clone());
+                }
+                SynthNodeType::ControlFile { handler } => {
+                    return handler.read();
+                }
+                _ => {}
+            }
+        }
+
+        anyhow::bail!("File not found: {:?}", path)
+    }
+
+    /// Write file contents
+    pub async fn write_file(&self, path: &Path, data: Vec<u8>) -> Result<()> {
+        let mut nodes = self.nodes.write().await;
+
+        if let Some(node) = nodes.get_mut(path) {
+            match &mut node.node_type {
+                SynthNodeType::File { content, writable } => {
+                    if *writable {
+                        *content = data;
+                        node.modified = Utc::now();
+                        return Ok(());
+                    } else {
+                        anyhow::bail!("File is read-only: {:?}", path);
+                    }
+                }
+                SynthNodeType::ControlFile { handler } => {
+                    return handler.write(&data);
+                }
+                _ => {}
+            }
+        }
+
+        anyhow::bail!("File not found: {:?}", path)
+    }
+}

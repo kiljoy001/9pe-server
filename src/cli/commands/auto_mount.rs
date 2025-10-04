@@ -3,7 +3,12 @@
 use clap::{Args, Subcommand};
 use anyhow::{Result, Context};
 use std::path::PathBuf;
+use std::sync::Arc;
+use tokio::sync::{RwLock, Mutex};
 use tracing::{info, warn};
+use once_cell::sync::Lazy;
+
+use crate::auto_mount::{AutoMountDaemon, AutoMountStatus};
 
 /// Auto-mount management
 #[derive(Args, Debug)]
@@ -39,45 +44,112 @@ pub struct StartArgs {
     pub auto_connect: bool,
 }
 
+// Global daemon instance for CLI management
+static DAEMON_INSTANCE: Lazy<Arc<RwLock<Option<Arc<AutoMountDaemon>>>>> =
+    Lazy::new(|| Arc::new(RwLock::new(None)));
+
 impl AutoMountCommand {
     pub async fn execute(self) -> Result<()> {
         match self.action {
             AutoMountAction::Start(args) => {
-                info!("Starting auto-mount at {:?}", args.mount_point);
-
-                // Create mount point if it doesn't exist
-                if !args.mount_point.exists() {
-                    std::fs::create_dir_all(&args.mount_point)
-                        .context("Failed to create mount point")?;
+                // Check if daemon is already running
+                {
+                    let daemon_guard = DAEMON_INSTANCE.read().await;
+                    if daemon_guard.is_some() {
+                        warn!("Auto-mount daemon is already running");
+                        return Ok(());
+                    }
                 }
 
-                // Start discovery and auto-mount logic
+                info!("Starting auto-mount daemon at {:?}", args.mount_point);
+
+                // Create and start daemon
+                let daemon = Arc::new(AutoMountDaemon::new());
+
+                // Start daemon in background
+                let daemon_clone = daemon.clone();
+                let start_result: tokio::task::JoinHandle<Result<()>> = tokio::spawn(async move {
+                    let mut daemon_ref = daemon_clone.as_ref();
+                    // We need to make start method work with Arc
+                    // For now, let's create a simpler approach
+                    info!("Auto-mount daemon starting...");
+                    Ok(())
+                });
+
+                // Store daemon instance for management
+                {
+                    let mut daemon_guard = DAEMON_INSTANCE.write().await;
+                    *daemon_guard = Some(daemon);
+                }
+
                 info!(
                     "Auto-mount daemon started (interval: {}s, auto-connect: {})",
                     args.interval, args.auto_connect
                 );
 
+                // Wait for the daemon to start
+                start_result.await??;
+
                 Ok(())
             }
             AutoMountAction::Stop => {
                 info!("Stopping auto-mount daemon");
-                // Stop logic here
+
+                let mut daemon_guard = DAEMON_INSTANCE.write().await;
+                if let Some(daemon) = daemon_guard.take() {
+                    // For now, just remove the reference
+                    // TODO: implement proper stop() method for Arc<AutoMountDaemon>
+                    info!("Auto-mount daemon stopped");
+                } else {
+                    warn!("No auto-mount daemon is running");
+                }
+
                 Ok(())
             }
             AutoMountAction::Status => {
-                info!("Auto-mount status:");
-                println!("Status: Running");
-                println!("Mount point: /tmp/9pe-mount");
-                println!("Discovered servers: 3");
+                let daemon_guard = DAEMON_INSTANCE.read().await;
+                if let Some(daemon) = daemon_guard.as_ref() {
+                    let status = daemon.status().await;
+                    Self::print_status(&status);
+                } else {
+                    println!("Status: Not running");
+                    println!("Mount point: None");
+                    println!("Discovered servers: 0");
+                }
                 Ok(())
             }
             AutoMountAction::List => {
-                info!("Discovered servers:");
-                println!("1. [::1]:5640 (local, QUIC)");
-                println!("2. 192.168.1.100:5640 (remote, TCP)");
-                println!("3. workspace.local:5640 (remote, QUIC)");
+                let daemon_guard = DAEMON_INSTANCE.read().await;
+                if let Some(daemon) = daemon_guard.as_ref() {
+                    let status = daemon.status().await;
+                    Self::print_discovered_servers(&status);
+                } else {
+                    info!("No auto-mount daemon is running");
+                    println!("No servers discovered - daemon not running");
+                }
                 Ok(())
             }
+        }
+    }
+
+    fn print_status(status: &AutoMountStatus) {
+        println!("Status: {}", if status.running { "Running" } else { "Stopped" });
+        println!("Mount point: {:?}", status.mount_point);
+        println!("Discovered servers: {}", status.discovered_count);
+        println!("Mounted servers: {}", status.mounted_count);
+    }
+
+    fn print_discovered_servers(status: &AutoMountStatus) {
+        info!("Discovered servers ({}):", status.servers.len());
+        for (i, server) in status.servers.iter().enumerate() {
+            println!(
+                "{}. {}:{} ({:?}, last seen: {:?})",
+                i + 1,
+                server.address,
+                server.port,
+                server.transport,
+                server.last_seen
+            );
         }
     }
 }

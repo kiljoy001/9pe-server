@@ -41,11 +41,17 @@
 //! - **Type Safety**: Comprehensive error types, async traits
 //! - **Testing**: Full test coverage with property-based testing
 
+pub mod auth;
+pub mod auto_mount;
 pub mod cli;
+pub mod consensus;
 pub mod error;
+pub mod fuse_mount;
 pub mod network;
+pub mod protocol;
 pub mod server;
 pub mod settrans;
+pub mod synth;
 pub mod transport;
 pub mod wasm;
 
@@ -54,6 +60,7 @@ pub use server::{Server, ServerConfig};
 pub use network::{NetworkConfig, BindAddress};
 pub use transport::{TransportType, Transport, Connection, ConnectionListener};
 pub use error::{ServerError, Result};
+pub use fuse_mount::{mount_9p_fuse, unmount_fuse, cleanup_broken_mounts};
 
 // Re-export CLI for binary usage
 pub use cli::Cli;

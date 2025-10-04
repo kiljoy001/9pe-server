@@ -1,0 +1,278 @@
+//! Comprehensive tests for bounded GHOSTDAG consensus
+
+#[cfg(test)]
+mod tests {
+    use ninep_server::consensus::bounded_ghostdag::*;
+    use tokio;
+
+    #[tokio::test]
+    async fn test_dag_creation_and_basic_operations() {
+        let dag = BoundedGhostdag::new("test-node".to_string());
+
+        // Test genesis block creation
+        let genesis = dag.get_genesis_block().await;
+        assert_eq!(genesis.height, 0);
+        assert_eq!(genesis.parents.len(), 0);
+        assert_eq!(genesis.state, BlockState::Confirmed);
+    }
+
+    #[tokio::test]
+    async fn test_block_addition_and_state_transitions() {
+        let dag = BoundedGhostdag::new("test-node".to_string());
+
+        // Add a block with create operation
+        let op = NamespaceOp::Create {
+            path: "/test/file.txt".to_string(),
+            mode: 0o644,
+            is_dir: false,
+        };
+
+        let block_id = dag.add_block(vec![], vec![op.clone()]).await.unwrap();
+
+        // Check block was added
+        let block = dag.get_block(&block_id).await.unwrap();
+        assert_eq!(block.operations.len(), 1);
+        assert_eq!(block.height, 1);
+
+        // Process pending blocks
+        dag.process_pending_blocks().await.unwrap();
+
+        // Block should now be valid
+        let block = dag.get_block(&block_id).await.unwrap();
+        assert!(block.state == BlockState::Valid || block.state == BlockState::Processing);
+    }
+
+    #[tokio::test]
+    async fn test_conflict_detection() {
+        let dag = BoundedGhostdag::new("test-node".to_string());
+
+        // Add first block with create operation
+        let op1 = NamespaceOp::Create {
+            path: "/test/file.txt".to_string(),
+            mode: 0o644,
+            is_dir: false,
+        };
+        let block1 = dag.add_block(vec![], vec![op1]).await.unwrap();
+
+        // Add conflicting block trying to create same file
+        let op2 = NamespaceOp::Create {
+            path: "/test/file.txt".to_string(),
+            mode: 0o755,
+            is_dir: false,
+        };
+        let block2 = dag.add_block(vec![], vec![op2]).await.unwrap();
+
+        // Process blocks
+        dag.process_pending_blocks().await.unwrap();
+
+        // Check conflicts were detected
+        let conflicts = dag.check_conflicts(&block1, &block2).await;
+        assert!(!conflicts.is_empty());
+        assert_eq!(conflicts[0].0, "/test/file.txt");
+    }
+
+    #[tokio::test]
+    async fn test_dag_pruning_at_max_size() {
+        let dag = BoundedGhostdag::new("test-node".to_string());
+
+        // Add blocks up to MAX_DAG_SIZE (1000)
+        for i in 0..1005 {
+            let op = NamespaceOp::Create {
+                path: format!("/test/file{}.txt", i),
+                mode: 0o644,
+                is_dir: false,
+            };
+            dag.add_block(vec![], vec![op]).await.unwrap();
+
+            if i % 100 == 0 {
+                dag.process_pending_blocks().await.unwrap();
+            }
+        }
+
+        // Trigger pruning
+        dag.prune_old_blocks().await.unwrap();
+
+        // Check DAG size is bounded
+        let stats = dag.get_dag_stats().await;
+        assert!(stats.total_blocks <= 1000);
+        assert!(stats.checkpoint_count > 0);
+    }
+
+    #[tokio::test]
+    async fn test_ghost_selection() {
+        let dag = BoundedGhostdag::new("test-node".to_string());
+
+        // Create a fork in the DAG
+        let genesis = dag.get_genesis_block().await;
+
+        // Branch 1: Add 3 blocks
+        let mut branch1_tip = genesis.id.clone();
+        for i in 0..3 {
+            let op = NamespaceOp::Create {
+                path: format!("/branch1/file{}.txt", i),
+                mode: 0o644,
+                is_dir: false,
+            };
+            branch1_tip = dag.add_block(vec![branch1_tip.clone()], vec![op]).await.unwrap();
+        }
+
+        // Branch 2: Add 5 blocks (heavier)
+        let mut branch2_tip = genesis.id.clone();
+        for i in 0..5 {
+            let op = NamespaceOp::Create {
+                path: format!("/branch2/file{}.txt", i),
+                mode: 0o644,
+                is_dir: false,
+            };
+            branch2_tip = dag.add_block(vec![branch2_tip.clone()], vec![op]).await.unwrap();
+        }
+
+        // Process and run GHOST selection
+        dag.process_pending_blocks().await.unwrap();
+        dag.update_main_chain().await.unwrap();
+
+        // Check that branch2 is selected as main chain (heavier)
+        let main_chain = dag.get_main_chain().await;
+        assert!(main_chain.len() >= 5);
+    }
+
+    #[tokio::test]
+    async fn test_namespace_operations() {
+        let dag = BoundedGhostdag::new("test-node".to_string());
+
+        // Test various namespace operations
+        let ops = vec![
+            NamespaceOp::Create {
+                path: "/dir".to_string(),
+                mode: 0o755,
+                is_dir: true,
+            },
+            NamespaceOp::Create {
+                path: "/dir/file.txt".to_string(),
+                mode: 0o644,
+                is_dir: false,
+            },
+            NamespaceOp::Write {
+                path: "/dir/file.txt".to_string(),
+                offset: 0,
+                hash: [0u8; 32],
+            },
+            NamespaceOp::SetTrans {
+                path: "/dir".to_string(),
+                translator: "test-translator".to_string(),
+                args: vec!["arg1".to_string()],
+            },
+            NamespaceOp::Chmod {
+                path: "/dir/file.txt".to_string(),
+                mode: 0o600,
+            },
+            NamespaceOp::Rename {
+                from: "/dir/file.txt".to_string(),
+                to: "/dir/renamed.txt".to_string(),
+            },
+        ];
+
+        // Add block with all operations
+        let block_id = dag.add_block(vec![], ops.clone()).await.unwrap();
+        dag.process_pending_blocks().await.unwrap();
+
+        // Verify block contains all operations
+        let block = dag.get_block(&block_id).await.unwrap();
+        assert_eq!(block.operations.len(), 6);
+    }
+
+    #[tokio::test]
+    async fn test_batch_operations() {
+        let dag = BoundedGhostdag::new("test-node".to_string());
+
+        // Create batch operation
+        let batch_ops = vec![
+            NamespaceOp::Create {
+                path: "/batch/file1.txt".to_string(),
+                mode: 0o644,
+                is_dir: false,
+            },
+            NamespaceOp::Create {
+                path: "/batch/file2.txt".to_string(),
+                mode: 0o644,
+                is_dir: false,
+            },
+            NamespaceOp::Create {
+                path: "/batch/file3.txt".to_string(),
+                mode: 0o644,
+                is_dir: false,
+            },
+        ];
+
+        let batch = NamespaceOp::Batch { ops: batch_ops };
+
+        let block_id = dag.add_block(vec![], vec![batch]).await.unwrap();
+        dag.process_pending_blocks().await.unwrap();
+
+        // Verify batch was processed
+        let block = dag.get_block(&block_id).await.unwrap();
+        assert_eq!(block.operations.len(), 1);
+        match &block.operations[0] {
+            NamespaceOp::Batch { ops } => assert_eq!(ops.len(), 3),
+            _ => panic!("Expected batch operation"),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_checkpoint_creation() {
+        let dag = BoundedGhostdag::new("test-node".to_string());
+
+        // Add enough blocks to trigger checkpoint
+        for i in 0..150 {
+            let op = NamespaceOp::Create {
+                path: format!("/checkpoint/file{}.txt", i),
+                mode: 0o644,
+                is_dir: false,
+            };
+            dag.add_block(vec![], vec![op]).await.unwrap();
+        }
+
+        dag.process_pending_blocks().await.unwrap();
+        dag.prune_old_blocks().await.unwrap();
+
+        // Check checkpoint was created
+        let stats = dag.get_dag_stats().await;
+        assert!(stats.checkpoint_count > 0);
+    }
+
+    #[tokio::test]
+    async fn test_concurrent_block_addition() {
+        use tokio::task;
+        use std::sync::Arc;
+
+        let dag = Arc::new(BoundedGhostdag::new("test-node".to_string()));
+
+        // Spawn multiple tasks adding blocks concurrently
+        let mut handles = vec![];
+
+        for i in 0..10 {
+            let dag_clone = Arc::clone(&dag);
+            let handle = task::spawn(async move {
+                let op = NamespaceOp::Create {
+                    path: format!("/concurrent/file{}.txt", i),
+                    mode: 0o644,
+                    is_dir: false,
+                };
+                dag_clone.add_block(vec![], vec![op]).await
+            });
+            handles.push(handle);
+        }
+
+        // Wait for all tasks to complete
+        for handle in handles {
+            handle.await.unwrap().unwrap();
+        }
+
+        // Process all blocks
+        dag.process_pending_blocks().await.unwrap();
+
+        // Verify all blocks were added
+        let stats = dag.get_dag_stats().await;
+        assert!(stats.total_blocks >= 10);
+    }
+}

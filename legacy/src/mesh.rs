@@ -161,11 +161,15 @@ impl MeshNetwork {
 
         info!("🌐 Creating mesh network with peer ID: {}", local_peer_id);
 
-        // Create transport
+        // Create transport with optimized settings for stable mesh connections
+        let mut yamux_config = yamux::Config::default();
+        yamux_config.set_max_buffer_size(16 * 1024 * 1024); // 16MB buffer
+        yamux_config.set_max_num_streams(1024); // Allow more concurrent streams
+
         let transport = tcp::tokio::Transport::default()
             .upgrade(libp2p::core::upgrade::Version::V1)
             .authenticate(noise::Config::new(&local_key)?)
-            .multiplex(yamux::Config::default())
+            .multiplex(yamux_config)
             .boxed();
 
         // Create gossipsub
@@ -225,8 +229,11 @@ impl MeshNetwork {
             identify,
         };
 
-        // Create swarm
-        let mut swarm = Swarm::new(transport, behaviour, local_peer_id, Config::with_tokio_executor());
+        // Create swarm with disabled connection idle timeout to prevent 2-minute disconnections
+        // The default idle timeout in libp2p can cause connections to drop after being idle
+        let swarm_config = Config::with_tokio_executor()
+            .with_idle_connection_timeout(Duration::from_secs(u64::MAX)); // Effectively disable timeout
+        let mut swarm = Swarm::new(transport, behaviour, local_peer_id, swarm_config);
 
         // Listen on specified port - IPv6 dual-stack by default!
         // This allows both IPv6 and IPv4 connections

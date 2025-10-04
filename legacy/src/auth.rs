@@ -12,6 +12,7 @@ use serde::{Serialize, Deserialize};
 use ed25519_dalek::{SigningKey, VerifyingKey, Signature, Signer};
 use sha2::Sha256;
 use tracing::warn;
+
 use crate::validation;
 
 /// Permission flags (can be OR'd together)
@@ -39,6 +40,10 @@ impl Permissions {
 
     pub fn add(&mut self, perm: Permissions) {
         self.0 |= perm.0;
+    }
+
+    pub fn as_u32(self) -> u32 {
+        self.0
     }
 
     pub fn remove(&mut self, perm: Permissions) {
@@ -434,6 +439,11 @@ impl AuthService {
 
         self.users.write().await.insert(user.username.clone(), user);
         Ok(())
+    }
+
+    /// Check if any users exist
+    pub async fn has_users(&self) -> bool {
+        !self.users.read().await.is_empty()
     }
 
     /// Add ACL entry with path validation

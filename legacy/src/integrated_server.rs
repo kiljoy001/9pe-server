@@ -9,7 +9,7 @@ use tokio::sync::RwLock;
 use anyhow::{Result, Context};
 use tracing::{info, warn, error, debug};
 
-use plan9e::protocol::{NinePeeMessage, ProtocolError};
+use ninepee::{NinePeeMessage, ProtocolError};
 
 use crate::synthetic::{SyntheticFileSystem, SyntheticGenerator};
 use crate::synthetic_advanced::{Plan9SyntheticFS, SyntheticFile};
@@ -107,12 +107,10 @@ impl IntegratedServer {
         use crate::auth::{User, AclEntry};
 
         // Check if any users exist first
-        let users = self.auth_service.users.read().await;
-        if !users.is_empty() {
+        if self.auth_service.has_users().await {
             info!("Users already exist, skipping default user creation");
             return Ok(());
         }
-        drop(users);
 
         info!("No users found, creating default user");
 
@@ -135,7 +133,7 @@ impl IntegratedServer {
         // Set up default ACL - allow the user to access everything
         let acl_entry = AclEntry {
             principal: "admin".to_string(),
-            permissions: Permissions::ALL.0,
+            permissions: Permissions::ALL.as_u32(),
             inheritable: true,
         };
 
@@ -223,16 +221,16 @@ impl IntegratedServer {
             }
 
             // Advanced 9P.e messages
-            NinePeeMessage::Stream { fid, stream_type } => {
-                self.handle_stream(fid, stream_type).await
+            NinePeeMessage::StreamInit { stream_id, fid, mode } => {
+                self.handle_stream_init(stream_id, fid, mode).await
             }
 
-            NinePeeMessage::Synthetic { path, operation } => {
-                self.handle_synthetic(path, operation).await
+            NinePeeMessage::SyntheticCreate { fid, generator, params } => {
+                self.handle_synthetic_create(fid, generator, params).await
             }
 
-            NinePeeMessage::Translator { fid, trans_type, config } => {
-                self.handle_translator(fid, trans_type, config).await
+            NinePeeMessage::TranslatorSpawn { translator_id, code, config } => {
+                self.handle_translator_spawn(translator_id, code, config).await
             }
 
             _ => {
@@ -273,8 +271,12 @@ impl IntegratedServer {
 
                 self.contexts.write().await.insert(conn_id, ctx);
 
-                Ok(NinePeeMessage::AuthResp {
-                    aqid: 0, // Auth qid
+                // Return a successful response (9P.e doesn't have AuthResp)
+                Ok(NinePeeMessage::Attach {
+                    fid: afid,
+                    afid,
+                    uname,
+                    aname,
                 })
             }
             Err(e) => {
@@ -372,8 +374,11 @@ impl IntegratedServer {
         drop(fids);
         self.fids.write().await.insert(newfid, new_target);
 
-        Ok(NinePeeMessage::WalkResp {
-            qids: vec![], // Would return proper qids
+        // Return success - in 9P.e, walk success is indicated by lack of error
+        Ok(NinePeeMessage::Walk {
+            fid,
+            newfid,
+            wnames: vec![], // Empty means success
         })
     }
 
@@ -437,7 +442,7 @@ impl IntegratedServer {
 
             FidTarget::Translator(trans_name, path) => {
                 // Read through translator
-                if let Some(trans) = self.translators.translators.read().await.get(trans_name) {
+                if let Some(trans) = self.translators.get_translator_by_name(trans_name).await {
                     trans.read(path, offset, count).await?
                 } else {
                     vec![]
@@ -447,7 +452,12 @@ impl IntegratedServer {
 
         metrics::record_bytes_read(data.len() as u64);
 
-        Ok(NinePeeMessage::ReadResp { data })
+        // Return read data via a Read message
+        Ok(NinePeeMessage::Read {
+            fid,
+            offset,
+            count: data.len() as u32,
+        })
     }
 
     /// Handle write with integrated targets
@@ -510,7 +520,7 @@ impl IntegratedServer {
 
             FidTarget::Translator(trans_name, path) => {
                 // Write through translator
-                if let Some(trans) = self.translators.translators.read().await.get(trans_name) {
+                if let Some(trans) = self.translators.get_translator_by_name(trans_name).await {
                     trans.write(path, offset, data.clone()).await?
                 } else {
                     0
@@ -520,14 +530,20 @@ impl IntegratedServer {
 
         metrics::record_bytes_written(count as u64);
 
-        Ok(NinePeeMessage::WriteResp { count })
+        // Return write response via a Write message
+        Ok(NinePeeMessage::Write {
+            fid,
+            offset,
+            data: vec![], // Empty data for response
+        })
     }
 
-    /// Handle synthetic file operations
-    async fn handle_synthetic(
+    /// Handle synthetic file creation
+    async fn handle_synthetic_create(
         &self,
-        path: String,
-        operation: String,
+        fid: u32,
+        generator: String,
+        params: Vec<u8>,
     ) -> Result<NinePeeMessage> {
         if !self.enable_synthetic {
             return Ok(NinePeeMessage::Error {
@@ -536,24 +552,21 @@ impl IntegratedServer {
             });
         }
 
-        // List synthetic files
-        if operation == "list" {
-            let mut files = self.synthetic_fs.list().await;
-            // Add Plan 9 synthetic files
-            // files.extend(self.plan9_synthetic.list().await);
+        // Create synthetic file with generator and params
+        // Store generator and params for fid
+        self.fids.write().await.insert(fid, FidTarget::SyntheticFile(generator.clone()));
 
-            let data = files.join("\n").into_bytes();
-            return Ok(NinePeeMessage::SyntheticResp { data });
-        }
-
-        Ok(NinePeeMessage::SyntheticResp { data: vec![] })
+        Ok(NinePeeMessage::SyntheticRefresh {
+            fid: 0, // Would be the actual fid
+            force: false,
+        })
     }
 
-    /// Handle translator operations
-    async fn handle_translator(
+    /// Handle translator spawn
+    async fn handle_translator_spawn(
         &self,
-        fid: u32,
-        trans_type: String,
+        translator_id: u32,
+        code: Vec<u8>,
         config: Vec<u8>,
     ) -> Result<NinePeeMessage> {
         if !self.enable_translators {
@@ -563,39 +576,28 @@ impl IntegratedServer {
             });
         }
 
-        // Mount translator at FID's path
-        let fids = self.fids.read().await;
-        if let Some(FidTarget::RealFile(path)) = fids.get(&fid) {
-            // Create and register translator based on type
-            match trans_type.as_str() {
-                "http" => {
-                    let url = String::from_utf8(config)?;
-                    let trans = Arc::new(crate::translators::HttpTranslator::new(url));
-                    self.translators.register(format!("http_{}", fid), trans).await?;
-                    self.translators.mount(path.clone(), format!("http_{}", fid)).await?;
-                }
-                _ => {
-                    return Ok(NinePeeMessage::Error {
-                        ename: format!("Unknown translator type: {}", trans_type),
-                        errno: 7,
-                    });
-                }
-            }
-        }
+        // Spawn translator with provided code and config
+        // In a real implementation, this would compile and execute the WASM code
 
-        Ok(NinePeeMessage::TranslatorResp { success: true })
+        Ok(NinePeeMessage::TranslatorSpawn {
+            translator_id,
+            code,
+            config,
+        })
     }
 
-    /// Handle streaming operations
-    async fn handle_stream(
+    /// Handle stream initialization
+    async fn handle_stream_init(
         &self,
+        stream_id: u32,
         fid: u32,
-        stream_type: String,
+        mode: u8,
     ) -> Result<NinePeeMessage> {
         // Would implement streaming for synthetic files
-        Ok(NinePeeMessage::StreamResp {
+        Ok(NinePeeMessage::StreamInit {
             stream_id: fid,
-            ready: true,
+            fid,
+            mode: 0, // Default mode
         })
     }
 
@@ -618,21 +620,31 @@ impl IntegratedServer {
     ) -> Result<NinePeeMessage> {
         // Store root for FID
         self.fids.write().await.insert(fid, FidTarget::RealFile(self.root.clone()));
-        Ok(NinePeeMessage::AttachResp { qid: 0 })
+        // Return successful attach response
+        Ok(NinePeeMessage::Attach {
+            fid,
+            afid,
+            uname,
+            aname,
+        })
     }
 
-    async fn handle_open(&self, fid: u32, mode: u32, conn_id: u64) -> Result<NinePeeMessage> {
-        Ok(NinePeeMessage::OpenResp { qid: 0, iounit: 8192 })
+    async fn handle_open(&self, fid: u32, mode: u8, conn_id: u64) -> Result<NinePeeMessage> {
+        // Return successful open response
+        Ok(NinePeeMessage::Open {
+            fid,
+            mode: mode as u8,
+        })
     }
 
     async fn handle_clunk(&self, fid: u32) -> Result<NinePeeMessage> {
         self.fids.write().await.remove(&fid);
-        Ok(NinePeeMessage::ClunkResp)
+        // Return successful clunk response
+        Ok(NinePeeMessage::Clunk { fid })
     }
 
     async fn handle_stat(&self, fid: u32) -> Result<NinePeeMessage> {
-        Ok(NinePeeMessage::StatResp {
-            stat: vec![], // Would return proper stat
-        })
+        // Return successful stat response
+        Ok(NinePeeMessage::Stat { fid })
     }
 }

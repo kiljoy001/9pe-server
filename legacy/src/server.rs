@@ -7,11 +7,11 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use anyhow::{Result, Context};
-use tracing::{info, warn, error, debug};
+use tracing::{info, warn, debug};
 use std::time::Instant;
 
-use plan9e::protocol::{NinePeeMessage, NINEPEE_VERSION, LEGACY_VERSION};
-use plan9e::transport::Session;
+use ninepee::{NinePeeMessage, NINEPEE_VERSION, LEGACY_VERSION};
+use ninepee::Session;
 use crate::metrics;
 use crate::synthetic::{SyntheticGenerator, CpuInfoGenerator, MemInfoGenerator};
 use crate::translator_base::{TranslatorRegistry, RegistryConfig};

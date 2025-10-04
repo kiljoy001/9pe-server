@@ -11,6 +11,7 @@ use std::path::{Path, PathBuf};
 use tokio::sync::RwLock;
 use anyhow::{Result, Context};
 use async_trait::async_trait;
+use base64::{Engine as _, engine::general_purpose};
 
 use crate::wasm_composition::{WasmComposer, WasmTranslator};
 use crate::synthetic_advanced::SyntheticFile;
@@ -274,7 +275,7 @@ impl WasmFilesystem {
 
                 let wasm_b64 = lines.next()
                     .ok_or_else(|| anyhow::anyhow!("Missing WASM code"))?;
-                let wasm_bytes = base64::decode(wasm_b64)?;
+                let wasm_bytes = general_purpose::STANDARD.decode(wasm_b64)?;
                 let input_data = lines.collect::<Vec<_>>().join("\n");
 
                 // Create temporary instance

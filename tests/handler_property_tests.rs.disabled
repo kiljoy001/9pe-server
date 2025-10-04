@@ -1,0 +1,739 @@
+//! Property-based tests for the refactored handler system
+
+use ninep_server::server::handler::MessageHandler;
+use ninep_server::wasm::TranslatorRegistry;
+use ninep_server::synth::SyntheticFilesystem;
+use ninep_server::settrans::VirtualSettransSystem;
+use ninepee::NinePeeMessage;
+use proptest::prelude::*;
+use tempfile::tempdir;
+use std::sync::Arc;
+use std::path::PathBuf;
+
+/// Generate arbitrary filenames
+fn arbitrary_filename() -> impl Strategy<Value = String> {
+    "[a-zA-Z][a-zA-Z0-9_-]{1,20}".prop_map(|s| s.to_string())
+}
+
+/// Generate arbitrary file paths
+fn arbitrary_path() -> impl Strategy<Value = String> {
+    prop::collection::vec(arbitrary_filename(), 1..5)
+        .prop_map(|parts| format!("/{}", parts.join("/")))
+}
+
+/// Generate arbitrary file content
+fn arbitrary_content() -> impl Strategy<Value = Vec<u8>> {
+    prop::collection::vec(any::<u8>(), 0..1024)
+}
+
+/// Generate arbitrary fids
+fn arbitrary_fid() -> impl Strategy<Value = u32> {
+    1u32..1000u32
+}
+
+/// Generate arbitrary file modes
+fn arbitrary_mode() -> impl Strategy<Value = u8> {
+    0u8..3u8  // Read, Write, Read+Write
+}
+
+/// Generate arbitrary permissions
+fn arbitrary_perm() -> impl Strategy<Value = u32> {
+    prop_oneof![
+        Just(0o644),  // Regular file
+        Just(0o755),  // Executable
+        Just(0o040755),  // Directory
+    ]
+}
+
+proptest! {
+    /// Property: Version negotiation should always succeed with valid protocol
+    #[test]
+    fn prop_version_negotiation(
+        msize in 8192u32..65536u32,
+        version in prop_oneof![
+            Just("9P2000".to_string()),
+            Just("9P2000.L".to_string()),
+            Just("9P.e".to_string()),
+        ]
+    ) {
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+        runtime.block_on(async {
+            let temp_dir = tempdir().unwrap();
+            let root_path = temp_dir.path().to_path_buf();
+
+            let translator_registry = Arc::new(TranslatorRegistry::new(root_path.clone()));
+            let settrans_system = Arc::new(VirtualSettransSystem::new());
+            let synth_fs = Arc::new(SyntheticFilesystem::new());
+
+            let mut handler = MessageHandler::new(
+                root_path,
+                65536,
+                translator_registry,
+                settrans_system,
+                synth_fs,
+            ).unwrap();
+
+            let response = handler.handle_message(NinePeeMessage::Version {
+                msize,
+                version: version.clone(),
+            }).await.unwrap();
+
+            match response {
+                NinePeeMessage::Version { msize: resp_msize, version: resp_version } => {
+                    prop_assert!(resp_msize <= msize, "Negotiated msize should not exceed requested");
+                    prop_assert!(resp_msize <= 65536, "Negotiated msize should not exceed handler max");
+                    prop_assert_eq!(resp_version, "9P.e", "Should negotiate to 9P.e");
+                }
+                _ => prop_assert!(false, "Version request should return Version response"),
+            }
+
+            Ok(())
+        })?
+    }
+
+    /// Property: Attach should create a valid root fid
+    #[test]
+    fn prop_attach_creates_root_fid(
+        fid in arbitrary_fid(),
+        uname in arbitrary_filename(),
+        aname in arbitrary_path(),
+    ) {
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+        runtime.block_on(async {
+            let temp_dir = tempdir().unwrap();
+            let root_path = temp_dir.path().to_path_buf();
+
+            let translator_registry = Arc::new(TranslatorRegistry::new(root_path.clone()));
+            let settrans_system = Arc::new(VirtualSettransSystem::new());
+            let synth_fs = Arc::new(SyntheticFilesystem::new());
+
+            let mut handler = MessageHandler::new(
+                root_path,
+                65536,
+                translator_registry,
+                settrans_system,
+                synth_fs,
+            ).unwrap();
+
+            // First negotiate version
+            handler.handle_message(NinePeeMessage::Version {
+                msize: 8192,
+                version: "9P.e".to_string(),
+            }).await.unwrap();
+
+            // Then attach
+            let response = handler.handle_message(NinePeeMessage::Attach {
+                fid,
+                afid: 0,
+                uname: uname.clone(),
+                aname: aname.clone(),
+            }).await.unwrap();
+
+            match response {
+                NinePeeMessage::Attach { fid: resp_fid, .. } => {
+                    prop_assert_eq!(resp_fid, fid, "Response should have same fid");
+                }
+                NinePeeMessage::Error { .. } => {
+                    // Error is acceptable for invalid paths
+                }
+                _ => prop_assert!(false, "Attach should return Attach or Error"),
+            }
+
+            Ok(())
+        })?
+    }
+
+    /// Property: Walk should navigate filesystem correctly
+    #[test]
+    fn prop_walk_navigation(
+        base_fid in arbitrary_fid(),
+        new_fid in arbitrary_fid(),
+        path_components in prop::collection::vec(arbitrary_filename(), 0..5),
+    ) {
+        prop_assume!(base_fid != new_fid);
+
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+        runtime.block_on(async {
+            let temp_dir = tempdir().unwrap();
+            let root_path = temp_dir.path().to_path_buf();
+
+            // Create the directory structure
+            let mut current_path = root_path.clone();
+            for component in &path_components {
+                current_path.push(component);
+                std::fs::create_dir_all(&current_path).unwrap();
+            }
+
+            let translator_registry = Arc::new(TranslatorRegistry::new(root_path.clone()));
+            let settrans_system = Arc::new(VirtualSettransSystem::new());
+            let synth_fs = Arc::new(SyntheticFilesystem::new());
+
+            let mut handler = MessageHandler::new(
+                root_path,
+                65536,
+                translator_registry,
+                settrans_system,
+                synth_fs,
+            ).unwrap();
+
+            // Setup: version and attach
+            handler.handle_message(NinePeeMessage::Version {
+                msize: 8192,
+                version: "9P.e".to_string(),
+            }).await.unwrap();
+
+            handler.handle_message(NinePeeMessage::Attach {
+                fid: base_fid,
+                afid: 0,
+                uname: "test".to_string(),
+                aname: "/".to_string(),
+            }).await.unwrap();
+
+            // Walk to the path
+            let response = handler.handle_message(NinePeeMessage::Walk {
+                fid: base_fid,
+                newfid: new_fid,
+                wnames: path_components.clone(),
+            }).await.unwrap();
+
+            match response {
+                NinePeeMessage::Walk { fid: resp_fid, newfid: resp_newfid, .. } => {
+                    prop_assert_eq!(resp_fid, base_fid);
+                    prop_assert_eq!(resp_newfid, new_fid);
+                }
+                NinePeeMessage::Error { .. } => {
+                    // Error acceptable for invalid paths
+                }
+                _ => prop_assert!(false, "Walk should return Walk or Error"),
+            }
+
+            Ok(())
+        })?
+    }
+
+    /// Property: Create should make new files/directories
+    #[test]
+    fn prop_create_files_and_dirs(
+        fid in arbitrary_fid(),
+        name in arbitrary_filename(),
+        perm in arbitrary_perm(),
+        mode in arbitrary_mode(),
+    ) {
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+        runtime.block_on(async {
+            let temp_dir = tempdir().unwrap();
+            let root_path = temp_dir.path().to_path_buf();
+
+            let translator_registry = Arc::new(TranslatorRegistry::new(root_path.clone()));
+            let settrans_system = Arc::new(VirtualSettransSystem::new());
+            let synth_fs = Arc::new(SyntheticFilesystem::new());
+
+            let mut handler = MessageHandler::new(
+                root_path.clone(),
+                65536,
+                translator_registry,
+                settrans_system,
+                synth_fs,
+            ).unwrap();
+
+            // Setup
+            handler.handle_message(NinePeeMessage::Version {
+                msize: 8192,
+                version: "9P.e".to_string(),
+            }).await.unwrap();
+
+            handler.handle_message(NinePeeMessage::Attach {
+                fid,
+                afid: 0,
+                uname: "test".to_string(),
+                aname: "/".to_string(),
+            }).await.unwrap();
+
+            // Create file/directory
+            let response = handler.handle_message(NinePeeMessage::Create {
+                fid,
+                name: name.clone(),
+                perm,
+                mode,
+            }).await.unwrap();
+
+            match response {
+                NinePeeMessage::Create { .. } => {
+                    // Verify file/dir was created
+                    let path = root_path.join(&name);
+                    prop_assert!(path.exists(), "File/directory should exist after create");
+
+                    if perm & 0o040000 != 0 {
+                        prop_assert!(path.is_dir(), "Should be a directory");
+                    } else {
+                        prop_assert!(path.is_file(), "Should be a file");
+                    }
+                }
+                NinePeeMessage::Error { .. } => {
+                    // Error acceptable for permission issues
+                }
+                _ => prop_assert!(false, "Create should return Create or Error"),
+            }
+
+            Ok(())
+        })?
+    }
+
+    /// Property: Read/Write round trip should preserve data
+    #[test]
+    fn prop_read_write_roundtrip(
+        fid in arbitrary_fid(),
+        offset in 0u64..1024u64,
+        data in arbitrary_content(),
+    ) {
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+        runtime.block_on(async {
+            let temp_dir = tempdir().unwrap();
+            let root_path = temp_dir.path().to_path_buf();
+
+            // Create a test file
+            let test_file = root_path.join("testfile");
+            std::fs::write(&test_file, vec![0u8; 2048]).unwrap();
+
+            let translator_registry = Arc::new(TranslatorRegistry::new(root_path.clone()));
+            let settrans_system = Arc::new(VirtualSettransSystem::new());
+            let synth_fs = Arc::new(SyntheticFilesystem::new());
+
+            let mut handler = MessageHandler::new(
+                root_path,
+                65536,
+                translator_registry,
+                settrans_system,
+                synth_fs,
+            ).unwrap();
+
+            // Setup
+            handler.handle_message(NinePeeMessage::Version {
+                msize: 8192,
+                version: "9P.e".to_string(),
+            }).await.unwrap();
+
+            handler.handle_message(NinePeeMessage::Attach {
+                fid,
+                afid: 0,
+                uname: "test".to_string(),
+                aname: "/".to_string(),
+            }).await.unwrap();
+
+            // Walk to the file
+            handler.handle_message(NinePeeMessage::Walk {
+                fid,
+                newfid: fid + 1,
+                wnames: vec!["testfile".to_string()],
+            }).await.unwrap();
+
+            // Open the file for write
+            handler.handle_message(NinePeeMessage::Open {
+                fid: fid + 1,
+                mode: 1, // Write mode
+            }).await.unwrap();
+
+            // Write data
+            let write_response = handler.handle_message(NinePeeMessage::Write {
+                fid: fid + 1,
+                offset,
+                data: data.clone(),
+            }).await.unwrap();
+
+            match write_response {
+                NinePeeMessage::Write { data: written_data, .. } => {
+                    prop_assert_eq!(written_data.len(), data.len(), "Should write all data");
+                }
+                _ => prop_assert!(false, "Write should return Write response"),
+            }
+
+            // Read back the data
+            let read_response = handler.handle_message(NinePeeMessage::Read {
+                fid: fid + 1,
+                offset,
+                count: data.len() as u32,
+            }).await.unwrap();
+
+            match read_response {
+                NinePeeMessage::Read { count, .. } => {
+                    prop_assert_eq!(count as usize, data.len(), "Should read back same amount");
+                }
+                _ => prop_assert!(false, "Read should return Read response"),
+            }
+
+            Ok(())
+        })?
+    }
+
+    /// Property: Clunk should release fids
+    #[test]
+    fn prop_clunk_releases_fid(
+        fid in arbitrary_fid(),
+    ) {
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+        runtime.block_on(async {
+            let temp_dir = tempdir().unwrap();
+            let root_path = temp_dir.path().to_path_buf();
+
+            let translator_registry = Arc::new(TranslatorRegistry::new(root_path.clone()));
+            let settrans_system = Arc::new(VirtualSettransSystem::new());
+            let synth_fs = Arc::new(SyntheticFilesystem::new());
+
+            let mut handler = MessageHandler::new(
+                root_path,
+                65536,
+                translator_registry,
+                settrans_system,
+                synth_fs,
+            ).unwrap();
+
+            // Setup
+            handler.handle_message(NinePeeMessage::Version {
+                msize: 8192,
+                version: "9P.e".to_string(),
+            }).await.unwrap();
+
+            handler.handle_message(NinePeeMessage::Attach {
+                fid,
+                afid: 0,
+                uname: "test".to_string(),
+                aname: "/".to_string(),
+            }).await.unwrap();
+
+            // Clunk the fid
+            let response = handler.handle_message(NinePeeMessage::Clunk {
+                fid,
+            }).await.unwrap();
+
+            match response {
+                NinePeeMessage::Clunk { fid: resp_fid } => {
+                    prop_assert_eq!(resp_fid, fid);
+                }
+                _ => prop_assert!(false, "Clunk should return Clunk response"),
+            }
+
+            // Using the fid again should fail
+            let reuse_response = handler.handle_message(NinePeeMessage::Open {
+                fid,
+                mode: 0,
+            }).await.unwrap();
+
+            match reuse_response {
+                NinePeeMessage::Error { .. } => {
+                    // Expected - fid should be invalid
+                }
+                _ => prop_assert!(false, "Using clunked fid should return Error"),
+            }
+
+            Ok(())
+        })?
+    }
+
+    /// Property: Remove should delete files/directories
+    #[test]
+    fn prop_remove_deletes_files(
+        fid in arbitrary_fid(),
+        filename in arbitrary_filename(),
+    ) {
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+        runtime.block_on(async {
+            let temp_dir = tempdir().unwrap();
+            let root_path = temp_dir.path().to_path_buf();
+
+            // Create a test file to remove
+            let test_file = root_path.join(&filename);
+            std::fs::write(&test_file, b"test").unwrap();
+
+            let translator_registry = Arc::new(TranslatorRegistry::new(root_path.clone()));
+            let settrans_system = Arc::new(VirtualSettransSystem::new());
+            let synth_fs = Arc::new(SyntheticFilesystem::new());
+
+            let mut handler = MessageHandler::new(
+                root_path.clone(),
+                65536,
+                translator_registry,
+                settrans_system,
+                synth_fs,
+            ).unwrap();
+
+            // Setup
+            handler.handle_message(NinePeeMessage::Version {
+                msize: 8192,
+                version: "9P.e".to_string(),
+            }).await.unwrap();
+
+            handler.handle_message(NinePeeMessage::Attach {
+                fid,
+                afid: 0,
+                uname: "test".to_string(),
+                aname: "/".to_string(),
+            }).await.unwrap();
+
+            // Walk to the file
+            handler.handle_message(NinePeeMessage::Walk {
+                fid,
+                newfid: fid + 1,
+                wnames: vec![filename.clone()],
+            }).await.unwrap();
+
+            // Remove the file
+            let response = handler.handle_message(NinePeeMessage::Remove {
+                fid: fid + 1,
+            }).await.unwrap();
+
+            match response {
+                NinePeeMessage::Remove { .. } => {
+                    prop_assert!(!test_file.exists(), "File should be deleted after remove");
+                }
+                NinePeeMessage::Error { .. } => {
+                    // Error acceptable for permission issues
+                }
+                _ => prop_assert!(false, "Remove should return Remove or Error"),
+            }
+
+            Ok(())
+        })?
+    }
+
+    /// Property: Stat should return valid metadata
+    #[test]
+    fn prop_stat_returns_metadata(
+        fid in arbitrary_fid(),
+        filename in arbitrary_filename(),
+        content in arbitrary_content(),
+    ) {
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+        runtime.block_on(async {
+            let temp_dir = tempdir().unwrap();
+            let root_path = temp_dir.path().to_path_buf();
+
+            // Create a test file
+            let test_file = root_path.join(&filename);
+            std::fs::write(&test_file, &content).unwrap();
+
+            let translator_registry = Arc::new(TranslatorRegistry::new(root_path.clone()));
+            let settrans_system = Arc::new(VirtualSettransSystem::new());
+            let synth_fs = Arc::new(SyntheticFilesystem::new());
+
+            let mut handler = MessageHandler::new(
+                root_path.clone(),
+                65536,
+                translator_registry,
+                settrans_system,
+                synth_fs,
+            ).unwrap();
+
+            // Setup
+            handler.handle_message(NinePeeMessage::Version {
+                msize: 8192,
+                version: "9P.e".to_string(),
+            }).await.unwrap();
+
+            handler.handle_message(NinePeeMessage::Attach {
+                fid,
+                afid: 0,
+                uname: "test".to_string(),
+                aname: "/".to_string(),
+            }).await.unwrap();
+
+            // Walk to the file
+            handler.handle_message(NinePeeMessage::Walk {
+                fid,
+                newfid: fid + 1,
+                wnames: vec![filename.clone()],
+            }).await.unwrap();
+
+            // Stat the file
+            let response = handler.handle_message(NinePeeMessage::Stat {
+                fid: fid + 1,
+            }).await.unwrap();
+
+            match response {
+                NinePeeMessage::Stat { stat, .. } => {
+                    prop_assert_eq!(stat.length as usize, content.len(), "Size should match");
+                    prop_assert_eq!(stat.name, filename, "Name should match");
+                    prop_assert!((stat.mode & 0o100000) != 0, "Should be a regular file");
+                }
+                _ => prop_assert!(false, "Stat should return Stat response"),
+            }
+
+            Ok(())
+        })?
+    }
+}
+
+#[cfg(test)]
+mod ninepee_extension_tests {
+    use super::*;
+
+    proptest! {
+        /// Property: Settrans should accept valid translator names
+        #[test]
+        fn prop_settrans_accepts_valid(
+            path in arbitrary_path(),
+            translator_name in "[a-z][a-z0-9_-]{2,20}",
+            args in prop::collection::vec("[a-z0-9_-]+", 0..5),
+        ) {
+            let runtime = tokio::runtime::Runtime::new().unwrap();
+            runtime.block_on(async {
+                let temp_dir = tempdir().unwrap();
+                let root_path = temp_dir.path().to_path_buf();
+
+                let translator_registry = Arc::new(TranslatorRegistry::new(root_path.clone()));
+                let settrans_system = Arc::new(VirtualSettransSystem::new());
+                let synth_fs = Arc::new(SyntheticFilesystem::new());
+
+                let mut handler = MessageHandler::new(
+                    root_path,
+                    65536,
+                    translator_registry,
+                    settrans_system,
+                    synth_fs,
+                ).unwrap();
+
+                let response = handler.handle_message(NinePeeMessage::SettransRequest {
+                    path: path.clone(),
+                    translator_name: translator_name.clone(),
+                    args: args.clone(),
+                }).await.unwrap();
+
+                match response {
+                    NinePeeMessage::SettransResponse { success, .. } => {
+                        prop_assert!(success, "Valid settrans should succeed");
+                    }
+                    _ => prop_assert!(false, "Settrans should return SettransResponse"),
+                }
+
+                Ok(())
+            })?
+        }
+
+        /// Property: WASM invoke should handle missing translators gracefully
+        #[test]
+        fn prop_wasm_invoke_missing_translator(
+            path in arbitrary_path(),
+            function in "[a-z][a-z0-9_]{2,20}",
+            args in arbitrary_content(),
+        ) {
+            let runtime = tokio::runtime::Runtime::new().unwrap();
+            runtime.block_on(async {
+                let temp_dir = tempdir().unwrap();
+                let root_path = temp_dir.path().to_path_buf();
+
+                let translator_registry = Arc::new(TranslatorRegistry::new(root_path.clone()));
+                let settrans_system = Arc::new(VirtualSettransSystem::new());
+                let synth_fs = Arc::new(SyntheticFilesystem::new());
+
+                let mut handler = MessageHandler::new(
+                    root_path,
+                    65536,
+                    translator_registry,
+                    settrans_system,
+                    synth_fs,
+                ).unwrap();
+
+                let response = handler.handle_message(NinePeeMessage::WasmInvoke {
+                    path: path.clone(),
+                    function: function.clone(),
+                    args: args.clone(),
+                }).await.unwrap();
+
+                match response {
+                    NinePeeMessage::Error { ename, .. } => {
+                        prop_assert!(
+                            ename.contains("No translator found"),
+                            "Should indicate missing translator"
+                        );
+                    }
+                    _ => prop_assert!(false, "Missing translator should return Error"),
+                }
+
+                Ok(())
+            })?
+        }
+
+        /// Property: Consensus requests should return not implemented
+        #[test]
+        fn prop_consensus_not_implemented(
+            block_data in arbitrary_content(),
+        ) {
+            let runtime = tokio::runtime::Runtime::new().unwrap();
+            runtime.block_on(async {
+                let temp_dir = tempdir().unwrap();
+                let root_path = temp_dir.path().to_path_buf();
+
+                let translator_registry = Arc::new(TranslatorRegistry::new(root_path.clone()));
+                let settrans_system = Arc::new(VirtualSettransSystem::new());
+                let synth_fs = Arc::new(SyntheticFilesystem::new());
+
+                let mut handler = MessageHandler::new(
+                    root_path,
+                    65536,
+                    translator_registry,
+                    settrans_system,
+                    synth_fs,
+                ).unwrap();
+
+                let response = handler.handle_message(NinePeeMessage::ConsensusRequest {
+                    block: block_data,
+                }).await.unwrap();
+
+                match response {
+                    NinePeeMessage::Error { ename, errno } => {
+                        prop_assert_eq!(errno, 38, "Should return ENOSYS");
+                        prop_assert!(
+                            ename.contains("not implemented"),
+                            "Should indicate not implemented"
+                        );
+                    }
+                    _ => prop_assert!(false, "Consensus should return Error"),
+                }
+
+                Ok(())
+            })?
+        }
+
+        /// Property: Work distribution should return not implemented
+        #[test]
+        fn prop_work_distribution_not_implemented(
+            task_id in "[a-z0-9-]{8,36}",
+            data in arbitrary_content(),
+        ) {
+            let runtime = tokio::runtime::Runtime::new().unwrap();
+            runtime.block_on(async {
+                let temp_dir = tempdir().unwrap();
+                let root_path = temp_dir.path().to_path_buf();
+
+                let translator_registry = Arc::new(TranslatorRegistry::new(root_path.clone()));
+                let settrans_system = Arc::new(VirtualSettransSystem::new());
+                let synth_fs = Arc::new(SyntheticFilesystem::new());
+
+                let mut handler = MessageHandler::new(
+                    root_path,
+                    65536,
+                    translator_registry,
+                    settrans_system,
+                    synth_fs,
+                ).unwrap();
+
+                let response = handler.handle_message(NinePeeMessage::WorkSubmit {
+                    task_id: task_id.clone(),
+                    data: data.clone(),
+                }).await.unwrap();
+
+                match response {
+                    NinePeeMessage::Error { ename, errno } => {
+                        prop_assert_eq!(errno, 38, "Should return ENOSYS");
+                        prop_assert!(
+                            ename.contains("not implemented"),
+                            "Should indicate not implemented"
+                        );
+                    }
+                    _ => prop_assert!(false, "WorkSubmit should return Error"),
+                }
+
+                Ok(())
+            })?
+        }
+    }
+}

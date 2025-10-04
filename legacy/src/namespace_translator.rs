@@ -9,7 +9,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::RwLock;
 use anyhow::{Result, Context};
 use serde::{Serialize, Deserialize};
-use tracing::{info, warn, error, debug};
+use tracing::info;
 use uuid::Uuid;
 use async_trait::async_trait;
 // Note: Ed25519 imports temporarily disabled for MVP
@@ -18,11 +18,10 @@ use async_trait::async_trait;
 use crate::translator_base::{
     AbstractTranslator, TranslatorManifest, TranslatorType, SyntheticFileSpec,
     AccessMode, DataType, Permission, RestartPolicy, SyntheticRequest, SyntheticResponse,
-    Operation, TranslatorStatus, HealthStatus, RequestContext, ResponseContext,
+    Operation, TranslatorStatus, HealthStatus, RequestContext,
     utils,
 };
 use crate::namespaces::{NamespaceManager, NamespacePermissions, ThresholdConfig, NamespacePolicies};
-use crate::global_event_chain::GlobalEventChain;
 
 /// Namespace management translator
 pub struct NamespaceTranslator {

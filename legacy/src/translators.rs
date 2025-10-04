@@ -449,6 +449,11 @@ impl TranslatorManager {
         }
     }
 
+    /// Get a translator by name
+    pub async fn get_translator_by_name(&self, name: &str) -> Option<Arc<dyn Translator>> {
+        self.translators.read().await.get(name).cloned()
+    }
+
     /// List all mount points
     pub async fn list_mounts(&self) -> Vec<(PathBuf, String)> {
         self.mount_points.read().await

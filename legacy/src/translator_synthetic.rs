@@ -208,6 +208,56 @@ impl ApiSyntheticTranslator {
 }
 
 #[async_trait]
+impl Translator for ApiSyntheticTranslator {
+    fn name(&self) -> &str { "api_synthetic" }
+    fn translator_type(&self) -> &str { "synthetic_api" }
+    fn isolation(&self) -> IsolationLevel { IsolationLevel::Process }
+    fn supports(&self, operation: &str) -> bool {
+        matches!(operation, "read" | "list" | "stat")
+    }
+
+    async fn init(&mut self) -> Result<()> {
+        Ok(())
+    }
+
+    async fn shutdown(&mut self) -> Result<()> {
+        Ok(())
+    }
+
+    async fn read(&self, path: &str, offset: u64, count: u32) -> Result<Vec<u8>> {
+        // Simplified implementation - would use synthetic file generation
+        let content = format!("API data for {}", path);
+        let bytes = content.as_bytes();
+        let start = offset.min(bytes.len() as u64) as usize;
+        let end = (start + count as usize).min(bytes.len());
+        Ok(bytes[start..end].to_vec())
+    }
+
+    async fn write(&self, _path: &str, _offset: u64, _data: Vec<u8>) -> Result<u32> {
+        Err(anyhow::anyhow!("Write not supported for API synthetic translator"))
+    }
+
+    async fn list(&self, path: &str) -> Result<Vec<String>> {
+        // Generate list from API endpoints
+        let tree = self.generate_tree(path).await?;
+        Ok(tree.entries.keys().cloned().collect())
+    }
+
+    async fn stat(&self, path: &str) -> Result<FileInfo> {
+        Ok(FileInfo {
+            name: path.rsplit('/').next().unwrap_or(path).to_string(),
+            size: 1024,
+            is_dir: false,
+            modified: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs(),
+            permissions: 0o644,
+        })
+    }
+}
+
+#[async_trait]
 impl SyntheticTranslator for ApiSyntheticTranslator {
     async fn generate_tree(&self, path: &str) -> Result<SyntheticTree> {
         let mut entries = HashMap::new();
@@ -260,6 +310,60 @@ impl SyntheticTranslator for ApiSyntheticTranslator {
 /// Git translator exposing commits as synthetic files
 pub struct GitSyntheticTranslator {
     repo_path: String,
+}
+
+impl GitSyntheticTranslator {
+    pub fn new(repo_path: String) -> Self {
+        Self { repo_path }
+    }
+}
+
+#[async_trait]
+impl Translator for GitSyntheticTranslator {
+    fn name(&self) -> &str { "git_synthetic" }
+    fn translator_type(&self) -> &str { "synthetic_git" }
+    fn isolation(&self) -> IsolationLevel { IsolationLevel::Process }
+    fn supports(&self, operation: &str) -> bool {
+        matches!(operation, "read" | "list" | "stat")
+    }
+
+    async fn init(&mut self) -> Result<()> {
+        Ok(())
+    }
+
+    async fn shutdown(&mut self) -> Result<()> {
+        Ok(())
+    }
+
+    async fn read(&self, path: &str, offset: u64, count: u32) -> Result<Vec<u8>> {
+        let content = format!("Git data for {} in repo {}", path, self.repo_path);
+        let bytes = content.as_bytes();
+        let start = offset.min(bytes.len() as u64) as usize;
+        let end = (start + count as usize).min(bytes.len());
+        Ok(bytes[start..end].to_vec())
+    }
+
+    async fn write(&self, _path: &str, _offset: u64, _data: Vec<u8>) -> Result<u32> {
+        Err(anyhow::anyhow!("Write not supported for Git synthetic translator"))
+    }
+
+    async fn list(&self, path: &str) -> Result<Vec<String>> {
+        let tree = self.generate_tree(path).await?;
+        Ok(tree.entries.keys().cloned().collect())
+    }
+
+    async fn stat(&self, path: &str) -> Result<FileInfo> {
+        Ok(FileInfo {
+            name: path.rsplit('/').next().unwrap_or(path).to_string(),
+            size: 512,
+            is_dir: false,
+            modified: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs(),
+            permissions: 0o644,
+        })
+    }
 }
 
 #[async_trait]
@@ -316,6 +420,62 @@ impl SyntheticTranslator for GitSyntheticTranslator {
 /// Monitoring translator that exposes metrics as synthetic files
 pub struct MetricsSyntheticTranslator {
     metrics: Arc<RwLock<HashMap<String, f64>>>,
+}
+
+impl MetricsSyntheticTranslator {
+    pub fn new() -> Self {
+        Self {
+            metrics: Arc::new(RwLock::new(HashMap::new())),
+        }
+    }
+}
+
+#[async_trait]
+impl Translator for MetricsSyntheticTranslator {
+    fn name(&self) -> &str { "metrics_synthetic" }
+    fn translator_type(&self) -> &str { "synthetic_metrics" }
+    fn isolation(&self) -> IsolationLevel { IsolationLevel::Process }
+    fn supports(&self, operation: &str) -> bool {
+        matches!(operation, "read" | "list" | "stat")
+    }
+
+    async fn init(&mut self) -> Result<()> {
+        Ok(())
+    }
+
+    async fn shutdown(&mut self) -> Result<()> {
+        Ok(())
+    }
+
+    async fn read(&self, path: &str, offset: u64, count: u32) -> Result<Vec<u8>> {
+        let content = format!("Metrics data for {}", path);
+        let bytes = content.as_bytes();
+        let start = offset.min(bytes.len() as u64) as usize;
+        let end = (start + count as usize).min(bytes.len());
+        Ok(bytes[start..end].to_vec())
+    }
+
+    async fn write(&self, _path: &str, _offset: u64, _data: Vec<u8>) -> Result<u32> {
+        Err(anyhow::anyhow!("Write not supported for Metrics synthetic translator"))
+    }
+
+    async fn list(&self, path: &str) -> Result<Vec<String>> {
+        let tree = self.generate_tree(path).await?;
+        Ok(tree.entries.keys().cloned().collect())
+    }
+
+    async fn stat(&self, path: &str) -> Result<FileInfo> {
+        Ok(FileInfo {
+            name: path.rsplit('/').next().unwrap_or(path).to_string(),
+            size: 256,
+            is_dir: false,
+            modified: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs(),
+            permissions: 0o644,
+        })
+    }
 }
 
 #[async_trait]

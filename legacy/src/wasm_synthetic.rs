@@ -9,7 +9,6 @@ use tokio::sync::RwLock;
 use anyhow::{Result, Context};
 use async_trait::async_trait;
 use wasmtime::*;
-use wasmtime_wasi::WasiCtxBuilder;
 
 use crate::synthetic_advanced::SyntheticFile;
 use crate::wasm_composition::WasmComposer;
@@ -207,11 +206,13 @@ impl WasmComposer {
                     .and_then(|e| e.into_memory())
                     .unwrap();
 
-                let data = mem.data(&caller);
-                let path = std::str::from_utf8(&data[path_ptr as usize..(path_ptr + path_len) as usize])
-                    .unwrap_or("");
+                let path = {
+                    let data = mem.data(&caller);
+                    std::str::from_utf8(&data[path_ptr as usize..(path_ptr + path_len) as usize])
+                        .unwrap_or("").to_string()
+                }; // immutable borrow ends here
 
-                caller.data_mut().pending_unregistrations.push(path.to_string());
+                caller.data_mut().pending_unregistrations.push(path);
 
                 1 // Success
             }
@@ -226,11 +227,13 @@ impl WasmComposer {
                     .and_then(|e| e.into_memory())
                     .unwrap();
 
-                let data = mem.data(&caller);
-                let event = &data[event_ptr as usize..(event_ptr + event_len) as usize];
+                let event = {
+                    let data = mem.data(&caller);
+                    data[event_ptr as usize..(event_ptr + event_len) as usize].to_vec()
+                }; // immutable borrow ends here
 
                 // Store event for processing
-                caller.data_mut().events.push(event.to_vec());
+                caller.data_mut().events.push(event);
 
                 1
             }
@@ -306,7 +309,7 @@ pub extern "C" fn read_config(path: *const u8, path_len: usize, offset: u64, cou
     let mut state = STATE.lock().unwrap();
 
     let config = state.entry("/config.json".to_string())
-        .or_insert_with(|| br#"{"debug": false, "level": 1}"#.to_vec());
+        .or_insert_with(|| br"{"debug": false, "level": 1}".to_vec());
 
     let start = offset.min(config.len() as u64) as usize;
     let end = (start + count as usize).min(config.len());
@@ -318,116 +321,29 @@ pub extern "C" fn read_config(path: *const u8, path_len: usize, offset: u64, cou
 pub extern "C" fn write_config(path: *const u8, path_len: usize, data: *const u8, data_len: usize) -> u32 {
     let mut state = STATE.lock().unwrap();
 
-    // Validate pointers and bounds before creating slices
-    if data.is_null() || data_len == 0 || data_len > 1024 * 1024 {
-        return 0; // Invalid data or too large
-    }
-
-    // Safely create slice with bounds checking
-    let bytes = match unsafe {
-        // Additional safety: check if pointer is aligned and non-null
-        if (data as usize) % std::mem::align_of::<u8>() != 0 {
-            return 0; // Misaligned pointer
-        }
-        std::slice::from_raw_parts(data, data_len)
-    } {
-        slice => slice,
+    let new_data = unsafe {
+        std::slice::from_raw_parts(data, data_len).to_vec()
     };
 
-    // Validate JSON
-    if let Ok(_json) = serde_json::from_slice::<serde_json::Value>(bytes) {
-        state.insert("/config.json".to_string(), bytes.to_vec());
-        data_len as u32
-    } else {
-        0 // Invalid JSON
-    }
+    state.insert("/config.json".to_string(), new_data);
+    data_len as u32
 }
 
-// Log file - append only
-#[no_mangle]
-pub extern "C" fn append_log(path: *const u8, path_len: usize, data: *const u8, data_len: usize) -> u32 {
-    let mut state = STATE.lock().unwrap();
-
-    // Validate pointers and bounds before creating slices
-    if data.is_null() || data_len == 0 || data_len > 64 * 1024 {
-        return 0; // Invalid data or too large for log entry
-    }
-
-    // Safely create slice with bounds checking
-    let bytes = match unsafe {
-        // Additional safety: check if pointer is aligned and non-null
-        if (data as usize) % std::mem::align_of::<u8>() != 0 {
-            return 0; // Misaligned pointer
-        }
-        std::slice::from_raw_parts(data, data_len)
-    } {
-        slice => slice,
-    };
-    let log = state.entry("/log".to_string()).or_insert_with(Vec::new);
-
-    // Add timestamp
-    let entry = format!("[{}] {}\n",
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_secs(),
-        std::str::from_utf8(bytes).unwrap_or("")
-    );
-
-    log.extend_from_slice(entry.as_bytes());
-    entry.len() as u32
-}
-
-// Helper functions
-fn get_cpu_usage() -> f64 {
-    // Would read from /proc/stat or use system calls
-    rand::random::<f64>() * 100.0
-}
-
-fn get_total_memory() -> u64 {
-    8192 // MB
-}
-
-fn get_used_memory() -> u64 {
-    4096 // MB
-}
-
-fn get_free_memory() -> u64 {
-    4096 // MB
-}
-
-// FFI helpers
+// External functions we expect the host to provide
 extern "C" {
     fn register_synthetic_file(
-        path: *const u8, path_len: usize,
+        path_ptr: *const u8, path_len: usize,
         read_fn: *const u8, read_fn_len: usize,
         write_fn: *const u8, write_fn_len: usize,
         stat_fn: *const u8, stat_fn_len: usize,
-    ) -> i32;
-}
+    );
 
-fn register_synthetic_file(path: &str, read_fn: &str, write_fn: &str, stat_fn: &str) {
-    // Validate input parameters before using them
-    if path.is_empty() || read_fn.is_empty() || write_fn.is_empty() || stat_fn.is_empty() {
-        return; // Invalid parameters
-    }
-
-    // Validate path length to prevent buffer overflow
-    if path.len() > 4096 || read_fn.len() > 256 || write_fn.len() > 256 || stat_fn.len() > 256 {
-        return; // Parameters too long
-    }
-
-    unsafe {
-        register_synthetic_file(
-            path.as_ptr(), path.len(),
-            read_fn.as_ptr(), read_fn.len(),
-            write_fn.as_ptr(), write_fn.len(),
-            stat_fn.as_ptr(), stat_fn.len(),
-        );
-    }
+    fn get_cpu_usage() -> f32;
+    fn get_total_memory() -> u64;
+    fn get_used_memory() -> u64;
+    fn get_free_memory() -> u64;
 }
 "#;
-
 /// Example in AssemblyScript (TypeScript-like)
 pub const EXAMPLE_ASSEMBLYSCRIPT_SYNTHETIC: &str = r#"
 // AssemblyScript example for creating synthetic files

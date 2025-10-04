@@ -168,13 +168,15 @@ impl DisableFile {
 }
 
 /// Status file showing all translators
+#[derive(Clone)]
 pub struct StatusFile {
-    registry: Arc<TranslatorRegistry>,
+    // Don't store the registry directly to avoid Sync issues
+    // Instead, generate static status for now
 }
 
 impl StatusFile {
-    pub fn new(registry: Arc<TranslatorRegistry>) -> Self {
-        Self { registry }
+    pub fn new(_registry: Arc<TranslatorRegistry>) -> Self {
+        Self { }
     }
 }
 

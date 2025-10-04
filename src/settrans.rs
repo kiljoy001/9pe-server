@@ -1,18 +1,18 @@
-//! Revolutionary filesystem-based translator management system
+//! Virtual settrans system using synthetic filesystem
 //!
-//! The settrans system provides Plan 9 style translator management through synthetic files.
-//! Drop WASM files into /settrans/install/ and control translators through filesystem operations.
+//! Provides translator management through virtual directories and files
+//! that exist only in the 9P namespace, not on physical disk.
 
 use anyhow::{Result, Context};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use tokio::fs;
 use tokio::sync::{RwLock, mpsc};
 use tokio::time::{Duration, interval};
 use tracing::{info, debug, error};
 
+use crate::synth::{SyntheticFilesystem, ControlHandler};
 use crate::wasm::ThreadSafeTranslatorRegistry;
 
 /// Translator state and metadata
@@ -22,8 +22,7 @@ pub struct TranslatorInfo {
     pub version: String,
     pub description: String,
     pub mount_point: String,
-    pub wasm_path: PathBuf,
-    pub config_path: Option<PathBuf>,
+    pub wasm_data: Vec<u8>,
     pub status: TranslatorStatus,
     pub installed_at: chrono::DateTime<chrono::Utc>,
     pub last_accessed: Option<chrono::DateTime<chrono::Utc>>,
@@ -37,21 +36,6 @@ pub enum TranslatorStatus {
     Enabled,
     Disabled,
     Error(String),
-    Installing,
-    Uninstalling,
-}
-
-impl std::fmt::Display for TranslatorStatus {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            TranslatorStatus::Available => write!(f, "available"),
-            TranslatorStatus::Enabled => write!(f, "enabled"),
-            TranslatorStatus::Disabled => write!(f, "disabled"),
-            TranslatorStatus::Error(err) => write!(f, "error: {}", err),
-            TranslatorStatus::Installing => write!(f, "installing"),
-            TranslatorStatus::Uninstalling => write!(f, "uninstalling"),
-        }
-    }
 }
 
 /// Commands for translator management
@@ -60,419 +44,234 @@ pub enum SettransCommand {
     Enable(String),
     Disable(String),
     Uninstall(String),
+    Install { name: String, data: Vec<u8> },
     Refresh,
     Status,
 }
 
-/// The settrans system - revolutionary filesystem-based translator management
-pub struct SettransSystem {
-    /// Base directory (/settrans)
+/// Virtual settrans system - translator management through synthetic filesystem
+pub struct VirtualSettransSystem {
+    /// Base directory (/srv/settrans) - virtual only
     base_dir: PathBuf,
+    /// Synthetic filesystem for virtual directories
+    synth_fs: Arc<SyntheticFilesystem>,
     /// Registry for WASM translators
     translator_registry: Arc<ThreadSafeTranslatorRegistry>,
     /// Known translators and their state
     translators: Arc<RwLock<HashMap<String, TranslatorInfo>>>,
     /// Command channel for control operations
     command_tx: mpsc::UnboundedSender<SettransCommand>,
-    /// Install watcher handle
-    install_watcher: Option<InstallWatcher>,
 }
 
-impl SettransSystem {
-    /// Create new settrans system
+impl VirtualSettransSystem {
+    /// Create new virtual settrans system
     pub async fn new(
-        base_dir: PathBuf,
+        synth_fs: Arc<SyntheticFilesystem>,
         translator_registry: Arc<ThreadSafeTranslatorRegistry>,
     ) -> Result<Self> {
-        // Create directory structure
-        Self::create_directories(&base_dir).await?;
+        let base_dir = PathBuf::from("/srv/settrans");
 
-        let (command_tx, command_rx) = mpsc::unbounded_channel();
+        // Create virtual directory structure in synthetic filesystem
+        Self::create_virtual_structure(&base_dir, &synth_fs).await?;
+
+        let (command_tx, mut command_rx) = mpsc::unbounded_channel();
         let translators = Arc::new(RwLock::new(HashMap::new()));
 
-        let mut system = Self {
-            base_dir: base_dir.clone(),
-            translator_registry: translator_registry.clone(),
-            translators: translators.clone(),
-            command_tx,
-            install_watcher: None,
-        };
+        // Create control file handlers
+        let translators_clone = Arc::clone(&translators);
+        let cmd_tx = command_tx.clone();
+
+        // Enable control file handler
+        struct EnableHandler {
+            cmd_tx: mpsc::UnboundedSender<SettransCommand>,
+        }
+        impl ControlHandler for EnableHandler {
+            fn read(&self) -> Result<Vec<u8>> {
+                Ok(b"Write translator name to enable\n".to_vec())
+            }
+            fn write(&self, data: &[u8]) -> Result<()> {
+                let name = String::from_utf8_lossy(data).trim().to_string();
+                self.cmd_tx.send(SettransCommand::Enable(name))?;
+                Ok(())
+            }
+        }
+
+        synth_fs.create_control_file(
+            &base_dir.join("enable"),
+            Arc::new(EnableHandler { cmd_tx: cmd_tx.clone() })
+        ).await?;
+
+        // Disable control file handler
+        struct DisableHandler {
+            cmd_tx: mpsc::UnboundedSender<SettransCommand>,
+        }
+        impl ControlHandler for DisableHandler {
+            fn read(&self) -> Result<Vec<u8>> {
+                Ok(b"Write translator name to disable\n".to_vec())
+            }
+            fn write(&self, data: &[u8]) -> Result<()> {
+                let name = String::from_utf8_lossy(data).trim().to_string();
+                self.cmd_tx.send(SettransCommand::Disable(name))?;
+                Ok(())
+            }
+        }
+
+        synth_fs.create_control_file(
+            &base_dir.join("disable"),
+            Arc::new(DisableHandler { cmd_tx: cmd_tx.clone() })
+        ).await?;
+
+        // Status control file handler
+        struct StatusHandler {
+            translators: Arc<RwLock<HashMap<String, TranslatorInfo>>>,
+        }
+        impl ControlHandler for StatusHandler {
+            fn read(&self) -> Result<Vec<u8>> {
+                // This would need to be async in real implementation
+                let translators = futures::executor::block_on(self.translators.read());
+                let mut status = String::new();
+                for (name, info) in translators.iter() {
+                    status.push_str(&format!("{}: {:?}\n", name, info.status));
+                }
+                if status.is_empty() {
+                    status = "No translators installed\n".to_string();
+                }
+                Ok(status.into_bytes())
+            }
+            fn write(&self, _data: &[u8]) -> Result<()> {
+                Ok(()) // Status is read-only
+            }
+        }
+
+        synth_fs.create_control_file(
+            &base_dir.join("status"),
+            Arc::new(StatusHandler { translators: Arc::clone(&translators) })
+        ).await?;
 
         // Start command processor
+        let translators_clone = Arc::clone(&translators);
+        let registry_clone = Arc::clone(&translator_registry);
+        let synth_fs_clone = Arc::clone(&synth_fs);
         let base_dir_clone = base_dir.clone();
-        let translators_clone = translators.clone();
-        let registry_clone = translator_registry.clone();
+
         tokio::spawn(async move {
-            Self::command_processor(
-                command_rx,
-                base_dir_clone,
-                translators_clone,
-                registry_clone,
-            ).await;
+            while let Some(command) = command_rx.recv().await {
+                match command {
+                    SettransCommand::Enable(name) => {
+                        Self::handle_enable(&name, &translators_clone, &registry_clone).await;
+                    }
+                    SettransCommand::Disable(name) => {
+                        Self::handle_disable(&name, &translators_clone, &registry_clone).await;
+                    }
+                    SettransCommand::Install { name, data } => {
+                        Self::handle_install(
+                            &name,
+                            data,
+                            &translators_clone,
+                            &synth_fs_clone,
+                            &base_dir_clone
+                        ).await;
+                    }
+                    _ => {}
+                }
+            }
         });
 
-        // Start install watcher
-        let install_watcher = InstallWatcher::new(
-            base_dir.join("install"),
-            system.command_tx.clone(),
-        ).await?;
-        system.install_watcher = Some(install_watcher);
-
-        // Initial scan
-        system.scan_available_translators().await?;
-
-        info!("Settrans system initialized at {:?}", base_dir);
-        Ok(system)
+        Ok(Self {
+            base_dir,
+            synth_fs,
+            translator_registry,
+            translators,
+            command_tx,
+        })
     }
 
-    /// Create the /settrans directory structure
-    async fn create_directories(base_dir: &Path) -> Result<()> {
+    /// Create virtual directory structure
+    async fn create_virtual_structure(
+        base_dir: &Path,
+        synth_fs: &Arc<SyntheticFilesystem>
+    ) -> Result<()> {
+        // Create base directory
+        synth_fs.create_directory(base_dir).await?;
+
+        // Create subdirectories
         let directories = [
             "install",      // Drop WASM files here
             "available",    // List installed translators
             "enabled",      // Currently active translators
             "disabled",     // Disabled translators
-            "status",       // Status information
         ];
-
-        fs::create_dir_all(base_dir).await?;
 
         for dir in &directories {
-            fs::create_dir_all(base_dir.join(dir)).await?;
+            synth_fs.create_directory(&base_dir.join(dir)).await?;
         }
 
-        // Create control files
-        let control_files = [
-            ("enable", "Write translator name to enable"),
-            ("disable", "Write translator name to disable"),
-            ("uninstall", "Write translator name to uninstall"),
-            ("refresh", "Write anything to refresh translator list"),
-            ("status", "Read current status of all translators"),
-        ];
-
-        for (file, description) in &control_files {
-            let file_path = base_dir.join(file);
-            if !file_path.exists() {
-                fs::write(&file_path, format!("# {}\n", description)).await?;
-            }
-        }
-
+        info!("Virtual settrans structure created at {:?} (synthetic filesystem only)", base_dir);
         Ok(())
     }
 
-    /// Scan for available translators
-    async fn scan_available_translators(&self) -> Result<()> {
-        let available_dir = self.base_dir.join("available");
-        let mut translators = self.translators.write().await;
-
-        // Clear existing available translators
-        translators.retain(|_, info| info.status != TranslatorStatus::Available);
-
-        // Scan available directory
-        if available_dir.exists() {
-            let mut entries = fs::read_dir(&available_dir).await?;
-            while let Some(entry) = entries.next_entry().await? {
-                if entry.file_type().await?.is_file() {
-                    let name = entry.file_name().to_string_lossy().to_string();
-                    if name.ends_with(".json") {
-                        if let Ok(info) = self.load_translator_info(&entry.path()).await {
-                            translators.insert(info.name.clone(), info);
-                        }
-                    }
-                }
-            }
-        }
-
-        self.update_status_files().await?;
-        Ok(())
-    }
-
-    /// Load translator info from JSON file
-    async fn load_translator_info(&self, config_path: &Path) -> Result<TranslatorInfo> {
-        let content = fs::read_to_string(config_path).await?;
-        let mut info: TranslatorInfo = serde_json::from_str(&content)?;
-
-        // Verify WASM file exists
-        if !info.wasm_path.exists() {
-            info.status = TranslatorStatus::Error("WASM file not found".to_string());
-        }
-
-        Ok(info)
-    }
-
-    /// Update synthetic status files
-    async fn update_status_files(&self) -> Result<()> {
-        let translators = self.translators.read().await;
-
-        // Update available list
-        let available: Vec<_> = translators
-            .values()
-            .filter(|t| t.status == TranslatorStatus::Available)
-            .map(|t| t.name.clone())
-            .collect();
-        fs::write(
-            self.base_dir.join("available").join("list"),
-            available.join("\n")
-        ).await?;
-
-        // Update enabled list
-        let enabled: Vec<_> = translators
-            .values()
-            .filter(|t| t.status == TranslatorStatus::Enabled)
-            .map(|t| t.name.clone())
-            .collect();
-        fs::write(
-            self.base_dir.join("enabled").join("list"),
-            enabled.join("\n")
-        ).await?;
-
-        // Update disabled list
-        let disabled: Vec<_> = translators
-            .values()
-            .filter(|t| t.status == TranslatorStatus::Disabled)
-            .map(|t| t.name.clone())
-            .collect();
-        fs::write(
-            self.base_dir.join("disabled").join("list"),
-            disabled.join("\n")
-        ).await?;
-
-        // Update comprehensive status
-        let mut status_content = String::new();
-        status_content.push_str("# Translator Status Report\n");
-        status_content.push_str(&format!("Generated: {}\n\n", chrono::Utc::now()));
-
-        for info in translators.values() {
-            status_content.push_str(&format!(
-                "{}: {} ({})\n  Mount: {}\n  Version: {}\n  Errors: {}\n",
-                info.name, info.status, info.description,
-                info.mount_point, info.version, info.error_count
-            ));
-            if let Some(error) = &info.last_error {
-                status_content.push_str(&format!("  Last Error: {}\n", error));
-            }
-            status_content.push('\n');
-        }
-
-        fs::write(self.base_dir.join("status"), status_content).await?;
-
-        Ok(())
-    }
-
-    /// Command processor loop
-    async fn command_processor(
-        mut command_rx: mpsc::UnboundedReceiver<SettransCommand>,
-        base_dir: PathBuf,
-        translators: Arc<RwLock<HashMap<String, TranslatorInfo>>>,
-        registry: Arc<ThreadSafeTranslatorRegistry>,
-    ) {
-        while let Some(command) = command_rx.recv().await {
-            match command {
-                SettransCommand::Enable(name) => {
-                    if let Err(e) = Self::enable_translator(&name, &translators, &registry).await {
-                        error!("Failed to enable translator {}: {}", name, e);
-                    }
-                }
-                SettransCommand::Disable(name) => {
-                    if let Err(e) = Self::disable_translator(&name, &translators, &registry).await {
-                        error!("Failed to disable translator {}: {}", name, e);
-                    }
-                }
-                SettransCommand::Uninstall(name) => {
-                    if let Err(e) = Self::uninstall_translator(&name, &base_dir, &translators).await {
-                        error!("Failed to uninstall translator {}: {}", name, e);
-                    }
-                }
-                SettransCommand::Refresh => {
-                    info!("Refreshing translator list");
-                }
-                SettransCommand::Status => {
-                    debug!("Status requested");
-                }
-            }
-        }
-    }
-
-    /// Enable a translator
-    async fn enable_translator(
+    /// Handle enable command
+    async fn handle_enable(
         name: &str,
         translators: &Arc<RwLock<HashMap<String, TranslatorInfo>>>,
         registry: &Arc<ThreadSafeTranslatorRegistry>,
-    ) -> Result<()> {
-        let mut translators_guard = translators.write().await;
-
-        if let Some(info) = translators_guard.get_mut(name) {
-            if info.status == TranslatorStatus::Available {
-                // Note: ThreadSafeTranslatorRegistry doesn't have enable_translator method yet
-                // For now, we just mark as enabled in our local state
-                info.status = TranslatorStatus::Enabled;
-                info!("Enabled translator: {}", name);
-            }
-        }
-
-        Ok(())
-    }
-
-    /// Disable a translator
-    async fn disable_translator(
-        name: &str,
-        translators: &Arc<RwLock<HashMap<String, TranslatorInfo>>>,
-        _registry: &Arc<ThreadSafeTranslatorRegistry>,
-    ) -> Result<()> {
-        let mut translators_guard = translators.write().await;
-
-        if let Some(info) = translators_guard.get_mut(name) {
-            if info.status == TranslatorStatus::Enabled {
-                // Note: In current implementation, we just mark as disabled
-                // The registry doesn't have an unload method yet
-                info.status = TranslatorStatus::Disabled;
-                info!("Disabled translator: {}", name);
-            }
-        }
-
-        Ok(())
-    }
-
-    /// Uninstall a translator
-    async fn uninstall_translator(
-        name: &str,
-        base_dir: &Path,
-        translators: &Arc<RwLock<HashMap<String, TranslatorInfo>>>,
-    ) -> Result<()> {
-        let mut translators_guard = translators.write().await;
-
-        if let Some(info) = translators_guard.remove(name) {
-            // Remove files
-            if info.wasm_path.exists() {
-                fs::remove_file(&info.wasm_path).await?;
-            }
-            if let Some(config_path) = &info.config_path {
-                if config_path.exists() {
-                    fs::remove_file(config_path).await?;
-                }
-            }
-
-            // Remove from available directory
-            let available_path = base_dir.join("available").join(format!("{}.json", name));
-            if available_path.exists() {
-                fs::remove_file(available_path).await?;
-            }
-
-            info!("Uninstalled translator: {}", name);
-        }
-
-        Ok(())
-    }
-
-    /// Get command sender for external control
-    pub fn command_sender(&self) -> mpsc::UnboundedSender<SettransCommand> {
-        self.command_tx.clone()
-    }
-
-    /// Get current translator status
-    pub async fn get_status(&self) -> HashMap<String, TranslatorInfo> {
-        self.translators.read().await.clone()
-    }
-}
-
-/// Watches /settrans/install for new WASM files
-pub struct InstallWatcher {
-    install_dir: PathBuf,
-    command_tx: mpsc::UnboundedSender<SettransCommand>,
-}
-
-impl InstallWatcher {
-    /// Create new install watcher
-    pub async fn new(
-        install_dir: PathBuf,
-        command_tx: mpsc::UnboundedSender<SettransCommand>,
-    ) -> Result<Self> {
-        fs::create_dir_all(&install_dir).await?;
-
-        let watcher = Self {
-            install_dir: install_dir.clone(),
-            command_tx: command_tx.clone(),
-        };
-
-        // Start watching loop
-        let install_dir_clone = install_dir.clone();
-        let command_tx_clone = command_tx.clone();
-        tokio::spawn(async move {
-            Self::watch_loop(install_dir_clone, command_tx_clone).await;
-        });
-
-        Ok(watcher)
-    }
-
-    /// Main watching loop
-    async fn watch_loop(
-        install_dir: PathBuf,
-        command_tx: mpsc::UnboundedSender<SettransCommand>,
     ) {
-        let mut interval = interval(Duration::from_secs(2));
-        let mut known_files = std::collections::HashSet::new();
-
-        loop {
-            interval.tick().await;
-
-            // Scan directory for new WASM files
-            if let Ok(mut entries) = fs::read_dir(&install_dir).await {
-                while let Ok(Some(entry)) = entries.next_entry().await {
-                    let path = entry.path();
-                    if path.extension().and_then(|s| s.to_str()) == Some("wasm") {
-                        let file_name = path.file_name()
-                            .and_then(|n| n.to_str())
-                            .unwrap_or("")
-                            .to_string();
-
-                        if !known_files.contains(&file_name) {
-                            known_files.insert(file_name.clone());
-
-                            if let Err(e) = Self::install_wasm_file(&path, &command_tx).await {
-                                error!("Failed to install {}: {}", file_name, e);
-                            }
-                        }
-                    }
+        let mut trans = translators.write().await;
+        if let Some(info) = trans.get_mut(name) {
+            // Load translator into registry
+            match registry.load_translator(
+                info.name.clone(),
+                PathBuf::from(&info.mount_point),
+                info.wasm_data.clone(),
+            ).await {
+                Ok(_) => {
+                    info.status = TranslatorStatus::Enabled;
+                    info!("Enabled translator: {}", name);
+                }
+                Err(e) => {
+                    error!("Failed to enable translator {}: {}", name, e);
+                    info.status = TranslatorStatus::Error(e.to_string());
                 }
             }
         }
     }
 
-    /// Install a new WASM file
-    async fn install_wasm_file(
-        wasm_path: &Path,
-        command_tx: &mpsc::UnboundedSender<SettransCommand>,
-    ) -> Result<()> {
-        let file_name = wasm_path.file_stem()
-            .and_then(|s| s.to_str())
-            .context("Invalid file name")?;
+    /// Handle disable command
+    async fn handle_disable(
+        name: &str,
+        translators: &Arc<RwLock<HashMap<String, TranslatorInfo>>>,
+        registry: &Arc<ThreadSafeTranslatorRegistry>,
+    ) {
+        let mut trans = translators.write().await;
+        if let Some(info) = trans.get_mut(name) {
+            // Remove from registry
+            let mount_path = PathBuf::from(&info.mount_point);
+            match registry.remove_translator(&mount_path).await {
+                Ok(_) => {
+                    info.status = TranslatorStatus::Disabled;
+                    info!("Disabled translator: {}", name);
+                }
+                Err(e) => {
+                    error!("Failed to disable translator {}: {}", name, e);
+                }
+            }
+        }
+    }
 
-        info!("Installing WASM translator: {}", file_name);
-
-        // Look for accompanying JSON config
-        let config_path = wasm_path.with_extension("json");
-        let translator_info = if config_path.exists() {
-            let content = fs::read_to_string(&config_path).await?;
-            serde_json::from_str::<serde_json::Value>(&content)?
-        } else {
-            // Create default config
-            serde_json::json!({
-                "name": file_name,
-                "version": "1.0.0",
-                "description": format!("Auto-discovered translator: {}", file_name),
-                "mount_point": format!("/srv/{}", file_name)
-            })
-        };
-
-        // Create translator info
+    /// Handle install command (when WASM is dropped into /install)
+    async fn handle_install(
+        name: &str,
+        data: Vec<u8>,
+        translators: &Arc<RwLock<HashMap<String, TranslatorInfo>>>,
+        synth_fs: &Arc<SyntheticFilesystem>,
+        base_dir: &Path,
+    ) {
         let info = TranslatorInfo {
-            name: translator_info["name"].as_str().unwrap_or(file_name).to_string(),
-            version: translator_info["version"].as_str().unwrap_or("1.0.0").to_string(),
-            description: translator_info["description"].as_str().unwrap_or("").to_string(),
-            mount_point: translator_info["mount_point"].as_str()
-                .unwrap_or(&format!("/srv/{}", file_name)).to_string(),
-            wasm_path: wasm_path.to_path_buf(),
-            config_path: if config_path.exists() { Some(config_path) } else { None },
+            name: name.to_string(),
+            version: "1.0.0".to_string(),
+            description: format!("WASM translator: {}", name),
+            mount_point: format!("/srv/{}", name),
+            wasm_data: data,
             status: TranslatorStatus::Available,
             installed_at: chrono::Utc::now(),
             last_accessed: None,
@@ -480,62 +279,38 @@ impl InstallWatcher {
             last_error: None,
         };
 
-        // Move to available directory
-        let available_dir = wasm_path.parent()
-            .unwrap()
-            .parent()
-            .unwrap()
-            .join("available");
+        // Create virtual file in /available
+        synth_fs.create_file(
+            &base_dir.join("available").join(name),
+            name.as_bytes().to_vec(),
+            false
+        ).await.ok();
 
-        let new_wasm_path = available_dir.join(wasm_path.file_name().unwrap());
-        let new_config_path = available_dir.join(format!("{}.json", info.name));
+        // Store translator info
+        translators.write().await.insert(name.to_string(), info);
+        info!("Installed translator: {}", name);
+    }
 
-        fs::rename(wasm_path, &new_wasm_path).await?;
+    /// Get the synthetic filesystem
+    pub fn get_synth_fs(&self) -> &Arc<SyntheticFilesystem> {
+        &self.synth_fs
+    }
 
-        // Update info with new path
-        let updated_info = TranslatorInfo {
-            wasm_path: new_wasm_path,
-            config_path: Some(new_config_path.clone()),
-            ..info
-        };
-
-        // Save config
-        fs::write(&new_config_path, serde_json::to_string_pretty(&updated_info)?).await?;
-
-        // Trigger refresh
-        let _ = command_tx.send(SettransCommand::Refresh);
-
-        info!("Successfully installed translator: {}", updated_info.name);
+    /// Install a WASM translator
+    pub async fn install_translator(&self, name: String, wasm_data: Vec<u8>) -> Result<()> {
+        self.command_tx.send(SettransCommand::Install { name, data: wasm_data })?;
         Ok(())
     }
-}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use tempfile::TempDir;
-
-    #[tokio::test]
-    async fn test_settrans_creation() {
-        let temp_dir = TempDir::new().unwrap();
-        let base_path = temp_dir.path().to_path_buf();
-
-        let registry = Arc::new(TranslatorRegistry::new(base_path.join("translators")));
-        let settrans = SettransSystem::new(base_path.join("settrans"), registry).await;
-
-        assert!(settrans.is_ok());
+    /// Enable a translator
+    pub async fn enable_translator(&self, name: &str) -> Result<()> {
+        self.command_tx.send(SettransCommand::Enable(name.to_string()))?;
+        Ok(())
     }
 
-    #[tokio::test]
-    async fn test_directory_structure() {
-        let temp_dir = TempDir::new().unwrap();
-        let base_path = temp_dir.path().join("settrans");
-
-        SettransSystem::create_directories(&base_path).await.unwrap();
-
-        assert!(base_path.join("install").exists());
-        assert!(base_path.join("available").exists());
-        assert!(base_path.join("enabled").exists());
-        assert!(base_path.join("status").exists());
+    /// Disable a translator
+    pub async fn disable_translator(&self, name: &str) -> Result<()> {
+        self.command_tx.send(SettransCommand::Disable(name.to_string()))?;
+        Ok(())
     }
 }

@@ -1,0 +1,7 @@
+std::mem::ManuallyDrop<std::boxed::Box<wasmtime::runtime::store::StoreInner<wasm_translator::WasiState>>>
+std::sync::Arc<tokio::sync::RwLock<std::collections::HashMap<u64, wasm_translator::TranslatorInstance>>>
+hashbrown::raw::RawTable<(std::path::PathBuf, std::sync::Arc<wasm_translator::WasmTranslator>)>
+hashbrown::map::HashMap<std::path::PathBuf, std::sync::Arc<wasm_translator::WasmTranslator>, std::hash::RandomState>
+std::collections::HashMap<std::path::PathBuf, std::sync::Arc<wasm_translator::WasmTranslator>>
+tokio::sync::RwLock<std::collections::HashMap<std::path::PathBuf, std::sync::Arc<wasm_translator::WasmTranslator>>>
+std::sync::Arc<tokio::sync::RwLock<std::collections::HashMap<std::path::PathBuf, std::sync::Arc<wasm_translator::WasmTranslator>>>>
