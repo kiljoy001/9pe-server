@@ -92,7 +92,7 @@ impl ServeCommand {
         };
 
         // Build the server with dependency injection
-        let server = ServerBuilder::new()
+        let mut builder = ServerBuilder::new()
             .network_config(network_config)
             .transport(transport)
             .root_directory(self.root)
@@ -101,8 +101,14 @@ impl ServeCommand {
             .mesh_enabled(self.mesh)
             .mesh_port(self.mesh_port)
             .metrics_enabled(self.metrics)
-            .metrics_port(self.metrics_port)
-            .build()
+            .metrics_port(self.metrics_port);
+
+        // If config file was loaded, pass it to the builder
+        if let Some(config) = file_config {
+            builder = builder.with_config(config);
+        }
+
+        let server = builder.build()
             .await
             .context("Failed to build server")?;
 

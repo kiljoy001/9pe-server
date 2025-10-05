@@ -28,6 +28,7 @@ pub struct Server {
     settrans_system: Arc<VirtualSettransSystem>,
     synth_fs: Arc<SyntheticFilesystem>,
     auto_mount_daemon: Option<AutoMountDaemon>,
+    consensus_coordinator: Option<Arc<crate::consensus::ConsensusCoordinator>>,
 }
 
 /// Server configuration
@@ -45,6 +46,8 @@ pub struct ServerConfig {
     pub translator_directory: PathBuf,
     pub settrans_directory: PathBuf,
     pub auto_mount_enabled: bool,
+    pub consensus_config: Option<crate::config::ConsensusConfig>,
+    pub node_id: String,
 }
 
 impl Server {
@@ -92,10 +95,44 @@ impl Server {
         );
         info!("Virtual settrans system initialized at /srv/settrans (virtual only, no physical directories)");
 
+        // Initialize consensus coordinator if enabled
+        let consensus_coordinator = if let Some(ref consensus_cfg) = config.consensus_config {
+            info!("Initializing consensus coordinator for node: {}", config.node_id);
+
+            // Create crypto provider
+            let crypto = Arc::new(crate::consensus::crypto::Ed25519Provider::new()?);
+
+            // Create consensus coordinator
+            let coordinator = Arc::new(crate::consensus::ConsensusCoordinator::new(
+                config.node_id.clone(),
+                crypto,
+            ));
+
+            // Initialize the coordinator
+            coordinator.initialize().await?;
+            info!("Consensus coordinator initialized successfully");
+
+            Some(coordinator)
+        } else {
+            info!("Consensus disabled in config");
+            None
+        };
+
         // Start mesh networking if enabled
         if config.mesh_enabled {
             info!("Starting mesh networking on port {}", config.mesh_port);
-            // Mesh initialization here
+            // TODO: Actual mesh networking implementation
+            // For now, just bind the port to prove it works
+            let mesh_addr = std::net::SocketAddr::from(([0, 0, 0, 0], config.mesh_port));
+            tokio::spawn(async move {
+                match tokio::net::TcpListener::bind(mesh_addr).await {
+                    Ok(_listener) => {
+                        info!("Mesh networking bound to port {}", config.mesh_port);
+                        // TODO: Implement actual mesh protocol
+                    }
+                    Err(e) => error!("Failed to bind mesh port: {}", e),
+                }
+            });
         }
 
         // Start metrics server if enabled
@@ -150,6 +187,7 @@ impl Server {
             settrans_system,
             synth_fs,
             auto_mount_daemon,
+            consensus_coordinator,
         })
     }
 

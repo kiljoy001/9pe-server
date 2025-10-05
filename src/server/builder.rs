@@ -21,6 +21,7 @@ pub struct ServerBuilder {
     translator_directory: Option<PathBuf>,
     settrans_directory: Option<PathBuf>,
     auto_mount_enabled: bool,
+    config: Option<crate::config::Config>,
 }
 
 impl ServerBuilder {
@@ -38,7 +39,13 @@ impl ServerBuilder {
             translator_directory: None,
             settrans_directory: None,
             auto_mount_enabled: true, // Auto-mount enabled by default
+            config: None,
         }
+    }
+
+    pub fn with_config(mut self, config: crate::config::Config) -> Self {
+        self.config = Some(config);
+        self
     }
 
     pub fn network_config(mut self, config: NetworkConfig) -> Self {
@@ -106,6 +113,18 @@ impl ServerBuilder {
         let home = std::env::var("HOME").unwrap_or_else(|_| ".".to_string());
         let ninep_home = PathBuf::from(&home).join(".9pe");
 
+        // Extract consensus config and node_id from file config if present
+        let (consensus_config, node_id) = if let Some(ref file_config) = self.config {
+            let consensus = if file_config.consensus.enabled {
+                Some(file_config.consensus.clone())
+            } else {
+                None
+            };
+            (consensus, file_config.server.node_id.clone())
+        } else {
+            (None, format!("node-{}", uuid::Uuid::new_v4()))
+        };
+
         let config = ServerConfig {
             network: self.network_config.unwrap_or_default(),
             transport: self.transport.unwrap_or_default(),
@@ -119,6 +138,8 @@ impl ServerBuilder {
             translator_directory: self.translator_directory.unwrap_or_else(|| ninep_home.join("translators")),
             settrans_directory: self.settrans_directory.unwrap_or_else(|| ninep_home.join("settrans")),
             auto_mount_enabled: self.auto_mount_enabled,
+            consensus_config,
+            node_id,
         };
 
         Server::new(config).await
