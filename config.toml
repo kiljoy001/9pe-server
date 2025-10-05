@@ -1,21 +1,29 @@
-# 9P.e Server Config - Machine 1 (Intel Arc + LLM)
+# 9P.e Server Config
+#
+# This config controls the core server behavior. LLM integration
+# is done via WASM translators, not the server itself.
 
 [server]
-listen_addr = "0.0.0.0:9009"
+listen_addr = "0.0.0.0:5640"
 node_id = "intel-arc-node"
 
-[llama]
+[consensus]
 enabled = true
-server_url = "http://localhost:8080"  # Your llama-launcher
+# Mesh peers - use same port as mesh_port (9650 by default)
+peers = ["[201:2bd3:1946:41ea:d21a:a129:2b2f:c3a6]:9650"]  # rentonsoftworks.coin
+
+# GPU and LLM config is for WASM translators to query capabilities
+# The server itself doesn't use LLMs - that's done in translators
 
 [gpu]
 enabled = true
 backend = "opencl"  # Intel Arc uses OpenCL
 device_id = 0
 
-[consensus]
+[llama]
+# This tells translators that LLM is available on this node
 enabled = true
-peers = ["[201:2bd3:1946:41ea:d21a:a129:2b2f:c3a6]:9009"]  # rentonsoftworks.coin
+server_url = "http://localhost:8080"  # For translators to use
 
 [logging]
 level = "info"

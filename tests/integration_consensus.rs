@@ -139,13 +139,19 @@ async fn test_metrics_endpoint_shows_consensus_state() {
 }
 
 #[tokio::test]
-async fn test_llama_config_is_used_by_server() {
-    use ninep_server::consensus::LlamaCppWorker;
+async fn test_llama_config_parsed_for_translators() {
+    // LLM config is for translators to query, not for the server to use directly
 
     let config = r#"
 [llama]
 enabled = true
 server_url = "http://localhost:18080"
+
+[server]
+node_id = "test"
+
+[consensus]
+enabled = false
 "#;
 
     let parsed: ninep_server::config::Config = toml::from_str(config).unwrap();
@@ -153,11 +159,8 @@ server_url = "http://localhost:18080"
     assert!(parsed.llama.enabled, "Llama should be enabled");
     assert_eq!(parsed.llama.server_url, "http://localhost:18080");
 
-    // Create worker with config URL
-    let worker = LlamaCppWorker::new("test".to_string(), Some(parsed.llama.server_url.clone()));
-
-    // TODO: The server should create this worker when config.llama.enabled = true
-    // Currently it never reads the config
+    // This config is for WASM translators to query what capabilities are available
+    // The server itself doesn't create LLM workers - translators do
 }
 
 #[tokio::test]
