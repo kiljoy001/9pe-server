@@ -224,18 +224,67 @@ async fn test_mesh_networking_port_is_bound() {
 }
 
 #[tokio::test]
-#[should_panic(expected = "Peers not discovered")]
-async fn test_peers_from_config_are_connected() {
-    // This test verifies that peers listed in config.consensus.peers
-    // are actually discovered and connected to.
-    //
-    // This WILL FAIL because:
-    // 1. Config not read
-    // 2. Consensus not initialized
-    // 3. Mesh networking not started
-    // 4. Peers never discovered
+async fn test_mesh_networking_starts_successfully() {
+    // This test verifies that mesh networking actually starts and listens
 
-    panic!("Peers not discovered - consensus layer not initialized");
+    use std::sync::Arc;
+    use ninep_server::mesh::MeshNetwork;
+
+    // Create mesh with no bootstrap peers
+    let mesh = Arc::new(MeshNetwork::new(
+        "test-node".to_string(),
+        19652,  // Use different port to avoid conflicts
+        vec![],
+    ));
+
+    // Clone before start consumes it
+    let mesh_clone = Arc::clone(&mesh);
+
+    // Start mesh
+    let result = mesh.start().await;
+    assert!(result.is_ok(), "Mesh network should start successfully");
+
+    // Give it a moment to bind
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+
+    // Verify it's listening by checking peer count (should be 0 with no bootstrap peers)
+    let peer_count = mesh_clone.get_peer_count().await;
+    assert_eq!(peer_count, 0, "Should have no peers yet");
+}
+
+#[tokio::test]
+async fn test_mesh_peer_connection() {
+    // Test that two mesh nodes can connect to each other
+
+    use std::sync::Arc;
+    use ninep_server::mesh::MeshNetwork;
+
+    // Start first node
+    let node1 = Arc::new(MeshNetwork::new(
+        "node1".to_string(),
+        19653,
+        vec![],
+    ));
+    node1.clone().start().await.unwrap();
+
+    // Start second node with node1 as bootstrap peer
+    let node2 = Arc::new(MeshNetwork::new(
+        "node2".to_string(),
+        19654,
+        vec!["127.0.0.1:19653".to_string()],
+    ));
+    node2.clone().start().await.unwrap();
+
+    // Wait for connection
+    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+
+    // Check peer counts
+    let node1_peers = node1.get_peer_count().await;
+    let node2_peers = node2.get_peer_count().await;
+
+    assert!(node1_peers >= 1 || node2_peers >= 1,
+            "At least one node should have connected (node1: {}, node2: {})",
+            node1_peers, node2_peers);
 }
 
 /// Integration test helper - start a test server

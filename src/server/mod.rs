@@ -29,6 +29,7 @@ pub struct Server {
     synth_fs: Arc<SyntheticFilesystem>,
     auto_mount_daemon: Option<AutoMountDaemon>,
     consensus_coordinator: Option<Arc<crate::consensus::ConsensusCoordinator>>,
+    mesh_network: Option<Arc<crate::mesh::MeshNetwork>>,
 }
 
 /// Server configuration
@@ -119,25 +120,42 @@ impl Server {
         };
 
         // Start mesh networking if enabled
-        if config.mesh_enabled {
+        let mesh_network = if config.mesh_enabled {
             info!("Starting mesh networking on port {}", config.mesh_port);
-            // TODO: Actual mesh networking implementation
-            // For now, just bind the port to prove it works
-            let mesh_addr = std::net::SocketAddr::from(([0, 0, 0, 0], config.mesh_port));
-            tokio::spawn(async move {
-                match tokio::net::TcpListener::bind(mesh_addr).await {
-                    Ok(_listener) => {
-                        info!("Mesh networking bound to port {}", config.mesh_port);
-                        // TODO: Implement actual mesh protocol
-                    }
-                    Err(e) => error!("Failed to bind mesh port: {}", e),
-                }
-            });
-        }
+
+            // Get bootstrap peers from consensus config
+            let bootstrap_peers = if let Some(ref consensus_cfg) = config.consensus_config {
+                consensus_cfg.peers.clone()
+            } else {
+                Vec::new()
+            };
+
+            let mesh = Arc::new(crate::mesh::MeshNetwork::new(
+                config.node_id.clone(),
+                config.mesh_port,
+                bootstrap_peers,
+            ));
+
+            // Start the mesh network
+            let mesh_clone = Arc::clone(&mesh);
+            if let Err(e) = mesh_clone.start().await {
+                error!("Failed to start mesh network: {}", e);
+                None
+            } else {
+                info!("Mesh network started successfully on port {}", config.mesh_port);
+                Some(mesh)
+            }
+        } else {
+            info!("Mesh networking disabled");
+            None
+        };
 
         // Start metrics server if enabled
         if config.metrics_enabled {
             let metrics_port = config.metrics_port;
+            let mesh_for_metrics = mesh_network.clone();
+            let consensus_for_metrics = consensus_coordinator.clone();
+
             tokio::spawn(async move {
                 use std::net::SocketAddr;
                 use tokio::net::TcpListener;
@@ -150,7 +168,19 @@ impl Server {
                         loop {
                             match listener.accept().await {
                                 Ok((mut stream, _)) => {
-                                    let response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n# 9P.e Metrics\nninep_server_running 1\nninep_connections_total 0\n";
+                                    // Collect metrics
+                                    let peer_count = if let Some(ref mesh) = mesh_for_metrics {
+                                        mesh.get_peer_count().await
+                                    } else {
+                                        0
+                                    };
+
+                                    let consensus_enabled = consensus_for_metrics.is_some() as u8;
+
+                                    let response = format!(
+                                        "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n# 9P.e Metrics\nninep_server_running 1\nninep_connections_total 0\nninep_consensus_enabled {}\nninep_mesh_peer_count {}\n",
+                                        consensus_enabled, peer_count
+                                    );
                                     let _ = stream.write_all(response.as_bytes()).await;
                                 }
                                 Err(e) => error!("Failed to accept metrics connection: {}", e),
@@ -188,6 +218,7 @@ impl Server {
             synth_fs,
             auto_mount_daemon,
             consensus_coordinator,
+            mesh_network,
         })
     }
 
