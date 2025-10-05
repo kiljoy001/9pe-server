@@ -43,6 +43,7 @@
 
 pub mod auth;
 pub mod auto_mount;
+pub mod config;
 pub mod cli;
 pub mod consensus;
 pub mod error;

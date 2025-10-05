@@ -102,6 +102,8 @@ proptest = "1.4"
 
 # Test utilities
 rand = "0.8"
+toml = "0.8"
+async-trait = "0.1"
 
 [features]
 default = []

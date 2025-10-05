@@ -52,7 +52,7 @@ impl Cli {
 
         // Execute the appropriate command
         match self.command {
-            Command::Serve(cmd) => cmd.execute().await,
+            Command::Serve(cmd) => cmd.execute(self.global.config).await,
             Command::Client(cmd) => cmd.execute().await,
             Command::AutoMount(cmd) => cmd.execute().await,
             Command::Version => {

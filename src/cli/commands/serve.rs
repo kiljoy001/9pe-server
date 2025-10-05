@@ -65,8 +65,16 @@ pub struct ServeCommand {
 
 impl ServeCommand {
     /// Execute the serve command
-    pub async fn execute(self) -> Result<()> {
+    pub async fn execute(self, config_path: Option<String>) -> Result<()> {
         info!("Starting 9P.e server...");
+
+        // Load config file if provided
+        let file_config = if let Some(path) = config_path.as_ref() {
+            info!("Loading configuration from: {}", path);
+            Some(crate::config::Config::from_file(std::path::Path::new(path))?)
+        } else {
+            None
+        };
 
         // Configure network with IPv6 preference
         let network_config = NetworkConfig::new(self.port)
