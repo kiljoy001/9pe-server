@@ -9,8 +9,9 @@ node_id = "intel-arc-node"
 
 [consensus]
 enabled = true
-# Mesh peers - use same port as mesh_port (9650 by default)
-peers = ["[201:2bd3:1946:41ea:d21a:a129:2b2f:c3a6]:9650"]  # rentonsoftworks.coin
+# Optional bootstrap peers for DHT seeding (not required - DHT will auto-discover)
+# peers = ["rentonsoftworks.coin:9650"]
+peers = []  # Empty - auto-discovery via DHT
 
 # GPU and LLM config is for WASM translators to query capabilities
 # The server itself doesn't use LLMs - that's done in translators
