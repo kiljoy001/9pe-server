@@ -102,6 +102,10 @@ impl ServerBuilder {
     }
 
     pub async fn build(self) -> Result<Server> {
+        // Use user home directory for all 9pe paths
+        let home = std::env::var("HOME").unwrap_or_else(|_| ".".to_string());
+        let ninep_home = PathBuf::from(&home).join(".9pe");
+
         let config = ServerConfig {
             network: self.network_config.unwrap_or_default(),
             transport: self.transport.unwrap_or_default(),
@@ -112,8 +116,8 @@ impl ServerBuilder {
             mesh_port: self.mesh_port,
             metrics_enabled: self.metrics_enabled,
             metrics_port: self.metrics_port,
-            translator_directory: self.translator_directory.unwrap_or_else(|| PathBuf::from("/srv/translators")),
-            settrans_directory: self.settrans_directory.unwrap_or_else(|| PathBuf::from("/srv/settrans")),
+            translator_directory: self.translator_directory.unwrap_or_else(|| ninep_home.join("translators")),
+            settrans_directory: self.settrans_directory.unwrap_or_else(|| ninep_home.join("settrans")),
             auto_mount_enabled: self.auto_mount_enabled,
         };
 

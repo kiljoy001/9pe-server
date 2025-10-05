@@ -10,7 +10,7 @@ use tokio::process::Command;
 use tracing::{debug, info, warn, error};
 
 use super::work_distribution::{JobRequest, JobRequirements, NodeCapabilities, PartialResult};
-use super::crypto::WorkProof;
+use super::crypto::{WorkProof, ComputationProof, Signature};
 
 /// Ollama worker executes LLM inference tasks
 pub struct OllamaWorker {
@@ -78,10 +78,19 @@ impl OllamaWorker {
         let result_data = serde_json::to_vec(&response)?;
 
         // Create proof of work
+        let result_hash = self.hash_result(&result_data);
         let proof = WorkProof {
-            nonce: 0, // TODO: Implement actual PoW
-            hash: self.hash_result(&result_data),
-            difficulty: 1,
+            work_id: job.id.clone(),
+            result_hash: result_hash.clone(),
+            computation_proof: ComputationProof::HashProof {
+                nonce: 0,
+                hash: result_hash,
+                difficulty: 1,
+            },
+            node_signature: Signature {
+                r: vec![0; 32],  // TODO: Implement actual signature
+                s: vec![0; 32],
+            },
             timestamp: SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs(),
         };
 

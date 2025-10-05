@@ -100,8 +100,29 @@ impl Server {
 
         // Start metrics server if enabled
         if config.metrics_enabled {
-            info!("Starting metrics server on port {}", config.metrics_port);
-            // Metrics initialization here
+            let metrics_port = config.metrics_port;
+            tokio::spawn(async move {
+                use std::net::SocketAddr;
+                use tokio::net::TcpListener;
+                use tokio::io::AsyncWriteExt;
+
+                let addr = SocketAddr::from(([0, 0, 0, 0], metrics_port));
+                match TcpListener::bind(addr).await {
+                    Ok(listener) => {
+                        info!("Metrics server started on port {}", metrics_port);
+                        loop {
+                            match listener.accept().await {
+                                Ok((mut stream, _)) => {
+                                    let response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n# 9P.e Metrics\nninep_server_running 1\nninep_connections_total 0\n";
+                                    let _ = stream.write_all(response.as_bytes()).await;
+                                }
+                                Err(e) => error!("Failed to accept metrics connection: {}", e),
+                            }
+                        }
+                    }
+                    Err(e) => error!("Failed to start metrics server: {}", e),
+                }
+            });
         }
 
         // Initialize auto-mount daemon if enabled

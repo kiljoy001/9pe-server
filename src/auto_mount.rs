@@ -81,7 +81,7 @@ impl AutoMountDaemon {
         self
     }
 
-    /// Generate mount point for a discovered server in /n/ namespace
+    /// Generate mount point for a discovered server in ~/.9pe/n/ namespace
     fn generate_mount_point(server: &DiscoveredServer) -> PathBuf {
         // Create clean server name for mount point
         let clean_name = server.address
@@ -89,16 +89,18 @@ impl AutoMountDaemon {
             .replace(":", "_")
             .replace("-", "_");
 
-        PathBuf::from("/n").join(format!("{}_port_{}", clean_name, server.port))
+        let home = std::env::var("HOME").unwrap_or_else(|_| ".".to_string());
+        PathBuf::from(&home).join(".9pe/n").join(format!("{}_port_{}", clean_name, server.port))
     }
 
-    /// Ensure /n/ directory exists
+    /// Ensure ~/.9pe/n/ directory exists
     fn ensure_n_directory_exists() -> Result<()> {
-        let n_path = PathBuf::from("/n");
+        let home = std::env::var("HOME").unwrap_or_else(|_| ".".to_string());
+        let n_path = PathBuf::from(&home).join(".9pe/n");
         if !n_path.exists() {
             std::fs::create_dir_all(&n_path)
-                .context("Failed to create /n directory")?;
-            info!("Created /n directory for namespace mounts");
+                .context("Failed to create ~/.9pe/n directory")?;
+            info!("Created ~/.9pe/n directory for namespace mounts");
         }
         Ok(())
     }

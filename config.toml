@@ -1,0 +1,21 @@
+# 9P.e Server Config - Machine 1 (Intel Arc + LLM)
+
+[server]
+listen_addr = "0.0.0.0:9009"
+node_id = "intel-arc-node"
+
+[llama]
+enabled = true
+server_url = "http://localhost:8080"  # Your llama-launcher
+
+[gpu]
+enabled = true
+backend = "opencl"  # Intel Arc uses OpenCL
+device_id = 0
+
+[consensus]
+enabled = true
+peers = ["[201:2bd3:1946:41ea:d21a:a129:2b2f:c3a6]:9009"]  # rentonsoftworks.coin
+
+[logging]
+level = "info"
