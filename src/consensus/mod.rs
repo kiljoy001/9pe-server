@@ -13,7 +13,8 @@ pub mod work_distribution;
 pub mod network;
 pub mod bounded_ghostdag;
 pub mod dynamic_scaling;
-pub mod ollama_worker;
+// pub mod ollama_worker;  // Disabled - ollama not available
+pub mod llama_worker;
 
 pub use ghostdag::{GhostdagConsensus, ConsensusState, WorkBlock};
 pub use crypto::{CryptoProvider, Signature, PublicKey};
@@ -22,7 +23,8 @@ pub use ghostdag::WorkResult;
 pub use network::{NetworkConsensus, PeerManager};
 pub use bounded_ghostdag::{BoundedGhostdag, NamespaceOp, BlockState, DagStats, Block, BlockId};
 pub use dynamic_scaling::{DynamicScaler, ScalingParams, ScaleDecision};
-pub use ollama_worker::{OllamaWorker, LLMRequest, LLMResponse, create_llm_job};
+// pub use ollama_worker::{OllamaWorker, LLMRequest, LLMResponse, create_llm_job};  // Disabled
+pub use llama_worker::{LlamaCppWorker, LLMRequest, LLMResponse, create_llm_job};
 
 use anyhow::Result;
 use std::sync::Arc;

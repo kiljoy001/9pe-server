@@ -17,14 +17,23 @@ use libc::{c_void, c_char, c_int, c_uint, size_t};
 
 // Level Zero types (simplified - in production use level-zero-sys crate)
 type ZeResult = c_int;
-type ZeDriver = *mut c_void;
-type ZeDevice = *mut c_void;
-type ZeContext = *mut c_void;
-type ZeCommandQueue = *mut c_void;
-type ZeCommandList = *mut c_void;
-type ZeDeviceMem = *mut c_void;
-type ZeKernel = *mut c_void;
-type ZeModule = *mut c_void;
+
+/// Send-safe wrapper for raw Level Zero handles
+/// Safety: Level Zero handles are opaque pointers that are thread-safe
+/// when accessed through the Level Zero API's internal locking
+#[derive(Clone, Copy)]
+struct SendPtr(*mut c_void);
+unsafe impl Send for SendPtr {}
+unsafe impl Sync for SendPtr {}
+
+type ZeDriver = SendPtr;
+type ZeDevice = SendPtr;
+type ZeContext = SendPtr;
+type ZeCommandQueue = SendPtr;
+type ZeCommandList = SendPtr;
+type ZeDeviceMem = SendPtr;
+type ZeKernel = SendPtr;
+type ZeModule = SendPtr;
 
 const ZE_RESULT_SUCCESS: ZeResult = 0;
 

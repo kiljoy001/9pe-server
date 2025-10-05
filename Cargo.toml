@@ -90,6 +90,8 @@ opencl3 = "0.9"
 
 # Additional dependencies for consensus
 num_cpus = "1.16"
+reqwest = { version = "0.12.23", features = ["json"] }
+sha2 = "0.10.9"
 
 [dev-dependencies]
 # Testing
