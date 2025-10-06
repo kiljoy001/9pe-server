@@ -388,7 +388,6 @@ struct RegisterNamespaceHandler {
     manager: Arc<NamespaceManager>,
 }
 
-#[async_trait::async_trait]
 impl ControlHandler for RegisterNamespaceHandler {
     fn read(&self) -> Result<Vec<u8>> {
         Ok(b"Write JSON to register namespace:\n\
@@ -456,7 +455,6 @@ struct ListNamespacesHandler {
     claims: Arc<RwLock<HashMap<String, NamespaceClaim>>>,
 }
 
-#[async_trait::async_trait]
 impl ControlHandler for ListNamespacesHandler {
     fn read(&self) -> Result<Vec<u8>> {
         let claims = tokio::runtime::Handle::current()
@@ -488,7 +486,6 @@ struct VerifyNamespaceHandler {
     claims: Arc<RwLock<HashMap<String, NamespaceClaim>>>,
 }
 
-#[async_trait::async_trait]
 impl ControlHandler for VerifyNamespaceHandler {
     fn read(&self) -> Result<Vec<u8>> {
         Ok(b"Write path to verify ownership\n".to_vec())
@@ -516,7 +513,6 @@ struct DeleteNamespaceHandler {
     manager: Arc<NamespaceManager>,
 }
 
-#[async_trait::async_trait]
 impl ControlHandler for DeleteNamespaceHandler {
     fn read(&self) -> Result<Vec<u8>> {
         Ok(b"Write JSON to delete namespace:\n\

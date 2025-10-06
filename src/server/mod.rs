@@ -27,6 +27,7 @@ pub struct Server {
     translator_registry: Arc<ThreadSafeTranslatorRegistry>,
     settrans_system: Arc<VirtualSettransSystem>,
     synth_fs: Arc<SyntheticFilesystem>,
+    namespace_manager: Arc<crate::namespace_manager::NamespaceManager>,
     auto_mount_daemon: Option<AutoMountDaemon>,
     consensus_coordinator: Option<Arc<crate::consensus::ConsensusCoordinator>>,
     mesh_network: Option<Arc<crate::mesh::MeshNetwork>>,
@@ -90,17 +91,7 @@ impl Server {
             error!("Failed to load existing translators: {}", e);
         }
 
-        // Initialize virtual settrans system with synthetic filesystem
-        let settrans_system = Arc::new(
-            VirtualSettransSystem::new(
-                synth_fs.clone(),
-                translator_registry.clone(),
-            ).await.context("Failed to initialize virtual settrans system")?
-        );
-        let settrans_path = crate::util::get_settrans_directory();
-        info!("Virtual settrans system initialized at {:?} (virtual only, no physical directories)", settrans_path);
-
-        // Initialize consensus coordinator if enabled
+        // Initialize consensus coordinator if enabled (needed by namespace manager)
         let consensus_coordinator = if let Some(ref consensus_cfg) = config.consensus_config {
             info!("Initializing consensus coordinator for node: {}", config.node_id);
 
@@ -153,6 +144,39 @@ impl Server {
             info!("Mesh networking disabled");
             None
         };
+
+        // Initialize namespace manager (system-level translator)
+        let namespace_manager = {
+            use crate::namespace_manager::NamespaceManager;
+
+            let mut manager = NamespaceManager::new(synth_fs.clone())?;
+
+            // Add consensus if available
+            if let Some(ref consensus) = consensus_coordinator {
+                // Get the bounded ghostdag from consensus coordinator
+                // For now, we'll initialize without consensus integration
+                // TODO: Add get_bounded_ghostdag() method to ConsensusCoordinator
+                info!("Namespace manager created (consensus integration pending)");
+            }
+
+            // Initialize namespace manager synthetic filesystem
+            manager.initialize().await
+                .context("Failed to initialize namespace manager")?;
+
+            // Register system namespaces
+            info!("Namespace manager initialized at /srv/namespace/");
+            Arc::new(manager)
+        };
+
+        // Initialize virtual settrans system with synthetic filesystem and namespace manager
+        let settrans_system = Arc::new(
+            VirtualSettransSystem::new(
+                synth_fs.clone(),
+                translator_registry.clone(),
+            ).await.context("Failed to initialize virtual settrans system")?
+        );
+        let settrans_path = crate::util::get_settrans_directory();
+        info!("Virtual settrans system initialized at {:?} (virtual only, no physical directories)", settrans_path);
 
         // Start metrics server if enabled
         if config.metrics_enabled {
@@ -220,6 +244,7 @@ impl Server {
             translator_registry,
             settrans_system,
             synth_fs,
+            namespace_manager,
             auto_mount_daemon,
             consensus_coordinator,
             mesh_network,
