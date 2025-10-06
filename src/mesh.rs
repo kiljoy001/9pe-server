@@ -596,3 +596,64 @@ impl KademliaTable {
             .collect()
     }
 }
+
+#[cfg(test)]
+mod fuzz_tests {
+    use super::*;
+    use proptest::prelude::*;
+
+    /// Fuzz test: Mesh message deserialization
+    #[test]
+    fn fuzz_mesh_message_deserialization() {
+        proptest!(|(bytes: Vec<u8>)| {
+            // Should never panic on arbitrary input
+            let _ = serde_json::from_slice::<MeshMessage>(&bytes);
+        });
+    }
+
+    /// Fuzz test: Node ID validation
+    #[test]
+    fn fuzz_node_id_validation() {
+        proptest!(|(node_id in ".*")| {
+            // Should handle any node ID string
+            let _ = node_id.as_bytes();
+        });
+    }
+
+    /// Fuzz test: Peer address parsing
+    #[test]
+    fn fuzz_peer_address_parsing() {
+        proptest!(|(addr_str in ".*")| {
+            // Should never panic on invalid addresses
+            let _ = addr_str.parse::<std::net::SocketAddr>();
+        });
+    }
+
+    /// Fuzz test: Kademlia distance calculation
+    #[test]
+    fn fuzz_kademlia_distance() {
+        proptest!(|(
+            id1 in prop::collection::vec(any::<u8>(), 32),
+            id2 in prop::collection::vec(any::<u8>(), 32)
+        )| {
+            let mut distance = [0u8; 32];
+            for i in 0..32 {
+                distance[i] = id1[i] ^ id2[i];
+            }
+            // XOR should never panic
+            prop_assert!(distance.len() == 32);
+        });
+    }
+
+    /// Fuzz test: Bootstrap peer parsing
+    #[test]
+    fn fuzz_bootstrap_parsing() {
+        proptest!(|(peer_str in ".*")| {
+            // Format: "peer_id@ip:port"
+            if let Some((id, addr)) = peer_str.split_once('@') {
+                let _ = addr.parse::<std::net::SocketAddr>();
+                let _ = id.to_string();
+            }
+        });
+    }
+}

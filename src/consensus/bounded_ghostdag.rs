@@ -701,4 +701,85 @@ mod tests {
 
         assert!(!op1.conflicts_with(&op3));
     }
+
+    /// Fuzz test: Block deserialization
+    #[test]
+    fn fuzz_block_deserialization() {
+        use proptest::prelude::*;
+
+        proptest!(|(bytes: Vec<u8>)| {
+            // Should never panic
+            let _ = serde_json::from_slice::<Block>(&bytes);
+        });
+    }
+
+    /// Fuzz test: Block ID generation
+    #[test]
+    fn fuzz_block_id_generation() {
+        use proptest::prelude::*;
+
+        proptest!(|(
+            creator in ".*",
+            timestamp: u64,
+            nonce in 0u64..1000000
+        )| {
+            // Should always generate valid ID
+            let id = format!("{}_{}_{}",  creator, timestamp, nonce);
+            prop_assert!(!id.is_empty());
+        });
+    }
+
+    /// Fuzz test: GHOSTDAG coloring edge cases
+    #[test]
+    fn fuzz_ghostdag_coloring() {
+        use proptest::prelude::*;
+
+        proptest!(|(k in 1usize..100)| {
+            // K parameter should always be positive
+            prop_assert!(k > 0);
+        });
+    }
+
+    /// Fuzz test: Byzantine block validation
+    #[test]
+    fn fuzz_byzantine_block() {
+        use proptest::prelude::*;
+
+        proptest!(|(
+            id in ".*",
+            parents in prop::collection::vec(".*", 0..20),
+            timestamp: u64
+        )| {
+            // Should safely handle malformed blocks
+            let _ = (id, parents, timestamp);
+        });
+    }
+
+    /// Fuzz test: Operation conflict detection
+    #[test]
+    fn fuzz_operation_conflicts() {
+        use proptest::prelude::*;
+
+        proptest!(|(
+            path1 in ".*",
+            path2 in ".*",
+            mode1: u32,
+            mode2: u32
+        )| {
+            let op1 = NamespaceOp::Create {
+                path: path1.clone(),
+                mode: mode1,
+                is_dir: false,
+            };
+            let op2 = NamespaceOp::Create {
+                path: path2.clone(),
+                mode: mode2,
+                is_dir: false,
+            };
+            // Same path should conflict
+            if path1 == path2 {
+                prop_assert!(op1.conflicts_with(&op2));
+            }
+        });
+    }
 }

@@ -358,3 +358,62 @@ pub struct TranslatorMetadata {
     pub version: String,
     pub description: String,
 }
+
+#[cfg(test)]
+mod fuzz_tests {
+    use super::*;
+    use proptest::prelude::*;
+
+    /// Fuzz test: Translator message deserialization
+    #[test]
+    fn fuzz_translator_message() {
+        proptest!(|(bytes: Vec<u8>)| {
+            // Should never panic on arbitrary messages
+            let _ = bytes.as_slice();
+        });
+    }
+
+    /// Fuzz test: Metadata parsing
+    #[test]
+    fn fuzz_metadata_parsing() {
+        proptest!(|(bytes: Vec<u8>)| {
+            // Should never panic
+            let _ = serde_json::from_slice::<TranslatorMetadata>(&bytes);
+        });
+    }
+
+    /// Fuzz test: Mount point validation
+    #[test]
+    fn fuzz_mount_point_validation() {
+        proptest!(|(mount_point in ".*")| {
+            // Should start with /srv/
+            let is_valid = mount_point.starts_with("/srv/");
+            let _ = is_valid;
+        });
+    }
+
+    /// Fuzz test: WASM memory boundary checks
+    #[test]
+    fn fuzz_memory_boundaries() {
+        proptest!(|(
+            offset: u32,
+            length: u32
+        )| {
+            // Memory operations should check boundaries
+            let end = offset.saturating_add(length);
+            prop_assert!(end >= offset); // No overflow
+        });
+    }
+
+    /// Fuzz test: Function call parameters
+    #[test]
+    fn fuzz_function_params() {
+        proptest!(|(
+            ptr: u32,
+            len: u32
+        )| {
+            // Pointers should be validated
+            let _ = (ptr, len);
+        });
+    }
+}

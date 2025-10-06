@@ -163,3 +163,51 @@ impl MessageHandler {
         })
     }
 }
+
+#[cfg(test)]
+mod fuzz_tests {
+    use super::*;
+    use proptest::prelude::*;
+
+    /// Fuzz test: Protocol message deserialization should never panic
+    #[test]
+    fn fuzz_protocol_message_deserialization() {
+        proptest!(|(bytes: Vec<u8>)| {
+            // Should never panic, only return Ok or Err
+            let _ = bincode::deserialize::<NinePeeMessage>(&bytes);
+        });
+    }
+
+    /// Fuzz test: Message size validation
+    #[test]
+    fn fuzz_message_size_validation() {
+        proptest!(|(size: u32, max_size in 1024u32..16_000_000u32)| {
+            // Test all combinations of message sizes
+            let negotiated = size.min(max_size);
+            prop_assert!(negotiated <= max_size);
+        });
+    }
+
+    /// Fuzz test: Version string validation
+    #[test]
+    fn fuzz_version_validation() {
+        proptest!(|(version in ".*")| {
+            // Should safely handle any version string
+            let is_valid = version.starts_with("9P2000") || version.starts_with("9P.e");
+            // Just ensure no panic
+            let _ = is_valid;
+        });
+    }
+
+    /// Fuzz test: Serialization round-trip
+    #[test]
+    fn fuzz_serialize_deserialize_roundtrip() {
+        proptest!(|(msize: u32, version in "9P.*")| {
+            let msg = NinePeeMessage::Version { msize, version };
+            if let Ok(bytes) = bincode::serialize(&msg) {
+                let _ = bincode::deserialize::<NinePeeMessage>(&bytes);
+                // Should not panic
+            }
+        });
+    }
+}

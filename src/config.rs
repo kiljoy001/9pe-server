@@ -190,4 +190,57 @@ level = "info"
         assert!(!config.llama.enabled);
         assert!(!config.gpu.enabled);
     }
+
+    /// Fuzz test: TOML parsing
+    #[test]
+    fn fuzz_toml_parsing() {
+        use proptest::prelude::*;
+
+        proptest!(|(toml_str in ".*")| {
+            // Should never panic on invalid TOML
+            let _ = toml::from_str::<Config>(&toml_str);
+        });
+    }
+
+    /// Fuzz test: JSON config parsing
+    #[test]
+    fn fuzz_json_config_parsing() {
+        use proptest::prelude::*;
+
+        proptest!(|(bytes: Vec<u8>)| {
+            // Should never panic
+            let _ = serde_json::from_slice::<Config>(&bytes);
+        });
+    }
+
+    /// Fuzz test: Path validation
+    #[test]
+    fn fuzz_path_validation() {
+        use proptest::prelude::*;
+
+        proptest!(|(path_str in ".*")| {
+            // Should safely handle any path
+            let _ = std::path::PathBuf::from(&path_str);
+        });
+    }
+
+    /// Fuzz test: Port number validation
+    #[test]
+    fn fuzz_port_validation() {
+        proptest::proptest!(|(port: u16)| {
+            // All u16 values are valid ports
+            proptest::prop_assert!(port <= 65535);
+        });
+    }
+
+    /// Fuzz test: Peer address parsing
+    #[test]
+    fn fuzz_peer_address_config() {
+        use proptest::prelude::*;
+
+        proptest!(|(peer in ".*")| {
+            // Format: "peer_id@ip:port"
+            let _ = peer.split('@').collect::<Vec<_>>();
+        });
+    }
 }

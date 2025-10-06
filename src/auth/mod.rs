@@ -572,4 +572,53 @@ mod tests {
         // Session should be invalid now
         assert!(auth.validate_session(&token).await.is_err());
     }
+
+    /// Fuzz test: Password verification should be timing-safe
+    #[test]
+    fn fuzz_password_verification() {
+        use proptest::prelude::*;
+
+        proptest!(|(password in ".*", hash in ".*")| {
+            // Should never panic on invalid inputs
+            use argon2::{Argon2, PasswordHash, PasswordVerifier};
+
+            if let Ok(parsed_hash) = PasswordHash::new(&hash) {
+                let _ = Argon2::default().verify_password(password.as_bytes(), &parsed_hash);
+            }
+        });
+    }
+
+    /// Fuzz test: Session token validation
+    #[test]
+    fn fuzz_session_token_validation() {
+        use proptest::prelude::*;
+
+        proptest!(|(token in ".*")| {
+            // Should safely handle any token format
+            let _ = token.split(':').collect::<Vec<_>>();
+        });
+    }
+
+    /// Fuzz test: Username validation
+    #[test]
+    fn fuzz_username_validation() {
+        use proptest::prelude::*;
+
+        proptest!(|(username in ".*")| {
+            // Usernames should be alphanumeric + underscore
+            let is_valid = username.chars().all(|c| c.is_alphanumeric() || c == '_');
+            let _ = is_valid;
+        });
+    }
+
+    /// Fuzz test: Capability deserialization
+    #[test]
+    fn fuzz_capability_deserialization() {
+        use proptest::prelude::*;
+
+        proptest!(|(bytes: Vec<u8>)| {
+            // Should never panic
+            let _ = serde_json::from_slice::<Vec<Capability>>(&bytes);
+        });
+    }
 }

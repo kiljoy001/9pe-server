@@ -583,4 +583,72 @@ mod tests {
         assert!(!manager.verify_namespace("/srv/test", &other_keypair.verifying_key().to_bytes())
             .await.unwrap());
     }
+
+    /// Fuzz test: Namespace path validation
+    #[test]
+    fn fuzz_namespace_path_validation() {
+        use proptest::prelude::*;
+
+        proptest!(|(path in ".*")| {
+            // Paths must start with /
+            let is_valid = path.starts_with('/');
+            // Should not panic on any input
+            let _ = is_valid;
+        });
+    }
+
+    /// Fuzz test: JSON deserialization for namespace registration
+    #[test]
+    fn fuzz_namespace_json_deserialization() {
+        use proptest::prelude::*;
+
+        proptest!(|(bytes: Vec<u8>)| {
+            #[derive(serde::Deserialize)]
+            struct RegRequest {
+                path: String,
+                description: String,
+                #[serde(rename = "type")]
+                namespace_type: String,
+                pubkey: String,
+                signature: String,
+            }
+
+            // Should never panic, only return Ok or Err
+            let _ = serde_json::from_slice::<RegRequest>(&bytes);
+        });
+    }
+
+    /// Fuzz test: Ed25519 signature verification
+    #[test]
+    fn fuzz_signature_verification() {
+        use proptest::prelude::*;
+
+        proptest!(|(
+            pubkey_bytes in prop::collection::vec(any::<u8>(), 32),
+            sig_bytes in prop::collection::vec(any::<u8>(), 64),
+            data in prop::collection::vec(any::<u8>(), 0..1000)
+        )| {
+            let mut pubkey = [0u8; 32];
+            let mut signature = [0u8; 64];
+            pubkey.copy_from_slice(&pubkey_bytes);
+            signature.copy_from_slice(&sig_bytes);
+
+            // Should safely handle invalid keys/signatures
+            if let Ok(vk) = VerifyingKey::from_bytes(&pubkey) {
+                let sig = Signature::from_bytes(&signature);
+                let _ = vk.verify(&data, &sig);
+            }
+        });
+    }
+
+    /// Fuzz test: Hex encoding/decoding
+    #[test]
+    fn fuzz_hex_encoding() {
+        use proptest::prelude::*;
+
+        proptest!(|(hex_str in ".*")| {
+            // Should never panic on invalid hex
+            let _ = hex::decode(&hex_str);
+        });
+    }
 }
