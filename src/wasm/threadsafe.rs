@@ -181,6 +181,14 @@ impl ThreadSafeTranslator {
             return Err(anyhow::anyhow!("WASM module must export 'read_file' function"));
         }
 
+        if !has_write_file {
+            return Err(anyhow::anyhow!("WASM module must export 'write_file' function"));
+        }
+
+        if !has_list_files {
+            return Err(anyhow::anyhow!("WASM module must export 'list_files' function"));
+        }
+
         // 8. Security: Validate imports
         for import in module.imports() {
             match import.module() {
@@ -696,5 +704,115 @@ mod tests {
         let result = ThreadSafeTranslator::validate_wasm_bytes(&too_small);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("too small"));
+    }
+
+    /// Fuzz test: WASM validation should never panic on arbitrary input
+    #[test]
+    fn fuzz_wasm_validation_no_panic() {
+        use proptest::prelude::*;
+
+        proptest!(|(bytes: Vec<u8>)| {
+            // Validation should never panic, only return Ok or Err
+            let _ = ThreadSafeTranslator::validate_wasm_bytes(&bytes);
+        });
+    }
+
+    /// Fuzz test: Valid WASM from WAT should always be accepted
+    #[test]
+    fn fuzz_valid_wasm_always_accepted() {
+        use proptest::prelude::*;
+
+        // Generate variations of valid WAT that should all be accepted
+        proptest!(|(mem_pages in 1u32..100, func_count in 1u32..10)| {
+            let wat = format!(r#"
+                (module
+                  (memory (export "memory") {})
+                  (func (export "read_file") (param i32 i32) (result i32)
+                    i32.const 0
+                  )
+                  (func (export "write_file") (param i32 i32 i32 i32) (result i32)
+                    i32.const 0
+                  )
+                  (func (export "list_files") (param i32 i32) (result i32)
+                    i32.const 0
+                  )
+                  {}
+                )
+            "#, mem_pages,
+                (0..func_count).map(|i|
+                    format!("(func $helper{} (param i32) (result i32) i32.const {})", i, i)
+                ).collect::<Vec<_>>().join("\n")
+            );
+
+            let wasm = wat::parse_str(&wat).expect("WAT compilation failed");
+            let result = ThreadSafeTranslator::validate_wasm_bytes(&wasm);
+            prop_assert!(result.is_ok(), "Valid WASM should be accepted: {:?}", result.err());
+        });
+    }
+
+    /// Fuzz test: Invalid WASM patterns should be safely rejected
+    #[test]
+    fn fuzz_invalid_wasm_safely_rejected() {
+        use proptest::prelude::*;
+
+        proptest!(|(
+            corrupt_at in 0usize..100,
+            corrupt_byte in any::<u8>(),
+            size_mult in 0usize..10
+        )| {
+            let mut wasm = create_minimal_valid_wasm();
+
+            // Corrupt at random position
+            if corrupt_at < wasm.len() {
+                wasm[corrupt_at] = corrupt_byte;
+            }
+
+            // Or make it wrong size
+            if size_mult > 0 {
+                wasm.resize(size_mult, 0);
+            }
+
+            // Should either accept (if corruption didn't break it) or safely reject
+            let _ = ThreadSafeTranslator::validate_wasm_bytes(&wasm);
+        });
+    }
+
+    /// Fuzz test: Missing required exports should be rejected
+    #[test]
+    fn fuzz_missing_exports_rejected() {
+        use proptest::prelude::*;
+
+        let test_cases = vec![
+            // Missing read_file
+            r#"(module
+                (memory (export "memory") 1)
+                (func (export "write_file") (param i32 i32 i32 i32) (result i32) i32.const 0)
+                (func (export "list_files") (param i32 i32) (result i32) i32.const 0)
+            )"#,
+            // Missing write_file
+            r#"(module
+                (memory (export "memory") 1)
+                (func (export "read_file") (param i32 i32) (result i32) i32.const 0)
+                (func (export "list_files") (param i32 i32) (result i32) i32.const 0)
+            )"#,
+            // Missing list_files
+            r#"(module
+                (memory (export "memory") 1)
+                (func (export "read_file") (param i32 i32) (result i32) i32.const 0)
+                (func (export "write_file") (param i32 i32 i32 i32) (result i32) i32.const 0)
+            )"#,
+            // Missing memory
+            r#"(module
+                (func (export "read_file") (param i32 i32) (result i32) i32.const 0)
+                (func (export "write_file") (param i32 i32 i32 i32) (result i32) i32.const 0)
+                (func (export "list_files") (param i32 i32) (result i32) i32.const 0)
+            )"#,
+        ];
+
+        for (i, wat) in test_cases.iter().enumerate() {
+            let wasm = wat::parse_str(wat).expect("WAT should compile");
+            let result = ThreadSafeTranslator::validate_wasm_bytes(&wasm);
+            assert!(result.is_err(), "Test case {} - WASM missing required exports should be rejected: {:?}", i, result);
+        }
     }
 }
