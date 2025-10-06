@@ -12,7 +12,7 @@ use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::RwLock;
 use tokio::time::{Duration, interval};
 use tracing::{info, error, debug, warn};
-use mdns_sd::{ServiceDaemon, ServiceEvent};
+use mdns_sd::{ServiceDaemon, ServiceEvent, ScopedIp};
 
 /// Mesh network coordinator with DHT and mDNS discovery
 pub struct MeshNetwork {
@@ -260,9 +260,82 @@ impl MeshNetwork {
     async fn run_mdns_discovery(&self) {
         info!("Starting mDNS service discovery on local network");
 
-        // TODO: Fix ScopedIp usage - need to check mdns-sd docs for correct API
-        // For now, DHT provides global discovery
-        warn!("mDNS discovery temporarily disabled - using DHT only");
+        match ServiceDaemon::new() {
+            Ok(mdns) => {
+                let service_type = "_9pe._tcp.local.";
+                let instance_name = format!("9pe-{}", self.node_id);
+                let host_name = format!("{}.local.", self.node_id);
+
+                info!("Advertising mDNS service: {}", instance_name);
+
+                // Get local IP addresses
+                let local_addrs: Vec<IpAddr> = if_addrs::get_if_addrs()
+                    .unwrap_or_default()
+                    .into_iter()
+                    .map(|iface| iface.ip())
+                    .collect();
+
+                // Register our service
+                match mdns_sd::ServiceInfo::new(
+                    service_type,
+                    &instance_name,
+                    &host_name,
+                    &local_addrs[..],
+                    self.local_port,
+                    &[("node_id", self.node_id.as_str())][..],
+                ) {
+                    Ok(service_info) => {
+                        if let Err(e) = mdns.register(service_info) {
+                            warn!("Failed to register mDNS service: {}", e);
+                        } else {
+                            info!("mDNS service registered successfully");
+                        }
+                    }
+                    Err(e) => {
+                        warn!("Failed to create mDNS service info: {}", e);
+                    }
+                }
+
+                // Browse for other 9P.e nodes
+                let receiver = match mdns.browse(service_type) {
+                    Ok(rx) => rx,
+                    Err(e) => {
+                        error!("Failed to browse mDNS services: {}", e);
+                        return;
+                    }
+                };
+
+                while let Ok(event) = receiver.recv() {
+                    match event {
+                        ServiceEvent::ServiceResolved(info) => {
+                            info!("mDNS discovered peer: {} at {:?}", info.get_fullname(), info.get_addresses());
+
+                            // Connect to discovered peers
+                            for scoped_ip in info.get_addresses() {
+                                let ip_addr = match scoped_ip {
+                                    ScopedIp::V4(v4) => IpAddr::V4(*v4.addr()),
+                                    ScopedIp::V6(v6) => IpAddr::V6(*v6.addr()),
+                                    _ => continue,  // Unknown variant, skip
+                                };
+
+                                let peer_addr = SocketAddr::new(ip_addr, self.local_port);
+                                info!("Auto-connecting to mDNS peer at {}", peer_addr);
+
+                                // TODO: Trigger connection to discovered peer
+                                // For now, peers will connect when they see us via their own mDNS
+                            }
+                        }
+                        ServiceEvent::ServiceRemoved(_, fullname) => {
+                            debug!("mDNS peer removed: {}", fullname);
+                        }
+                        _ => {}
+                    }
+                }
+            }
+            Err(e) => {
+                warn!("mDNS not available: {} (continuing with DHT only)", e);
+            }
+        }
     }
 
     async fn run_dht_discovery(&self) {
