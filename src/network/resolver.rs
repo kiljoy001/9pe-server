@@ -1,8 +1,8 @@
 //! Network address resolution with IPv6 preference
 
 use anyhow::{Result, Context};
-use std::net::{IpAddr, SocketAddr, ToSocketAddrs};
-use tracing::{debug, warn};
+use std::net::{SocketAddr, ToSocketAddrs};
+use tracing::debug;
 
 /// Network resolver that prefers IPv6
 pub struct NetworkResolver {

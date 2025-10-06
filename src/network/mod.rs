@@ -1,8 +1,7 @@
 //! Network module - Modern IPv6-first networking with IPv4 compatibility
 
-use anyhow::{Result, Context};
-use std::net::{IpAddr, SocketAddr};
-use tracing::{info, warn};
+use anyhow::Result;
+use std::net::SocketAddr;
 
 pub mod binding;
 pub mod resolver;

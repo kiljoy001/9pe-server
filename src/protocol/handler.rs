@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use anyhow::{Result, Context, bail};
-use tracing::{debug, info, warn, error};
+use tracing::{debug, info};
 use tokio::fs;
 use std::os::unix::fs::MetadataExt;
 

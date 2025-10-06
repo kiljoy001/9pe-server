@@ -3,12 +3,10 @@
 //! This implements the GHOSTDAG consensus algorithm for ordering work
 //! in a distributed environment with Byzantine fault tolerance.
 
-use anyhow::{Result, Context};
+use anyhow::Result;
 use serde::{Serialize, Deserialize};
 use std::collections::{HashMap, HashSet, VecDeque};
-use std::sync::Arc;
-use tokio::sync::RwLock;
-use super::crypto::{CryptoProvider, Signature, PublicKey, WorkProof};
+use super::crypto::{CryptoProvider, Signature, WorkProof};
 
 /// Unique identifier for blocks in the DAG
 pub type BlockId = String;

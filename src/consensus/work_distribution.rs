@@ -3,15 +3,15 @@
 //! Manages distributed job execution across the network using consensus
 //! to ensure fair work allocation and reliable result collection.
 
-use anyhow::{Result, Context};
+use anyhow::Result;
 use serde::{Serialize, Deserialize};
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
-use tokio::sync::{RwLock, mpsc};
-use tracing::{debug, error, warn, info};
+use tokio::sync::RwLock;
+use tracing::info;
 
-use super::crypto::{CryptoProvider, WorkProof, PublicKey};
-use super::ghostdag::{WorkSubmission, WorkResult};
+use super::crypto::WorkProof;
+use super::ghostdag::WorkResult;
 
 /// Work distributor manages job scheduling and execution
 pub struct WorkDistributor {
@@ -274,6 +274,12 @@ impl JobScheduler {
 /// Result collector manages work result aggregation
 pub struct ResultCollector {
     partial_results: Arc<RwLock<HashMap<String, Vec<PartialResult>>>>,
+}
+
+impl Default for ResultCollector {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ResultCollector {

@@ -13,12 +13,11 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use chrono::{DateTime, Utc};
-use sha2::{Sha256, Digest};
 use ed25519_dalek::{SigningKey, VerifyingKey, Signature, Signer, Verifier};
-use tracing::{info, warn, error};
+use tracing::info;
 
 use crate::consensus::{BoundedGhostdag, NamespaceOp};
-use crate::synth::{SyntheticFilesystem, SynthNode, SynthNodeType, ControlHandler};
+use crate::synth::{SyntheticFilesystem, ControlHandler};
 
 /// Cryptographic namespace claim
 #[serde_as]
@@ -439,7 +438,7 @@ impl ControlHandler for RegisterNamespaceHandler {
         signature.copy_from_slice(&sig_bytes);
         let sig = Signature::from_bytes(&signature);
 
-        let sign_data = format!("{}{}", req.path, hex::encode(&pubkey));
+        let sign_data = format!("{}{}", req.path, hex::encode(pubkey));
         public_key.verify(sign_data.as_bytes(), &sig)
             .map_err(|e| anyhow!("Signature verification failed: {}", e))?;
 

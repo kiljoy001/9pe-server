@@ -2,7 +2,6 @@
 //!
 //! Defines extended messages for 9P.e protocol including WASM, consensus, and mesh operations.
 
-use anyhow::Result;
 use serde::{Serialize, Deserialize};
 
 /// 9P.e extension message types

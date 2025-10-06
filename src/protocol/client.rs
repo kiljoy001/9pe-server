@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::{Mutex, RwLock};
 use anyhow::{Result, Context, bail};
-use tracing::{debug, info, warn, error};
+use tracing::info;
 use std::path::{Path, PathBuf};
 
 /// 9P Client for file operations

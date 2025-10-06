@@ -1,6 +1,6 @@
 //! Network binding addresses with IPv6-first support
 
-use anyhow::{Result, Context};
+use anyhow::Result;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use tracing::warn;
 

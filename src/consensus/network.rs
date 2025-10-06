@@ -3,18 +3,18 @@
 //! Manages peer-to-peer communication, node discovery, and network
 //! coordination for distributed consensus and work distribution.
 
-use anyhow::{Result, Context};
+use anyhow::Result;
 use serde::{Serialize, Deserialize};
 use std::collections::{HashMap, HashSet};
 use std::net::SocketAddr;
 use std::sync::Arc;
-use tokio::sync::{RwLock, mpsc, broadcast};
+use tokio::sync::{RwLock, broadcast};
 use tokio::time::{Duration, Interval, interval};
-use tracing::{debug, error, warn, info};
+use tracing::{debug, warn, info};
 
-use super::crypto::{CryptoProvider, SecureMessage, PublicKey};
-use super::ghostdag::{WorkBlock, BlockId, GhostdagConsensus};
-use super::work_distribution::{NodeInfo, NodeCapabilities, WorkAssignment, JobRequest};
+use super::crypto::PublicKey;
+use super::ghostdag::BlockId;
+use super::work_distribution::{NodeInfo, NodeCapabilities};
 
 /// Network consensus coordinator
 pub struct NetworkConsensus {
@@ -600,6 +600,12 @@ impl NetworkTopology {
 pub struct NetworkLoadBalancer {
     node_workloads: Arc<RwLock<HashMap<String, f64>>>,
     resource_weights: Arc<RwLock<HashMap<String, f64>>>,
+}
+
+impl Default for NetworkLoadBalancer {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl NetworkLoadBalancer {

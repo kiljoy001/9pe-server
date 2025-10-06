@@ -5,8 +5,6 @@
 //! standard and extended operations.
 
 use std::io::{Read, Write, Result as IoResult};
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 

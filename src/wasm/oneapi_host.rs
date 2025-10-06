@@ -3,17 +3,16 @@
 //! This module provides the MECHANISM: actual Level Zero API calls
 //! The WASM translator provides the POLICY: how to expose them as files
 
-use anyhow::{Result, Context, anyhow};
+use anyhow::Result;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use wasmtime::{Caller, Linker};
-use tracing::{debug, error, warn, info};
+use tracing::{error, info};
 use once_cell::sync::Lazy;
 
 // Level Zero FFI bindings
 // We link against libze_loader.so and libsycl.so installed in /opt/intel/oneapi
-use std::ffi::{CString, CStr};
-use libc::{c_void, c_char, c_int, c_uint, size_t};
+use libc::{c_void, c_int};
 
 // Level Zero types (simplified - in production use level-zero-sys crate)
 type ZeResult = c_int;

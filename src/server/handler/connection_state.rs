@@ -25,6 +25,12 @@ pub struct ConnectionState {
     next_fid: Arc<RwLock<u32>>,
 }
 
+impl Default for ConnectionState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ConnectionState {
     /// Create a new connection state manager
     pub fn new() -> Self {

@@ -4,14 +4,13 @@
 //! for WASM transformers, allowing them to query network state and
 //! work distribution information without being able to influence consensus.
 
-use anyhow::{Result, Context};
-use std::collections::HashMap;
+use anyhow::Result;
 use std::sync::{Arc, Mutex};
 use wasmtime::{Caller, Linker};
-use tracing::{debug, error, warn, info};
+use tracing::{debug, error, info};
 use once_cell::sync::Lazy;
 
-use crate::consensus::{ConsensusCoordinator, ConsensusState};
+use crate::consensus::ConsensusState;
 
 /// Placeholder network statistics structure
 #[derive(Debug, Clone)]
@@ -377,6 +376,12 @@ pub enum ConsensusEvent {
 /// Consensus event handler for WASM transformers
 pub struct ConsensusEventHandler {
     event_queue: Arc<Mutex<Vec<ConsensusEvent>>>,
+}
+
+impl Default for ConsensusEventHandler {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ConsensusEventHandler {

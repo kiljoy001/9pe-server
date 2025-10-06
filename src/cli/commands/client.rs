@@ -100,7 +100,7 @@ impl ClientCommand {
 
         // Mount using FUSE
         mount_9p_fuse(server_addr, mount_point.clone()).await
-            .with_context(|| format!("Failed to mount 9P server using FUSE"))?;
+            .with_context(|| "Failed to mount 9P server using FUSE".to_string())?;
 
         info!("✅ Server mounted successfully");
         info!("📁 Access remote files at: {:?}", mount_point);

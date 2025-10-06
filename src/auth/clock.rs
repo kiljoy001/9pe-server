@@ -36,6 +36,12 @@ pub struct MockClock {
     current_time: Arc<RwLock<DateTime<Utc>>>,
 }
 
+impl Default for MockClock {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MockClock {
     /// Create a new mock clock starting at the current time
     pub fn new() -> Self {
@@ -54,7 +60,7 @@ impl MockClock {
     /// Advance the clock by a duration
     pub async fn advance(&self, duration: Duration) {
         let mut time = self.current_time.write().await;
-        *time = *time + duration;
+        *time += duration;
     }
 
     /// Set the clock to a specific time

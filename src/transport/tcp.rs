@@ -11,6 +11,12 @@ use super::{Transport, Connection, ConnectionListener};
 /// TCP transport implementation
 pub struct TcpTransport;
 
+impl Default for TcpTransport {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TcpTransport {
     pub fn new() -> Self {
         info!("Initializing legacy TCP transport");

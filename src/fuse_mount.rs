@@ -5,9 +5,9 @@
 
 use std::collections::HashMap;
 use std::ffi::OsStr;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::Arc;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, UNIX_EPOCH};
 
 use anyhow::{Result, Context};
 use fuser::{
@@ -17,7 +17,7 @@ use fuser::{
 use tokio::sync::{RwLock, Mutex};
 use tracing::{debug, error, info, warn};
 
-use crate::protocol::{NinePClient, Qid, Stat, permissions};
+use crate::protocol::NinePClient;
 
 
 const TTL: Duration = Duration::from_secs(1);
@@ -242,7 +242,7 @@ fn create_file_attr(ino: u64, kind: FileType, size: u64, mode: u16) -> FileAttr 
     FileAttr {
         ino,
         size,
-        blocks: (size + 511) / 512,
+        blocks: size.div_ceil(512),
         atime: UNIX_EPOCH,
         mtime: UNIX_EPOCH,
         ctime: UNIX_EPOCH,
@@ -402,8 +402,8 @@ pub async fn cleanup_broken_mounts() -> Result<()> {
     let mut entries = tokio::fs::read_dir(&nine_pe_dir).await?;
     while let Some(entry) = entries.next_entry().await? {
         let path = entry.path();
-        if path.is_dir() {
-            if is_mount_point(&path).await? {
+        if path.is_dir()
+            && is_mount_point(&path).await? {
                 // Check if mount is responsive
                 if !is_mount_responsive(&path).await {
                     warn!("Found unresponsive mount at {:?}, cleaning up", path);
@@ -412,7 +412,6 @@ pub async fn cleanup_broken_mounts() -> Result<()> {
                     }
                 }
             }
-        }
     }
 
     Ok(())

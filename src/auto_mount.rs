@@ -374,9 +374,7 @@ impl AutoMountDaemon {
         }
 
         // Test connection first
-        if let Err(e) = Self::create_connection(&server.address, server.port, server.transport.clone()).await {
-            return Err(e);
-        }
+        Self::create_connection(&server.address, server.port, server.transport.clone()).await?;
 
         // For now, we'll use a simple directory mount since we don't have 9P FUSE client yet
         // In a real implementation, this would mount the 9P server using FUSE
@@ -428,7 +426,7 @@ impl AutoMountDaemon {
 
         // Use fusermount to unmount if it's a FUSE mount
         let output = Command::new("fusermount")
-            .args(&["-u", mount_path.to_str().unwrap()])
+            .args(["-u", mount_path.to_str().unwrap()])
             .output();
 
         match output {

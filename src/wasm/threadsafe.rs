@@ -4,13 +4,12 @@
 //! in its own dedicated thread with a message-passing interface.
 
 use anyhow::{Result, Context};
-use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::{RwLock, mpsc, oneshot};
 use tracing::{info, debug, error};
-use wasmtime::{Engine, Module, Store, Instance, Linker, Memory, Caller};
+use wasmtime::{Engine, Module, Store, Instance, Linker, Caller};
 use crate::wasm::opencl_host::add_opencl_functions;
 
 /// Store data for WASM instances

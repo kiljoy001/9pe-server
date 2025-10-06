@@ -9,8 +9,8 @@ use serde::{Serialize, Deserialize};
 use std::collections::{HashMap, HashSet, VecDeque, BTreeMap};
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{debug, info, warn};
-use super::dynamic_scaling::{DynamicScaler, ScalingParams, ScaleDecision};
+use tracing::info;
+use super::dynamic_scaling::{DynamicScaler, ScalingParams};
 
 /// Minimum blocks to keep (floor)
 const MIN_DAG_SIZE: usize = 100;

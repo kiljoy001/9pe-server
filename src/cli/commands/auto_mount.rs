@@ -1,10 +1,10 @@
 //! Auto-mount command implementation
 
 use clap::{Args, Subcommand};
-use anyhow::{Result, Context};
+use anyhow::Result;
 use std::path::PathBuf;
 use std::sync::Arc;
-use tokio::sync::{RwLock, Mutex};
+use tokio::sync::RwLock;
 use tracing::{info, warn};
 use once_cell::sync::Lazy;
 
@@ -69,7 +69,7 @@ impl AutoMountCommand {
                 // Start daemon in background
                 let daemon_clone = daemon.clone();
                 let start_result: tokio::task::JoinHandle<Result<()>> = tokio::spawn(async move {
-                    let mut daemon_ref = daemon_clone.as_ref();
+                    let daemon_ref = daemon_clone.as_ref();
                     // We need to make start method work with Arc
                     // For now, let's create a simpler approach
                     info!("Auto-mount daemon starting...");

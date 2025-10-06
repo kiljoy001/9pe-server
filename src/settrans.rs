@@ -3,14 +3,13 @@
 //! Provides translator management through virtual directories and files
 //! that exist only in the 9P namespace, not on physical disk.
 
-use anyhow::{Result, Context};
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::sync::{RwLock, mpsc};
-use tokio::time::{Duration, interval};
-use tracing::{info, debug, error};
+use tracing::{info, error};
 
 use crate::synth::{SyntheticFilesystem, ControlHandler};
 use crate::wasm::ThreadSafeTranslatorRegistry;

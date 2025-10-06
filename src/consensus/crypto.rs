@@ -3,7 +3,7 @@
 //! Provides cryptographic security for distributed work coordination,
 //! including signatures, key management, and secure communication.
 
-use anyhow::{Result, Context};
+use anyhow::Result;
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
 use async_trait::async_trait;
@@ -257,6 +257,12 @@ impl SecureMessage {
 pub struct TrustedKeyStore {
     trusted_keys: HashMap<String, PublicKey>,
     revoked_keys: HashMap<String, u64>, // node_id -> revocation_timestamp
+}
+
+impl Default for TrustedKeyStore {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl TrustedKeyStore {

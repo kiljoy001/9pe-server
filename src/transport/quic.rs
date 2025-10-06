@@ -1,9 +1,8 @@
 //! QUIC transport implementation - modern, encrypted by default
 
-use anyhow::{Result, Context};
+use anyhow::Result;
 use async_trait::async_trait;
 use std::net::SocketAddr;
-use std::sync::Arc;
 use tracing::{info, debug};
 
 use super::{Transport, Connection, ConnectionListener};

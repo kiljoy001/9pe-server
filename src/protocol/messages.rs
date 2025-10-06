@@ -3,7 +3,7 @@
 //! Defines all 9P2000 and 9P.e extension messages with serialization support.
 
 use super::{MessageType, Tag, Fid, Qid, Stat, Message};
-use std::io::{Read, Write, Result as IoResult, Error, ErrorKind};
+use std::io::{Result as IoResult, Error, ErrorKind};
 
 // Helper functions for wire encoding
 fn write_u8(buf: &mut Vec<u8>, val: u8) -> IoResult<()> {

@@ -4,17 +4,16 @@ mod basic_ops;
 mod ninepee_extensions;
 mod connection_state;
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::Arc;
-use tokio::sync::RwLock;
 use anyhow::Result;
-use tracing::{debug, info, warn, error};
+use tracing::{debug, info};
 
 use crate::wasm::ThreadSafeTranslatorRegistry;
 use crate::synth::SyntheticFilesystem;
 use crate::settrans::VirtualSettransSystem;
 use crate::consensus::BoundedGhostdag;
-use crate::protocol::{WireFormat, Message, Tversion, Rversion, Tattach, Rattach, Twalk, Rwalk, Topen, Ropen, Tread, Rread, Twrite, Rwrite, Tclunk, Rclunk, Tstat, Rstat, Tauth, Rauth, MessageType, NinePeeMessage};
+use crate::protocol::NinePeeMessage;
 
 use self::connection_state::ConnectionState;
 use self::basic_ops::BasicOpsHandler;

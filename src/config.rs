@@ -6,6 +6,7 @@ use std::path::Path;
 
 /// Main configuration structure
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct Config {
     #[serde(default)]
     pub server: ServerConfig,
@@ -33,6 +34,7 @@ pub struct ServerConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct ConsensusConfig {
     #[serde(default)]
     pub enabled: bool,
@@ -98,14 +100,6 @@ impl Default for ServerConfig {
     }
 }
 
-impl Default for ConsensusConfig {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            peers: Vec::new(),
-        }
-    }
-}
 
 impl Default for LlamaConfig {
     fn default() -> Self {
@@ -134,17 +128,6 @@ impl Default for LoggingConfig {
     }
 }
 
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            server: ServerConfig::default(),
-            consensus: ConsensusConfig::default(),
-            llama: LlamaConfig::default(),
-            gpu: GpuConfig::default(),
-            logging: LoggingConfig::default(),
-        }
-    }
-}
 
 impl Config {
     /// Load configuration from TOML file

@@ -55,6 +55,12 @@ pub struct SyntheticFilesystem {
     nodes: Arc<RwLock<HashMap<PathBuf, SynthNode>>>,
 }
 
+impl Default for SyntheticFilesystem {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SyntheticFilesystem {
     pub fn new() -> Self {
         Self {
