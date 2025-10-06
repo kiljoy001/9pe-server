@@ -81,7 +81,7 @@ impl AutoMountDaemon {
         self
     }
 
-    /// Generate mount point for a discovered server in ~/.9pe/n/ namespace
+    /// Generate mount point for a discovered server in /n or ~/n namespace
     fn generate_mount_point(server: &DiscoveredServer) -> PathBuf {
         // Create clean server name for mount point
         let clean_name = server.address
@@ -89,27 +89,27 @@ impl AutoMountDaemon {
             .replace(":", "_")
             .replace("-", "_");
 
-        let home = std::env::var("HOME").unwrap_or_else(|_| ".".to_string());
-        PathBuf::from(&home).join(".9pe/n").join(format!("{}_port_{}", clean_name, server.port))
+        let n_dir = crate::util::get_n_directory();
+        n_dir.join(format!("{}_port_{}", clean_name, server.port))
     }
 
-    /// Ensure ~/.9pe/n/ directory exists
+    /// Ensure /n or ~/n directory exists based on privilege level
     fn ensure_n_directory_exists() -> Result<()> {
-        let home = std::env::var("HOME").unwrap_or_else(|_| ".".to_string());
-        let n_path = PathBuf::from(&home).join(".9pe/n");
+        let n_path = crate::util::get_n_directory();
         if !n_path.exists() {
             std::fs::create_dir_all(&n_path)
-                .context("Failed to create ~/.9pe/n directory")?;
-            info!("Created ~/.9pe/n directory for namespace mounts");
+                .with_context(|| format!("Failed to create {:?} directory", n_path))?;
+            info!("Created {:?} directory for namespace mounts", n_path);
         }
         Ok(())
     }
 
     /// Start the auto-mount daemon
     pub async fn start(&mut self) -> Result<()> {
-        info!("Starting transparent auto-mount daemon for /n/ namespace");
+        let n_path = crate::util::get_n_directory();
+        info!("Starting transparent auto-mount daemon for {:?} namespace", n_path);
 
-        // Ensure /n/ directory exists
+        // Ensure namespace directory exists
         Self::ensure_n_directory_exists()?;
 
         // Start server health monitoring
@@ -255,7 +255,7 @@ impl AutoMountDaemon {
         let mounted = self.mounted_servers.read().await;
 
         AutoMountStatus {
-            mount_point: PathBuf::from("/n"),
+            mount_point: crate::util::get_n_directory(),
             running: self.shutdown_tx.is_some(),
             discovered_count: discovered.len(),
             mounted_count: mounted.len(),
@@ -308,8 +308,9 @@ impl AutoMountDaemon {
                     if let Err(e) = Self::mount_server(&server, mounted_servers).await {
                         warn!("Failed to mount server {}:{}: {}", address, port, e);
                     } else {
-                        info!("Auto-mounted server {}:{} at /n/{}_port_{}",
-                              address, port,
+                        let n_dir = crate::util::get_n_directory();
+                        info!("Auto-mounted server {}:{} at {:?}/{}_port_{}",
+                              address, port, n_dir,
                               address.replace(".", "_").replace(":", "_").replace("-", "_"),
                               port);
                     }

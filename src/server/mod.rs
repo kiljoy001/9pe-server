@@ -59,6 +59,9 @@ impl Server {
 
     /// Internal constructor called by builder
     pub(crate) async fn new(config: ServerConfig) -> Result<Self> {
+        // Log execution mode (user vs system)
+        crate::util::log_execution_mode();
+
         // Create transport
         let transport = TransportFactory::create(config.transport.clone())?;
 
@@ -94,7 +97,8 @@ impl Server {
                 translator_registry.clone(),
             ).await.context("Failed to initialize virtual settrans system")?
         );
-        info!("Virtual settrans system initialized at /srv/settrans (virtual only, no physical directories)");
+        let settrans_path = crate::util::get_settrans_directory();
+        info!("Virtual settrans system initialized at {:?} (virtual only, no physical directories)", settrans_path);
 
         // Initialize consensus coordinator if enabled
         let consensus_coordinator = if let Some(ref consensus_cfg) = config.consensus_config {

@@ -49,12 +49,14 @@ pub mod consensus;
 pub mod error;
 pub mod fuse_mount;
 pub mod mesh;
+pub mod namespace_manager;
 pub mod network;
 pub mod protocol;
 pub mod server;
 pub mod settrans;
 pub mod synth;
 pub mod transport;
+pub mod util;
 pub mod wasm;
 
 // Re-export commonly used types for convenience

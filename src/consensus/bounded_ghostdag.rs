@@ -61,6 +61,12 @@ pub enum NamespaceOp {
     Chmod { path: String, mode: u32 },
     /// Rename/move operation
     Rename { from: String, to: String },
+    /// Register namespace with cryptographic ownership
+    RegisterNamespace {
+        path: String,
+        owner_pubkey: [u8; 32],
+        signature: Vec<u8>, // Store as Vec for easier serde
+    },
     /// Atomic batch of operations
     Batch { ops: Vec<NamespaceOp> },
 }
@@ -81,7 +87,7 @@ impl NamespaceOp {
         match self {
             Self::Create { path, .. } | Self::Delete { path } |
             Self::Write { path, .. } | Self::SetTrans { path, .. } |
-            Self::Chmod { path, .. } => {
+            Self::Chmod { path, .. } | Self::RegisterNamespace { path, .. } => {
                 paths.insert(path.clone());
             }
             Self::Rename { from, to } => {
@@ -537,6 +543,10 @@ impl BoundedGhostdag {
                 if let Some(file) = state.remove(from) {
                     state.insert(to.clone(), file);
                 }
+            }
+            NamespaceOp::RegisterNamespace { .. } => {
+                // Namespace registration doesn't affect filesystem state
+                // It's tracked separately in the namespace manager
             }
             NamespaceOp::Batch { ops } => {
                 for op in ops {
