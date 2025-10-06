@@ -108,6 +108,7 @@ proptest = "1.4"
 rand = "0.8"
 toml = "0.8"
 async-trait = "0.1"
+wat = "1.0"  # WAT to WASM compiler for tests
 
 [features]
 default = []

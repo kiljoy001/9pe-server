@@ -201,24 +201,34 @@ mod tests {
 
     #[tokio::test]
     async fn test_scaling_decisions() {
-        let params = ScalingParams::default();
+        let mut params = ScalingParams::default();
+        params.cooldown_secs = 1; // Use 1 second cooldown for testing
         let scaler = DynamicScaler::new(params.clone());
 
-        // Simulate high load
+        // Simulate high load (high throughput, high fill, high fork depth)
+        // pressure_score = 0.5 * 0.95 + 0.3 * 0.9 + 0.2 * 0.5 = 0.475 + 0.27 + 0.1 = 0.845 > 0.8
         for _ in 0..20 {
-            scaler.record_metrics(50.0, 0.9, 10).await;
+            scaler.record_metrics(90.0, 0.95, 50).await;
         }
 
         let decision = scaler.calculate_scale_decision(&params).await;
         assert_eq!(decision, ScaleDecision::ScaleUp);
+
+        // Apply the scale decision to update last_scale_time
+        scaler.apply_scale(decision, &params).await;
+
+        // Clear history to start fresh with low load metrics
+        scaler.throughput_history.write().await.clear();
+        scaler.fill_history.write().await.clear();
+        scaler.fork_depth_history.write().await.clear();
 
         // Simulate low load
         for _ in 0..20 {
             scaler.record_metrics(1.0, 0.1, 0).await;
         }
 
-        // Wait for cooldown
-        tokio::time::sleep(tokio::time::Duration::from_secs(61)).await;
+        // Wait for cooldown (2 seconds to exceed 1-second cooldown)
+        tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
         let decision = scaler.calculate_scale_decision(&params).await;
         assert_eq!(decision, ScaleDecision::ScaleDown);

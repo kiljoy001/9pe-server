@@ -90,7 +90,7 @@ impl Clock for MockClock {
 mod tests {
     use super::*;
 
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread")]
     async fn test_mock_clock_advance() {
         let clock = MockClock::new();
         let start = clock.now();

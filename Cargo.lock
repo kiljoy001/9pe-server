@@ -2272,6 +2272,7 @@ dependencies = [
  "wasmparser 0.118.2",
  "wasmtime",
  "wasmtime-wasi",
+ "wat",
  "webpki-roots 0.26.11",
 ]
 
