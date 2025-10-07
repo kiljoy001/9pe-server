@@ -54,8 +54,15 @@ pub mod network;
 pub mod protocol;
 pub mod server;
 pub mod settrans;
+pub mod stats;
 pub mod synth;
+pub mod sycl;
 pub mod transport;
+
+// 9P.e Extension Control Modules (Everything is a File!)
+pub mod mesh_control;
+pub mod consensus_control;
+pub mod compute_control;
 pub mod util;
 pub mod wasm;
 

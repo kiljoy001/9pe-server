@@ -74,6 +74,14 @@ impl SyclError {
             Err(self)
         }
     }
+
+    pub fn ok(self) -> Option<()> {
+        if self.is_ok() {
+            Some(())
+        } else {
+            None
+        }
+    }
 }
 
 impl std::fmt::Display for SyclError {

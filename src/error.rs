@@ -179,3 +179,52 @@ impl From<ConfigError> for ServerError {
 
 /// Result type alias for convenience
 pub type Result<T> = std::result::Result<T, ServerError>;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_error_display() {
+        let err = ServerError::FileSystem(FileSystemError::PathNotFound("/test".to_string()));
+        assert!(err.to_string().contains("Path not found"));
+    }
+
+    #[test]
+    fn test_network_error_conversion() {
+        let net_err = NetworkError::BindFailed("test".to_string());
+        let server_err: ServerError = net_err.into();
+        assert!(matches!(server_err, ServerError::Network(_)));
+    }
+
+    #[test]
+    fn test_io_error_conversion() {
+        let io_err = io::Error::from(io::ErrorKind::NotFound);
+        let server_err: ServerError = io_err.into();
+        assert!(matches!(server_err, ServerError::Io(_)));
+    }
+
+    #[test]
+    fn test_protocol_error() {
+        let err = ProtocolError::UnsupportedVersion(42);
+        assert_eq!(err.to_string(), "Unsupported version: 42");
+    }
+
+    #[test]
+    fn test_config_error() {
+        let err = ConfigError::MissingRequired("port".to_string());
+        assert!(err.to_string().contains("Missing required"));
+    }
+
+    /// Fuzz test: Error types should handle any string
+    #[test]
+    fn fuzz_error_messages() {
+        use proptest::prelude::*;
+
+        proptest!(|(msg in ".*")| {
+            let _ = NetworkError::BindFailed(msg.clone());
+            let _ = FileSystemError::PathNotFound(msg.clone());
+            let _ = ConfigError::InvalidValue(msg.clone());
+        });
+    }
+}

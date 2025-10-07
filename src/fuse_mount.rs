@@ -428,3 +428,102 @@ async fn is_mount_responsive(path: &PathBuf) -> bool {
         _ => false,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_create_root_attr() {
+        let attr = create_root_attr();
+        assert_eq!(attr.ino, 1);
+        assert_eq!(attr.kind, FileType::Directory);
+        assert_eq!(attr.perm, 0o755);
+        assert_eq!(attr.nlink, 2);
+    }
+
+    #[test]
+    fn test_create_file_attr() {
+        let attr = create_file_attr(42, FileType::RegularFile, 1024, 0o644);
+        assert_eq!(attr.ino, 42);
+        assert_eq!(attr.kind, FileType::RegularFile);
+        assert_eq!(attr.size, 1024);
+        assert_eq!(attr.perm, 0o644);
+        assert_eq!(attr.nlink, 1);
+    }
+
+    #[test]
+    fn test_create_directory_attr() {
+        let attr = create_file_attr(10, FileType::Directory, 0, 0o755);
+        assert_eq!(attr.kind, FileType::Directory);
+        assert_eq!(attr.nlink, 2); // Directories have nlink=2
+    }
+
+    #[test]
+    fn test_ninep_fs_creation() {
+        let fs = NinePFS::new("127.0.0.1:5640".to_string());
+        assert_eq!(fs.server_addr, "127.0.0.1:5640");
+    }
+
+    #[tokio::test]
+    async fn test_allocate_ino() {
+        let fs = NinePFS::new("127.0.0.1:5640".to_string());
+        let ino1 = fs.allocate_ino().await;
+        let ino2 = fs.allocate_ino().await;
+        let ino3 = fs.allocate_ino().await;
+
+        // Should allocate sequential inode numbers
+        assert_eq!(ino1 + 1, ino2);
+        assert_eq!(ino2 + 1, ino3);
+    }
+
+    #[test]
+    fn test_ninep_fs_clone() {
+        let fs = NinePFS::new("127.0.0.1:5640".to_string());
+        let fs_clone = fs.clone();
+
+        assert_eq!(fs.server_addr, fs_clone.server_addr);
+    }
+
+    #[tokio::test]
+    async fn test_check_proc_mounts_nonexistent() {
+        let path = PathBuf::from("/nonexistent/mount/point");
+        let result = check_proc_mounts(&path).await;
+
+        // Should either succeed (false) or fail if /proc/mounts unavailable
+        let _ = result;
+    }
+
+    #[test]
+    fn test_block_calculation() {
+        let attr = create_file_attr(1, FileType::RegularFile, 1024, 0o644);
+        assert_eq!(attr.blocks, 2); // 1024 bytes = 2 blocks of 512
+
+        let attr = create_file_attr(1, FileType::RegularFile, 100, 0o644);
+        assert_eq!(attr.blocks, 1); // 100 bytes = 1 block (rounded up)
+    }
+
+    /// Fuzz test: File attributes should handle arbitrary sizes
+    #[test]
+    fn fuzz_file_attributes() {
+        use proptest::prelude::*;
+
+        proptest!(|(ino: u64, size: u64, perm: u16)| {
+            let attr = create_file_attr(ino, FileType::RegularFile, size, perm);
+            // Should not panic with any values
+            assert_eq!(attr.ino, ino);
+            assert_eq!(attr.size, size);
+        });
+    }
+
+    /// Fuzz test: Server address parsing
+    #[test]
+    fn fuzz_server_address() {
+        use proptest::prelude::*;
+
+        proptest!(|(addr in ".*")| {
+            let fs = NinePFS::new(addr.clone());
+            assert_eq!(fs.server_addr, addr);
+        });
+    }
+}

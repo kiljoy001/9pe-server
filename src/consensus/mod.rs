@@ -69,6 +69,145 @@ impl ConsensusCoordinator {
     pub async fn get_work_result(&self, job_id: &str) -> Result<Option<WorkResult>> {
         self.work_distributor.get_result(job_id).await
     }
+
+    /// Submit a transaction to the consensus system (for /srv/consensus/submit)
+    pub async fn submit_transaction(&self, tx: serde_json::Value) -> Result<()> {
+        // Convert JSON transaction to WorkSubmission
+        let work_type = tx["type"].as_str().unwrap_or("transaction").to_string();
+        let input_data = serde_json::to_vec(&tx)?;
+
+        let submission = ghostdag::WorkSubmission {
+            work_type,
+            input_data,
+            requirements: ghostdag::WorkRequirements {
+                min_nodes: 1,
+                required_capabilities: vec![],
+                resource_requirements: ghostdag::ResourceRequirements {
+                    cpu_cores: None,
+                    memory_mb: None,
+                    gpu_required: false,
+                    storage_mb: None,
+                },
+            },
+            priority: 1,
+            max_execution_time_ms: 30000,
+        };
+
+        self.ghostdag.write().await.submit_work(submission).await?;
+        Ok(())
+    }
+
+    /// Get recent blocks from the DAG (for /srv/consensus/blocks)
+    pub async fn get_recent_blocks(&self, count: usize) -> Vec<BlockInfo> {
+        let state = self.ghostdag.read().await.get_state();
+        let main_chain = state.main_chain;
+
+        main_chain.iter()
+            .rev()
+            .take(count)
+            .map(|block_id| {
+                let parent = if let Some(idx) = main_chain.iter().position(|id| id == block_id) {
+                    if idx > 0 {
+                        Some(main_chain[idx - 1].clone())
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                };
+
+                BlockInfo {
+                    block_id: block_id.clone(),
+                    height: main_chain.iter().position(|id| id == block_id).unwrap_or(0) as u64,
+                    parent_id: parent,
+                    timestamp: std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs(),
+                }
+            })
+            .collect()
+    }
+
+    /// Get DAG structure information (for /srv/consensus/dag)
+    pub async fn get_dag_structure(&self) -> DagInfo {
+        let state = self.ghostdag.read().await.get_state();
+
+        DagInfo {
+            total_vertices: state.dag_height,
+            total_edges: state.main_chain.len() as u64, // Simplified
+            tips: state.tips,
+            orphans: 0, // TODO: Calculate actual orphans
+            max_depth: state.main_chain.len() as u64,
+        }
+    }
+
+    /// Get network peers participating in consensus (for /srv/consensus/peers)
+    pub async fn get_network_peers(&self) -> Vec<ConsensusPeerInfo> {
+        // For now, return placeholder data
+        // TODO: Integrate with actual network layer
+        vec![
+            ConsensusPeerInfo {
+                peer_id: "peer-1".to_string(),
+                address: "192.168.1.100:5640".to_string(),
+                blocks_ahead: 0,
+                latency_ms: 15,
+            }
+        ]
+    }
+
+    /// Get consensus metrics (for /srv/consensus/metrics)
+    pub async fn get_metrics(&self) -> ConsensusMetrics {
+        let state = self.ghostdag.read().await.get_state();
+
+        ConsensusMetrics {
+            tip_height: state.main_chain.len() as u64,
+            total_blocks: state.dag_height,
+            pending_tx_count: state.pending_work.len(),
+            network_hashrate: 0.0, // TODO: Calculate from work proofs
+            active_peers: 1, // TODO: Get from network layer
+            consensus_reached: state.tips.len() <= 3, // Consider consensus reached if ≤3 tips
+        }
+    }
+}
+
+/// Block information for /srv/consensus/blocks
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BlockInfo {
+    pub block_id: String,
+    pub height: u64,
+    pub parent_id: Option<String>,
+    pub timestamp: u64,
+}
+
+/// DAG structure information for /srv/consensus/dag
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DagInfo {
+    pub total_vertices: u64,
+    pub total_edges: u64,
+    pub tips: Vec<String>,
+    pub orphans: u64,
+    pub max_depth: u64,
+}
+
+/// Consensus peer information for /srv/consensus/peers
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ConsensusPeerInfo {
+    pub peer_id: String,
+    pub address: String,
+    pub blocks_ahead: i64,
+    pub latency_ms: u64,
+}
+
+/// Consensus metrics for /srv/consensus/metrics and /srv/consensus/status
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ConsensusMetrics {
+    pub tip_height: u64,
+    pub total_blocks: u64,
+    pub pending_tx_count: usize,
+    pub network_hashrate: f64,
+    pub active_peers: usize,
+    pub consensus_reached: bool,
 }
 
 /// Read-only consensus primitives exposed to WASM transformers

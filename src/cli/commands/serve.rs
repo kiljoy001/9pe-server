@@ -42,17 +42,9 @@ pub struct ServeCommand {
     #[arg(long, default_value = "9650")]
     pub mesh_port: u16,
 
-    /// Metrics server port (Prometheus/Grafana)
-    #[arg(long, default_value = "9090")]
-    pub metrics_port: u16,
-
     /// Enable mesh networking
     #[arg(long, default_value = "true")]
     pub mesh: bool,
-
-    /// Enable metrics server
-    #[arg(long, default_value = "true")]
-    pub metrics: bool,
 
     /// Maximum message size in bytes
     #[arg(long, default_value = "8388608")] // 8MB
@@ -99,9 +91,7 @@ impl ServeCommand {
             .max_message_size(self.max_message_size)
             .worker_threads(self.workers)
             .mesh_enabled(self.mesh)
-            .mesh_port(self.mesh_port)
-            .metrics_enabled(self.metrics)
-            .metrics_port(self.metrics_port);
+            .mesh_port(self.mesh_port);
 
         // If config file was loaded, pass it to the builder
         if let Some(config) = file_config {

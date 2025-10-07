@@ -478,6 +478,107 @@ impl MeshNetwork {
     pub async fn get_connected_peers(&self) -> Vec<String> {
         self.peers.read().await.keys().cloned().collect()
     }
+
+    /// Get all peers with detailed information (for /srv/mesh/peers)
+    pub async fn get_all_peers(&self) -> std::collections::HashMap<String, PeerInfo> {
+        let peers = self.peers.read().await;
+        peers.iter().map(|(id, peer_conn)| {
+            (id.clone(), PeerInfo {
+                peer_id: peer_conn.node_id.clone(),
+                address: peer_conn.address.to_string(),
+                connected: true,
+                last_seen: std::time::SystemTime::now(),
+            })
+        }).collect()
+    }
+
+    /// Connect to a new peer (for /srv/mesh/connect)
+    pub async fn connect_to_peer(&self, address: &str, peer_id: Option<String>) -> Result<()> {
+        let addr: SocketAddr = address.parse()
+            .context("Invalid peer address")?;
+
+        let node_id = peer_id.unwrap_or_else(|| format!("peer-{}", addr));
+
+        let peer_conn = PeerConnection {
+            node_id: node_id.clone(),
+            address: addr,
+            last_seen: std::time::Instant::now(),
+        };
+
+        self.peers.write().await.insert(node_id.clone(), peer_conn);
+        info!("Connected to peer {} at {}", node_id, addr);
+        Ok(())
+    }
+
+    /// Disconnect from a peer (for /srv/mesh/disconnect)
+    pub async fn disconnect_peer(&self, peer_id: &str) -> Result<()> {
+        if self.peers.write().await.remove(peer_id).is_some() {
+            info!("Disconnected from peer {}", peer_id);
+            Ok(())
+        } else {
+            Err(anyhow::anyhow!("Peer {} not found", peer_id))
+        }
+    }
+
+    /// Announce service via mDNS (for /srv/mesh/announce)
+    pub async fn announce_service(&self, service_name: &str) -> Result<()> {
+        info!("Announcing service: {}", service_name);
+        // TODO: Actual mDNS announcement when mDNS daemon is available
+        Ok(())
+    }
+
+    /// Get mesh network status (for /srv/mesh/status)
+    pub async fn get_status(&self) -> MeshStatus {
+        let peer_count = self.peers.read().await.len();
+        MeshStatus {
+            node_id: self.node_id.clone(),
+            peer_count,
+            active_connections: peer_count,
+            mdns_enabled: self.mdns_daemon.is_some(),
+            dht_enabled: true,
+            uptime_seconds: 0, // TODO: Track actual uptime
+        }
+    }
+
+    /// Get DHT routing table (for /srv/mesh/dht)
+    pub async fn get_dht_routing_table(&self) -> Vec<(Vec<u8>, String)> {
+        // TODO: Return actual DHT routing table when Kademlia is fully implemented
+        vec![]
+    }
+}
+
+/// Peer information for control interface
+#[derive(Clone, Debug)]
+pub struct PeerInfo {
+    pub peer_id: String,
+    pub address: String,
+    pub connected: bool,
+    pub last_seen: std::time::SystemTime,
+}
+
+impl PeerInfo {
+    pub fn is_connected(&self) -> bool {
+        self.connected
+    }
+
+    pub fn address(&self) -> Option<String> {
+        Some(self.address.clone())
+    }
+
+    pub fn last_seen(&self) -> std::time::SystemTime {
+        self.last_seen
+    }
+}
+
+/// Mesh network status
+#[derive(Clone, Debug)]
+pub struct MeshStatus {
+    pub node_id: String,
+    pub peer_count: usize,
+    pub active_connections: usize,
+    pub mdns_enabled: bool,
+    pub dht_enabled: bool,
+    pub uptime_seconds: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

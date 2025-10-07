@@ -6,10 +6,11 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 use std::path::PathBuf;
 use tempfile::TempDir;
+use std::os::unix::fs::PermissionsExt;
 
 use ninep_server::consensus::{BoundedGhostdag, NamespaceOp, Block, BlockState};
-use ninep_server::server::handler::{BasicOpsHandler, ConnectionState};
-use ninep_server::protocol::{NinePeeMessage, Stat, Qid};
+use ninep_server::server::handler::{PublicBasicOpsHandler, PublicConnectionState};
+use ninep_server::protocol::NinePeeMessage;
 
 /// Strategy for generating valid file permissions
 fn file_permissions_strategy() -> impl Strategy<Value = u32> {
@@ -50,9 +51,9 @@ async fn prop_wstat_permission_changes() {
             // Setup
             let temp_dir = TempDir::new().unwrap();
             let dag = Arc::new(BoundedGhostdag::new("test_consensus".to_string()));
-            let connection_state = ConnectionState::new();
+            let connection_state = PublicConnectionState::new();
 
-            let mut handler = BasicOpsHandler::new(
+            let mut handler = PublicBasicOpsHandler::new(
                 temp_dir.path().to_path_buf(),
                 connection_state.clone(),
             );
@@ -119,9 +120,9 @@ async fn prop_wstat_file_truncation() {
             // Setup
             let temp_dir = TempDir::new().unwrap();
             let dag = Arc::new(BoundedGhostdag::new("test_consensus".to_string()));
-            let connection_state = ConnectionState::new();
+            let connection_state = PublicConnectionState::new();
 
-            let mut handler = BasicOpsHandler::new(
+            let mut handler = PublicBasicOpsHandler::new(
                 temp_dir.path().to_path_buf(),
                 connection_state.clone(),
             );
@@ -202,9 +203,9 @@ async fn prop_wstat_file_rename() {
             // Setup
             let temp_dir = TempDir::new().unwrap();
             let dag = Arc::new(BoundedGhostdag::new("test_consensus".to_string()));
-            let connection_state = ConnectionState::new();
+            let connection_state = PublicConnectionState::new();
 
-            let mut handler = BasicOpsHandler::new(
+            let mut handler = PublicBasicOpsHandler::new(
                 temp_dir.path().to_path_buf(),
                 connection_state.clone(),
             );
@@ -277,9 +278,9 @@ async fn prop_wstat_invalid_data_handling() {
             // Setup
             let temp_dir = TempDir::new().unwrap();
             let dag = Arc::new(BoundedGhostdag::new("test_consensus".to_string()));
-            let connection_state = ConnectionState::new();
+            let connection_state = PublicConnectionState::new();
 
-            let mut handler = BasicOpsHandler::new(
+            let mut handler = PublicBasicOpsHandler::new(
                 temp_dir.path().to_path_buf(),
                 connection_state.clone(),
             );
@@ -331,9 +332,9 @@ async fn prop_wstat_concurrent_operations_consensus_integrity() {
             // Setup
             let temp_dir = TempDir::new().unwrap();
             let dag = Arc::new(BoundedGhostdag::new("test_consensus".to_string()));
-            let connection_state = ConnectionState::new();
+            let connection_state = PublicConnectionState::new();
 
-            let mut handler = BasicOpsHandler::new(
+            let mut handler = PublicBasicOpsHandler::new(
                 temp_dir.path().to_path_buf(),
                 connection_state.clone(),
             );

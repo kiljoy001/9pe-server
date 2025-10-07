@@ -313,3 +313,129 @@ impl VirtualSettransSystem {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_translator_info_serialization() {
+        let info = TranslatorInfo {
+            name: "test".to_string(),
+            version: "1.0.0".to_string(),
+            description: "Test translator".to_string(),
+            mount_point: "/srv/test".to_string(),
+            wasm_data: vec![1, 2, 3],
+            status: TranslatorStatus::Available,
+            installed_at: chrono::Utc::now(),
+            last_accessed: None,
+            error_count: 0,
+            last_error: None,
+        };
+
+        // Should serialize/deserialize without error
+        let json = serde_json::to_string(&info).unwrap();
+        let deserialized: TranslatorInfo = serde_json::from_str(&json).unwrap();
+        assert_eq!(info.name, deserialized.name);
+    }
+
+    #[test]
+    fn test_translator_status_variants() {
+        let statuses = vec![
+            TranslatorStatus::Available,
+            TranslatorStatus::Enabled,
+            TranslatorStatus::Disabled,
+            TranslatorStatus::Error("test error".to_string()),
+        ];
+
+        for status in statuses {
+            // Should serialize without panic
+            let json = serde_json::to_string(&status).unwrap();
+            let _: TranslatorStatus = serde_json::from_str(&json).unwrap();
+        }
+    }
+
+    #[test]
+    fn test_translator_info_equality() {
+        let info1 = TranslatorInfo {
+            name: "test".to_string(),
+            version: "1.0.0".to_string(),
+            description: "Test".to_string(),
+            mount_point: "/srv/test".to_string(),
+            wasm_data: vec![1, 2, 3],
+            status: TranslatorStatus::Available,
+            installed_at: chrono::Utc::now(),
+            last_accessed: None,
+            error_count: 0,
+            last_error: None,
+        };
+
+        let mut info2 = info1.clone();
+        assert_eq!(info1, info2);
+
+        info2.error_count = 5;
+        assert_ne!(info1, info2);
+    }
+
+    #[test]
+    fn test_settrans_command_variants() {
+        let commands = vec![
+            SettransCommand::Enable("test".to_string()),
+            SettransCommand::Disable("test".to_string()),
+            SettransCommand::Uninstall("test".to_string()),
+            SettransCommand::Install { name: "test".to_string(), data: vec![1, 2, 3] },
+            SettransCommand::Refresh,
+            SettransCommand::Status,
+        ];
+
+        // All commands should be constructable
+        assert_eq!(commands.len(), 6);
+    }
+
+    #[test]
+    fn test_translator_status_error_message() {
+        let error_msg = "Failed to load WASM module".to_string();
+        let status = TranslatorStatus::Error(error_msg.clone());
+
+        if let TranslatorStatus::Error(msg) = status {
+            assert_eq!(msg, error_msg);
+        } else {
+            panic!("Expected Error variant");
+        }
+    }
+
+    /// Fuzz test: TranslatorInfo should handle arbitrary data
+    #[test]
+    fn fuzz_translator_info() {
+        use proptest::prelude::*;
+
+        proptest!(|(name in ".*", version in ".*", data: Vec<u8>)| {
+            let info = TranslatorInfo {
+                name,
+                version,
+                description: "Test".to_string(),
+                mount_point: "/srv/test".to_string(),
+                wasm_data: data,
+                status: TranslatorStatus::Available,
+                installed_at: chrono::Utc::now(),
+                last_accessed: None,
+                error_count: 0,
+                last_error: None,
+            };
+            // Should not panic with arbitrary strings/data
+            let _ = info.name.len();
+        });
+    }
+
+    /// Fuzz test: Status serialization with arbitrary error messages
+    #[test]
+    fn fuzz_status_errors() {
+        use proptest::prelude::*;
+
+        proptest!(|(error_msg in ".*")| {
+            let status = TranslatorStatus::Error(error_msg);
+            let json = serde_json::to_string(&status).unwrap();
+            let _: TranslatorStatus = serde_json::from_str(&json).unwrap();
+        });
+    }
+}

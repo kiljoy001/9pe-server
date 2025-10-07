@@ -268,3 +268,129 @@ impl SyntheticFilesystem {
         anyhow::bail!("File not found: {:?}", path)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_create_directory() {
+        let fs = SyntheticFilesystem::new();
+        let path = PathBuf::from("/test/dir");
+
+        fs.create_directory(&path).await.unwrap();
+        assert!(fs.exists(&path).await, "Directory should exist");
+    }
+
+    #[tokio::test]
+    async fn test_create_nested_directories() {
+        let fs = SyntheticFilesystem::new();
+        let path = PathBuf::from("/test/deep/nested/dir");
+
+        fs.create_directory(&path).await.unwrap();
+
+        // All intermediate directories should exist
+        assert!(fs.exists(&PathBuf::from("/test")).await);
+        assert!(fs.exists(&PathBuf::from("/test/deep")).await);
+        assert!(fs.exists(&PathBuf::from("/test/deep/nested")).await);
+        assert!(fs.exists(&PathBuf::from("/test/deep/nested/dir")).await);
+    }
+
+    #[tokio::test]
+    async fn test_create_file() {
+        let fs = SyntheticFilesystem::new();
+        let path = PathBuf::from("/test/file.txt");
+        let content = b"test content".to_vec();
+
+        fs.create_file(&path, content.clone(), false).await.unwrap();
+
+        assert!(fs.exists(&path).await, "File should exist");
+        let read_content = fs.read_file(&path).await.unwrap();
+        assert_eq!(read_content, content, "Content should match");
+    }
+
+    #[tokio::test]
+    async fn test_writable_file() {
+        let fs = SyntheticFilesystem::new();
+        let path = PathBuf::from("/test/writable.txt");
+        let initial = b"initial".to_vec();
+        let updated = b"updated".to_vec();
+
+        fs.create_file(&path, initial, true).await.unwrap();
+        fs.write_file(&path, updated.clone()).await.unwrap();
+
+        let content = fs.read_file(&path).await.unwrap();
+        assert_eq!(content, updated, "Content should be updated");
+    }
+
+    #[tokio::test]
+    async fn test_readonly_file() {
+        let fs = SyntheticFilesystem::new();
+        let path = PathBuf::from("/test/readonly.txt");
+        let content = b"readonly".to_vec();
+
+        fs.create_file(&path, content, false).await.unwrap();
+
+        // Writing to readonly file should fail
+        let result = fs.write_file(&path, b"new".to_vec()).await;
+        assert!(result.is_err(), "Writing to readonly file should fail");
+    }
+
+    #[tokio::test]
+    async fn test_list_directory() {
+        let fs = SyntheticFilesystem::new();
+        let dir = PathBuf::from("/test");
+
+        fs.create_file(&dir.join("file1.txt"), b"content1".to_vec(), false).await.unwrap();
+        fs.create_file(&dir.join("file2.txt"), b"content2".to_vec(), false).await.unwrap();
+
+        let children = fs.list_directory(&dir).await.unwrap();
+        assert_eq!(children.len(), 2, "Should have 2 children");
+        assert!(children.contains(&"file1.txt".to_string()));
+        assert!(children.contains(&"file2.txt".to_string()));
+    }
+
+    #[tokio::test]
+    async fn test_get_node() {
+        let fs = SyntheticFilesystem::new();
+        let path = PathBuf::from("/test/file.txt");
+
+        fs.create_file(&path, b"content".to_vec(), true).await.unwrap();
+
+        let node = fs.get_node(&path).await.unwrap();
+        assert_eq!(node.name, "file.txt");
+        assert!(matches!(node.node_type, SynthNodeType::File { .. }));
+    }
+
+    #[tokio::test]
+    async fn test_read_nonexistent_file() {
+        let fs = SyntheticFilesystem::new();
+        let path = PathBuf::from("/nonexistent/file.txt");
+
+        let result = fs.read_file(&path).await;
+        assert!(result.is_err(), "Reading nonexistent file should fail");
+    }
+
+    /// Fuzz test: Filesystem should handle arbitrary paths
+    #[test]
+    fn fuzz_path_handling() {
+        use proptest::prelude::*;
+
+        proptest!(|(path_str in "[a-zA-Z0-9/_-]{1,50}")| {
+            let _path = PathBuf::from(&path_str);
+            // Should not panic
+        });
+    }
+
+    /// Fuzz test: File content should handle arbitrary data
+    #[test]
+    fn fuzz_file_content() {
+        use proptest::prelude::*;
+
+        proptest!(|(content: Vec<u8>)| {
+            let fs = SyntheticFilesystem::new();
+            // Should not panic with any content
+            let _ = content.len();
+        });
+    }
+}

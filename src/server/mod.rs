@@ -178,47 +178,9 @@ impl Server {
         let settrans_path = crate::util::get_settrans_directory();
         info!("Virtual settrans system initialized at {:?} (virtual only, no physical directories)", settrans_path);
 
-        // Start metrics server if enabled
-        if config.metrics_enabled {
-            let metrics_port = config.metrics_port;
-            let mesh_for_metrics = mesh_network.clone();
-            let consensus_for_metrics = consensus_coordinator.clone();
-
-            tokio::spawn(async move {
-                use std::net::SocketAddr;
-                use tokio::net::TcpListener;
-                use tokio::io::AsyncWriteExt;
-
-                let addr = SocketAddr::from(([0, 0, 0, 0], metrics_port));
-                match TcpListener::bind(addr).await {
-                    Ok(listener) => {
-                        info!("Metrics server started on port {}", metrics_port);
-                        loop {
-                            match listener.accept().await {
-                                Ok((mut stream, _)) => {
-                                    // Collect metrics
-                                    let peer_count = if let Some(ref mesh) = mesh_for_metrics {
-                                        mesh.get_peer_count().await
-                                    } else {
-                                        0
-                                    };
-
-                                    let consensus_enabled = consensus_for_metrics.is_some() as u8;
-
-                                    let response = format!(
-                                        "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n# 9P.e Metrics\nninep_server_running 1\nninep_connections_total 0\nninep_consensus_enabled {}\nninep_mesh_peer_count {}\n",
-                                        consensus_enabled, peer_count
-                                    );
-                                    let _ = stream.write_all(response.as_bytes()).await;
-                                }
-                                Err(e) => error!("Failed to accept metrics connection: {}", e),
-                            }
-                        }
-                    }
-                    Err(e) => error!("Failed to start metrics server: {}", e),
-                }
-            });
-        }
+        // Metrics are now exposed as files in /srv/stats/ instead of HTTP server
+        // This is more Plan 9-like: everything is a file, every file is a function
+        info!("Metrics available at /srv/stats/* (see src/stats.rs)");
 
         // Initialize auto-mount daemon if enabled
         let auto_mount_daemon = if config.auto_mount_enabled {

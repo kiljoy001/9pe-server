@@ -484,3 +484,130 @@ pub async fn initialize_auto_mount_with_consensus(consensus: Arc<ConsensusCoordi
     daemon.start().await?;
     Ok(daemon)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_discovered_server_creation() {
+        let server = DiscoveredServer {
+            address: "127.0.0.1".to_string(),
+            port: 5640,
+            transport: TransportType::Tcp,
+            last_seen: SystemTime::now(),
+            peer_info: None,
+        };
+
+        assert_eq!(server.address, "127.0.0.1");
+        assert_eq!(server.port, 5640);
+    }
+
+    #[test]
+    fn test_generate_mount_point() {
+        let server = DiscoveredServer {
+            address: "192.168.1.10".to_string(),
+            port: 5640,
+            transport: TransportType::Tcp,
+            last_seen: SystemTime::now(),
+            peer_info: None,
+        };
+
+        let mount_point = AutoMountDaemon::generate_mount_point(&server);
+        let path_str = mount_point.to_string_lossy();
+
+        // Should contain sanitized address and port
+        assert!(path_str.contains("192_168_1_10"));
+        assert!(path_str.contains("port_5640"));
+    }
+
+    #[test]
+    fn test_daemon_creation() {
+        let daemon = AutoMountDaemon::new();
+        assert_eq!(daemon.interval, Duration::from_secs(30));
+    }
+
+    #[test]
+    fn test_daemon_with_custom_interval() {
+        let daemon = AutoMountDaemon::with_interval(60);
+        assert_eq!(daemon.interval, Duration::from_secs(60));
+    }
+
+    #[test]
+    fn test_parse_node_address() {
+        let result = AutoMountDaemon::parse_node_address("192.168.1.1:5640");
+        assert!(result.is_ok());
+
+        let (addr, port, _transport) = result.unwrap();
+        assert_eq!(addr, "192.168.1.1");
+        assert_eq!(port, 5640);
+    }
+
+    #[test]
+    fn test_parse_invalid_node_address() {
+        let result = AutoMountDaemon::parse_node_address("invalid-address");
+        assert!(result.is_err());
+
+        let result = AutoMountDaemon::parse_node_address("192.168.1.1:invalid");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_get_local_servers() {
+        let servers = AutoMountDaemon::get_local_servers();
+        assert!(!servers.is_empty(), "Should return local servers");
+
+        for (addr, port, transport) in servers {
+            assert!(matches!(transport, TransportType::Tcp));
+            assert!(port > 0);
+            assert!(!addr.is_empty());
+        }
+    }
+
+    #[tokio::test]
+    async fn test_status_initial_state() {
+        let daemon = AutoMountDaemon::new();
+        let status = daemon.status().await;
+
+        assert_eq!(status.discovered_count, 0);
+        assert_eq!(status.mounted_count, 0);
+        assert_eq!(status.running, false);
+    }
+
+    #[test]
+    fn test_default_trait() {
+        let daemon = AutoMountDaemon::default();
+        assert_eq!(daemon.interval, Duration::from_secs(30));
+    }
+
+    /// Fuzz test: Mount point generation should handle arbitrary addresses
+    #[test]
+    fn fuzz_mount_point_generation() {
+        use proptest::prelude::*;
+
+        proptest!(|(addr in ".*", port: u16)| {
+            let server = DiscoveredServer {
+                address: addr,
+                port,
+                transport: TransportType::Tcp,
+                last_seen: SystemTime::now(),
+                peer_info: None,
+            };
+
+            let mount_point = AutoMountDaemon::generate_mount_point(&server);
+            // Should not panic with any address
+            let _ = mount_point.to_string_lossy();
+        });
+    }
+
+    /// Fuzz test: Address parsing should handle arbitrary input
+    #[test]
+    fn fuzz_address_parsing() {
+        use proptest::prelude::*;
+
+        proptest!(|(addr_str in ".*")| {
+            // Should not panic with arbitrary input
+            let _ = AutoMountDaemon::parse_node_address(&addr_str);
+        });
+    }
+}
