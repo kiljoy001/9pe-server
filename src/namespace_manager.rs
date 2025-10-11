@@ -1086,3 +1086,11 @@ mod tests {
         });
     }
 }
+
+
+/// Register namespace manager controls with the synthetic filesystem
+pub async fn register_namespace_controls(synth_fs: &Arc<SyntheticFilesystem>) -> Result<Arc<NamespaceManager>> {
+    let namespace_mgr = NamespaceManager::new(synth_fs.clone())?;
+    namespace_mgr.initialize().await?;
+    Ok(Arc::new(namespace_mgr))
+}
