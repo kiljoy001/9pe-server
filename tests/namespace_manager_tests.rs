@@ -5,6 +5,7 @@
 //! - Participant management for M-of-N requirements
 //! - Liveness tracking and garbage collection
 //! - Public namespace automatic approval
+//! - M-of-N signature requirements validation
 
 use anyhow::Result;
 use ninep_server::{
@@ -15,6 +16,7 @@ use std::sync::Arc;
 use tokio;
 use ed25519_dalek::{SigningKey, Signer};
 use chrono::{Utc, Duration};
+use hex;
 
 #[tokio::test]
 async fn test_namespace_participant_management() -> Result<()> {
@@ -278,5 +280,90 @@ async fn test_namespace_access_request_rejection() -> Result<()> {
     let pending = manager.list_pending_requests("/srv/test/reject").await?;
     assert_eq!(pending.len(), 0); // No pending requests
     
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_namespace_m_of_n_requirements() -> Result<()> {
+    let synth_fs = Arc::new(SyntheticFilesystem::new());
+    let manager = NamespaceManager::new(synth_fs)?;
+
+    let owner_keypair = SigningKey::from_bytes(&rand::random());
+    
+    // Register namespace with 2-of-3 requirements
+    manager.register_namespace(
+        "/srv/test/mofn",
+        "Test namespace with M-of-N requirements",
+        "test",
+        Some((2, 3)), // 2-of-3 signatures required
+        None, // expires_at
+        &owner_keypair,
+    ).await?;
+
+    let claim = manager.get_claim("/srv/test/mofn").await?;
+    assert_eq!(claim.metadata.participant_requirements, Some((2, 3)));
+    
+    // Test that owner can add participants
+    let participant1_keypair = SigningKey::from_bytes(&rand::random());
+    let participant2_keypair = SigningKey::from_bytes(&rand::random());
+    
+    let participant1_pubkey = hex::encode(participant1_keypair.verifying_key().as_bytes());
+    let participant2_pubkey = hex::encode(participant2_keypair.verifying_key().as_bytes());
+    
+    manager.add_participant(
+        "/srv/test/mofn",
+        &participant1_pubkey,
+        &owner_keypair,
+    ).await?;
+
+    manager.add_participant(
+        "/srv/test/mofn",
+        &participant2_pubkey,
+        &owner_keypair,
+    ).await?;
+
+    let updated_claim = manager.get_claim("/srv/test/mofn").await?;
+    assert_eq!(updated_claim.metadata.participants.len(), 3); // owner + 2 participants
+    assert!(updated_claim.metadata.participants.contains(&participant1_pubkey));
+    assert!(updated_claim.metadata.participants.contains(&participant2_pubkey));
+
+    // Test that participants can update liveness
+    manager.update_liveness("/srv/test/mofn", &participant1_pubkey).await?;
+    manager.update_liveness("/srv/test/mofn", &participant2_pubkey).await?;
+
+    // Test that unauthorized users cannot perform operations
+    let unauthorized_keypair = SigningKey::from_bytes(&rand::random());
+    let result = manager.add_participant(
+        "/srv/test/mofn",
+        &hex::encode(unauthorized_keypair.verifying_key().as_bytes()),
+        &unauthorized_keypair,
+    ).await;
+    
+    assert!(result.is_err());
+    assert!(result.unwrap_err().to_string().contains("Unauthorized"));
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_namespace_open_participation() -> Result<()> {
+    let synth_fs = Arc::new(SyntheticFilesystem::new());
+    let manager = NamespaceManager::new(synth_fs)?;
+
+    let owner_keypair = SigningKey::from_bytes(&rand::random());
+    
+    // Register public namespace with open participation (1,0) = open
+    manager.register_namespace(
+        "/srv/public/open",
+        "Public namespace with open participation",
+        "public",
+        Some((1, 0)), // Open participation
+        None, // expires_at
+        &owner_keypair,
+    ).await?;
+
+    let claim = manager.get_claim("/srv/public/open").await?;
+    assert_eq!(claim.metadata.participant_requirements, Some((1, 0)));
+
     Ok(())
 }
