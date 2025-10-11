@@ -560,20 +560,15 @@ impl NamespaceManager {
         &self,
         path: &str,
         participant_pubkey_hex: &str,
-        _owner_keypair: &SigningKey,
+        owner_keypair: &SigningKey,
     ) -> Result<()> {
         let mut claims = self.claims.write().await;
         let claim = claims.get_mut(path).ok_or_else(|| anyhow!("Namespace not found"))?;
 
-        // Verify owner authorization
-        let owner_key = VerifyingKey::from_bytes(&claim.owner_pubkey)
-            .map_err(|_| anyhow!("Invalid owner public key"))?;
-        
-        let sign_data = format!("add_participant:{}:{}", path, participant_pubkey_hex);
-        let signature = Signature::from_bytes(&claim.signature);
-        
-        owner_key.verify(sign_data.as_bytes(), &signature)
-            .map_err(|_| anyhow!("Unauthorized: not the namespace owner"))?;
+        // Verify owner authorization - check that the provided keypair matches the owner
+        if claim.owner_pubkey != owner_keypair.verifying_key().to_bytes() {
+            return Err(anyhow!("Unauthorized: not the namespace owner"));
+        }
 
         // Add participant
         if !claim.metadata.participants.contains(&participant_pubkey_hex.to_string()) {
@@ -590,20 +585,15 @@ impl NamespaceManager {
         &self,
         path: &str,
         participant_pubkey_hex: &str,
-        _owner_keypair: &SigningKey,
+        owner_keypair: &SigningKey,
     ) -> Result<()> {
         let mut claims = self.claims.write().await;
         let claim = claims.get_mut(path).ok_or_else(|| anyhow!("Namespace not found"))?;
 
-        // Verify owner authorization
-        let owner_key = VerifyingKey::from_bytes(&claim.owner_pubkey)
-            .map_err(|_| anyhow!("Invalid owner public key"))?;
-        
-        let sign_data = format!("remove_participant:{}:{}", path, participant_pubkey_hex);
-        let signature = Signature::from_bytes(&claim.signature);
-        
-        owner_key.verify(sign_data.as_bytes(), &signature)
-            .map_err(|_| anyhow!("Unauthorized: not the namespace owner"))?;
+        // Verify owner authorization - check that the provided keypair matches the owner
+        if claim.owner_pubkey != owner_keypair.verifying_key().to_bytes() {
+            return Err(anyhow!("Unauthorized: not the namespace owner"));
+        }
 
         // Remove participant
         claim.metadata.participants.retain(|p| p != participant_pubkey_hex);
