@@ -367,3 +367,32 @@ async fn test_namespace_open_participation() -> Result<()> {
 
     Ok(())
 }
+
+#[tokio::test]
+async fn test_public_namespace_discovery() -> Result<()> {
+    let synth_fs = Arc::new(SyntheticFilesystem::new());
+    let manager = NamespaceManager::new(synth_fs.clone())?;
+
+    let owner_keypair = SigningKey::from_bytes(&rand::random());
+    
+    // Register public namespace with open participation (1,0) = open
+    manager.register_namespace(
+        "/srv/public/test_discovery",
+        "Test public namespace for discovery",
+        "public",
+        Some((1, 0)), // Open participation
+        None, // expires_at
+        &owner_keypair,
+    ).await?;
+
+    // Test that it appears in public namespace listing
+    let public_namespaces = manager.list_public_namespaces().await;
+    assert_eq!(public_namespaces.len(), 1);
+    assert_eq!(public_namespaces[0].path, "/srv/public/test_discovery");
+    assert_eq!(public_namespaces[0].metadata.namespace_type, "public");
+
+    // Test that it has the correct M-of-N requirements
+    assert_eq!(public_namespaces[0].metadata.participant_requirements, Some((1, 0)));
+
+    Ok(())
+}

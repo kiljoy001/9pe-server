@@ -195,6 +195,15 @@ impl NamespaceManager {
             false, // read-only
         ).await?;
 
+        // /srv/namespace/list_public - List public namespaces
+        let list_public_handler = Arc::new(ListPublicNamespacesHandler {
+            claims: self.claims.clone(),
+        });
+        self.synth_fs.create_control_file(
+            &base.join("list_public"),
+            list_public_handler,
+        ).await?;
+
         Ok(())
     }
 
@@ -856,6 +865,42 @@ impl ControlHandler for ListNamespacesHandler {
                 hex::encode(&claim.owner_pubkey[..8]),
                 claim.metadata.namespace_type,
                 claim.metadata.description,
+                claim.created_at.format("%Y-%m-%d %H:%M:%S UTC")
+            ));
+        }
+
+        Ok(output.into_bytes())
+    }
+
+    fn write(&self, _data: &[u8]) -> Result<()> {
+        Err(anyhow!("Read-only file"))
+    }
+}
+
+/// Handler for /srv/namespace/list_public
+struct ListPublicNamespacesHandler {
+    claims: Arc<RwLock<HashMap<String, NamespaceClaim>>>,
+}
+
+impl ControlHandler for ListPublicNamespacesHandler {
+    fn read(&self) -> Result<Vec<u8>> {
+        let claims = tokio::runtime::Handle::current()
+            .block_on(self.claims.read());
+
+        let mut output = String::from("Public namespaces:\n\n");
+
+        for claim in claims.values().filter(|c| c.metadata.namespace_type == "public") {
+            let requirements = claim.metadata.participant_requirements
+                .map(|(n, m)| format!("{}-of-{}", n, m))
+                .unwrap_or_else(|| "owner-only".to_string());
+            
+            output.push_str(&format!(
+                "Path: {}\nDescription: {}\nOwner: {}\nParticipants: {}\nRequirements: {}\nCreated: {}\n\n",
+                claim.path,
+                claim.metadata.description,
+                hex::encode(&claim.owner_pubkey[..8]),
+                claim.metadata.participants.len(),
+                requirements,
                 claim.created_at.format("%Y-%m-%d %H:%M:%S UTC")
             ));
         }
