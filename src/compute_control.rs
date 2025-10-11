@@ -2,13 +2,16 @@
 //!
 //! Submit GPU/WASM compute jobs by writing to files in /srv/compute/
 
+use crate::sycl::ffi::{
+    sycl_create_queue, sycl_discover_devices, sycl_get_device, SyclDevice, SyclDeviceInfo,
+    SyclQueue,
+};
 use crate::synth::{ControlHandler, SyntheticFilesystem};
-use crate::sycl::ffi::{SyclDevice, SyclQueue, sycl_get_device, sycl_create_queue, sycl_discover_devices, SyclDeviceInfo};
 use anyhow::Result;
-use std::sync::Arc;
-use std::path::PathBuf;
-use tokio::sync::RwLock;
 use std::collections::HashMap;
+use std::path::PathBuf;
+use std::sync::Arc;
+use tokio::sync::RwLock;
 use uuid::Uuid;
 
 /// Compute job status
@@ -24,13 +27,14 @@ pub enum JobStatus {
 #[derive(Clone, Debug)]
 pub struct ComputeJob {
     pub id: String,
-    pub job_type: String,  // "sycl", "wasm", "opencl"
+    pub job_type: String, // "sycl", "wasm", "opencl"
     pub input: Vec<u8>,
     pub status: JobStatus,
     pub submitted_at: std::time::SystemTime,
 }
 
 /// Compute job manager
+#[derive(Debug)]
 pub struct ComputeManager {
     jobs: Arc<RwLock<HashMap<String, ComputeJob>>>,
     sycl_available: bool,
@@ -102,31 +106,49 @@ pub async fn register_compute_control(
     manager: Arc<ComputeManager>,
 ) -> Result<()> {
     // Create /srv/compute directory
-    synth.create_directory(&PathBuf::from("/srv/compute")).await?;
+    synth
+        .create_directory(&PathBuf::from("/srv/compute"))
+        .await?;
 
     // /srv/compute/submit - Write job spec to submit
-    synth.create_control_file(
-        &PathBuf::from("/srv/compute/submit"),
-        Arc::new(SubmitHandler { manager: manager.clone() })
-    ).await?;
+    synth
+        .create_control_file(
+            &PathBuf::from("/srv/compute/submit"),
+            Arc::new(SubmitHandler {
+                manager: manager.clone(),
+            }),
+        )
+        .await?;
 
     // /srv/compute/jobs - Read list of jobs
-    synth.create_control_file(
-        &PathBuf::from("/srv/compute/jobs"),
-        Arc::new(JobsHandler { manager: manager.clone() })
-    ).await?;
+    synth
+        .create_control_file(
+            &PathBuf::from("/srv/compute/jobs"),
+            Arc::new(JobsHandler {
+                manager: manager.clone(),
+            }),
+        )
+        .await?;
 
     // /srv/compute/devices - Read available GPU devices
-    synth.create_control_file(
-        &PathBuf::from("/srv/compute/devices"),
-        Arc::new(DevicesHandler { manager: manager.clone() })
-    ).await?;
+    synth
+        .create_control_file(
+            &PathBuf::from("/srv/compute/devices"),
+            Arc::new(DevicesHandler {
+                manager: manager.clone(),
+            }),
+        )
+        .await?;
 
     // /srv/compute/status - Read compute system status
-    synth.create_control_file(
-        &PathBuf::from("/srv/compute/status"),
-        Arc::new(StatusHandler { manager: manager.clone() })
-    ).await?;
+    synth
+        .create_control_file(
+            &PathBuf::from("/srv/compute/status"),
+            Arc::new(StatusHandler {
+                manager: manager.clone(),
+            }),
+        )
+        .await?;
 
     Ok(())
 }
@@ -143,25 +165,26 @@ impl ControlHandler for SubmitHandler {
                \"type\": \"sycl\" | \"wasm\" | \"opencl\",\n\
                \"operation\": \"vector_add\" | \"matmul\" | \"custom\",\n\
                \"data\": \"base64-encoded-input\"\n\
-             }\n".to_vec())
+             }\n"
+        .to_vec())
     }
 
     fn write(&self, data: &[u8]) -> Result<()> {
         let job_spec = String::from_utf8(data.to_vec())?;
         let spec: serde_json::Value = serde_json::from_str(&job_spec)?;
 
-        let job_type = spec["type"].as_str()
+        let job_type = spec["type"]
+            .as_str()
             .ok_or_else(|| anyhow::anyhow!("Missing 'type' field"))?
             .to_string();
 
-        let input_data = spec["data"].as_str()
+        let input_data = spec["data"]
+            .as_str()
             .ok_or_else(|| anyhow::anyhow!("Missing 'data' field"))?
             .as_bytes()
             .to_vec();
 
-        let job_id = futures::executor::block_on(
-            self.manager.submit_job(job_type, input_data)
-        )?;
+        let job_id = futures::executor::block_on(self.manager.submit_job(job_type, input_data))?;
 
         println!("Job submitted: {}", job_id);
         Ok(())
@@ -188,10 +211,7 @@ impl ControlHandler for JobsHandler {
 
             output.push_str(&format!(
                 "{}\t{}\t{}\t{:?}\n",
-                job.id,
-                job.job_type,
-                status_str,
-                job.submitted_at
+                job.id, job.job_type, status_str, job.submitted_at
             ));
         }
 
@@ -199,7 +219,9 @@ impl ControlHandler for JobsHandler {
     }
 
     fn write(&self, _data: &[u8]) -> Result<()> {
-        Err(anyhow::anyhow!("jobs file is read-only, use 'submit' to add jobs"))
+        Err(anyhow::anyhow!(
+            "jobs file is read-only, use 'submit' to add jobs"
+        ))
     }
 }
 
@@ -212,21 +234,25 @@ impl ControlHandler for DevicesHandler {
     fn read(&self) -> Result<Vec<u8>> {
         if !self.manager.is_sycl_available() {
             return Ok(b"SYCL not available - no GPU devices detected\n\
-                       Install AdaptiveCpp for GPU support\n".to_vec());
+                       Install AdaptiveCpp for GPU support\n"
+                .to_vec());
         }
 
-        let mut devices = vec![SyclDeviceInfo {
-            name: [0; 256],
-            vendor: [0; 128],
-            compute_units: 0,
-            global_memory_size: 0,
-            local_memory_size: 0,
-            max_work_group_size: 0,
-            is_gpu: false,
-            is_cpu: false,
-            supports_fp64: false,
-            supports_fp16: false,
-        }; 16];
+        let mut devices = vec![
+            SyclDeviceInfo {
+                name: [0; 256],
+                vendor: [0; 128],
+                compute_units: 0,
+                global_memory_size: 0,
+                local_memory_size: 0,
+                max_work_group_size: 0,
+                is_gpu: false,
+                is_cpu: false,
+                supports_fp64: false,
+                supports_fp16: false,
+            };
+            16
+        ];
 
         let mut count: usize = 16;
 
@@ -267,10 +293,22 @@ struct StatusHandler {
 impl ControlHandler for StatusHandler {
     fn read(&self) -> Result<Vec<u8>> {
         let jobs = futures::executor::block_on(self.manager.list_jobs());
-        let pending = jobs.iter().filter(|j| matches!(j.status, JobStatus::Pending)).count();
-        let running = jobs.iter().filter(|j| matches!(j.status, JobStatus::Running)).count();
-        let completed = jobs.iter().filter(|j| matches!(j.status, JobStatus::Completed(_))).count();
-        let failed = jobs.iter().filter(|j| matches!(j.status, JobStatus::Failed(_))).count();
+        let pending = jobs
+            .iter()
+            .filter(|j| matches!(j.status, JobStatus::Pending))
+            .count();
+        let running = jobs
+            .iter()
+            .filter(|j| matches!(j.status, JobStatus::Running))
+            .count();
+        let completed = jobs
+            .iter()
+            .filter(|j| matches!(j.status, JobStatus::Completed(_)))
+            .count();
+        let failed = jobs
+            .iter()
+            .filter(|j| matches!(j.status, JobStatus::Failed(_)))
+            .count();
 
         let output = format!(
             "Compute System Status\n\
@@ -304,7 +342,8 @@ mod tests {
     #[tokio::test]
     async fn test_compute_manager() {
         let manager = ComputeManager::new();
-        let job_id = manager.submit_job("sycl".to_string(), b"test data".to_vec())
+        let job_id = manager
+            .submit_job("sycl".to_string(), b"test data".to_vec())
             .await
             .expect("Failed to submit job");
 
@@ -320,7 +359,8 @@ mod tests {
         let synth = SyntheticFilesystem::new();
         let manager = Arc::new(ComputeManager::new());
 
-        register_compute_control(&synth, manager).await
+        register_compute_control(&synth, manager)
+            .await
             .expect("Failed to register compute control");
 
         assert!(synth.exists(&PathBuf::from("/srv/compute")).await);

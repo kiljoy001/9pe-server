@@ -4,11 +4,11 @@
 //! No physical directories are created on disk.
 
 use anyhow::Result;
+use chrono::{DateTime, Utc};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use chrono::{DateTime, Utc};
 
 /// Virtual file or directory in the synthetic filesystem
 #[derive(Debug, Clone)]
@@ -32,10 +32,12 @@ pub enum SynthNodeType {
 impl std::fmt::Debug for SynthNodeType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Directory { children } => f.debug_struct("Directory")
+            Self::Directory { children } => f
+                .debug_struct("Directory")
                 .field("children", children)
                 .finish(),
-            Self::File { content, writable } => f.debug_struct("File")
+            Self::File { content, writable } => f
+                .debug_struct("File")
                 .field("content_len", &content.len())
                 .field("writable", writable)
                 .finish(),
@@ -51,6 +53,7 @@ pub trait ControlHandler: Send + Sync {
 }
 
 /// Synthetic filesystem that maintains virtual directories and files
+#[derive(Debug)]
 pub struct SyntheticFilesystem {
     nodes: Arc<RwLock<HashMap<PathBuf, SynthNode>>>,
 }
@@ -78,7 +81,8 @@ impl SyntheticFilesystem {
             current.push(component);
 
             if !nodes.contains_key(&current) {
-                let name = current.file_name()
+                let name = current
+                    .file_name()
                     .unwrap_or_default()
                     .to_string_lossy()
                     .to_string();
@@ -86,7 +90,9 @@ impl SyntheticFilesystem {
                 let node = SynthNode {
                     name,
                     path: current.clone(),
-                    node_type: SynthNodeType::Directory { children: Vec::new() },
+                    node_type: SynthNodeType::Directory {
+                        children: Vec::new(),
+                    },
                     permissions: 0o755,
                     created: Utc::now(),
                     modified: Utc::now(),
@@ -98,8 +104,10 @@ impl SyntheticFilesystem {
                 // Update parent's children list
                 if let Some(parent_path) = current.parent() {
                     if let Some(parent_node) = nodes.get_mut(parent_path) {
-                        if let SynthNodeType::Directory { ref mut children } = parent_node.node_type {
-                            let child_name = current.file_name()
+                        if let SynthNodeType::Directory { ref mut children } = parent_node.node_type
+                        {
+                            let child_name = current
+                                .file_name()
                                 .unwrap_or_default()
                                 .to_string_lossy()
                                 .to_string();
@@ -124,7 +132,8 @@ impl SyntheticFilesystem {
 
         let mut nodes = self.nodes.write().await;
 
-        let name = path.file_name()
+        let name = path
+            .file_name()
             .unwrap_or_default()
             .to_string_lossy()
             .to_string();
@@ -159,7 +168,7 @@ impl SyntheticFilesystem {
     pub async fn create_control_file(
         &self,
         path: &Path,
-        handler: Arc<dyn ControlHandler>
+        handler: Arc<dyn ControlHandler>,
     ) -> Result<()> {
         // Ensure parent directory exists
         if let Some(parent) = path.parent() {
@@ -168,7 +177,8 @@ impl SyntheticFilesystem {
 
         let mut nodes = self.nodes.write().await;
 
-        let name = path.file_name()
+        let name = path
+            .file_name()
             .unwrap_or_default()
             .to_string_lossy()
             .to_string();
@@ -341,8 +351,12 @@ mod tests {
         let fs = SyntheticFilesystem::new();
         let dir = PathBuf::from("/test");
 
-        fs.create_file(&dir.join("file1.txt"), b"content1".to_vec(), false).await.unwrap();
-        fs.create_file(&dir.join("file2.txt"), b"content2".to_vec(), false).await.unwrap();
+        fs.create_file(&dir.join("file1.txt"), b"content1".to_vec(), false)
+            .await
+            .unwrap();
+        fs.create_file(&dir.join("file2.txt"), b"content2".to_vec(), false)
+            .await
+            .unwrap();
 
         let children = fs.list_directory(&dir).await.unwrap();
         assert_eq!(children.len(), 2, "Should have 2 children");
@@ -355,7 +369,9 @@ mod tests {
         let fs = SyntheticFilesystem::new();
         let path = PathBuf::from("/test/file.txt");
 
-        fs.create_file(&path, b"content".to_vec(), true).await.unwrap();
+        fs.create_file(&path, b"content".to_vec(), true)
+            .await
+            .unwrap();
 
         let node = fs.get_node(&path).await.unwrap();
         assert_eq!(node.name, "file.txt");
