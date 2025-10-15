@@ -26,12 +26,14 @@ pub use self::connection_state::ConnectionState as PublicConnectionState;
 /// Main message handler that coordinates protocol handling
 pub struct MessageHandler {
     /// Root filesystem path
+    #[allow(dead_code)]
     root: PathBuf,
 
     /// Maximum message size
     max_message_size: u32,
 
     /// Connection state management
+    #[allow(dead_code)]
     connection_state: ConnectionState,
 
     /// Basic 9P operations handler
@@ -41,6 +43,7 @@ pub struct MessageHandler {
     ninepee_extensions: NinePeeExtensionsHandler,
 
     /// Bounded GHOSTDAG consensus for namespace operations
+    #[allow(dead_code)]
     consensus_dag: Arc<BoundedGhostdag>,
 }
 
@@ -104,7 +107,7 @@ impl MessageHandler {
                 self.basic_ops.handle_open(fid, mode).await,
             NinePeeMessage::Create { fid, name, perm, mode } =>
                 self.basic_ops.handle_create(fid, name, perm, mode).await,
-            NinePeeMessage::Read { fid, offset, count } =>
+            NinePeeMessage::Read { fid, offset, count, .. } =>
                 self.basic_ops.handle_read(fid, offset, count).await,
             NinePeeMessage::Write { fid, offset, data } =>
                 self.basic_ops.handle_write(fid, offset, data).await,
@@ -112,7 +115,7 @@ impl MessageHandler {
                 self.basic_ops.handle_clunk(fid).await,
             NinePeeMessage::Remove { fid } =>
                 self.basic_ops.handle_remove(fid).await,
-            NinePeeMessage::Stat { fid } =>
+            NinePeeMessage::Stat { fid, .. } =>
                 self.basic_ops.handle_stat(fid).await,
             NinePeeMessage::Wstat { fid, stat } =>
                 self.basic_ops.handle_wstat(fid, stat).await,

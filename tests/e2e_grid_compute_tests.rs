@@ -4,13 +4,13 @@
 //! Grid computing involves distributing computational work across multiple machines,
 //! each potentially with GPU accelerators, and aggregating results.
 
-use std::process::{Command, Child, Stdio};
-use std::time::Duration;
-use std::thread;
-use std::net::TcpStream;
-use tempfile::TempDir;
 use std::fs;
+use std::net::TcpStream;
 use std::path::PathBuf;
+use std::process::{Child, Command, Stdio};
+use std::thread;
+use std::time::Duration;
+use tempfile::TempDir;
 
 /// Helper struct to manage a compute node in the grid
 struct GridComputeNode {
@@ -24,8 +24,8 @@ struct GridComputeNode {
 impl GridComputeNode {
     fn start(
         tcp_port: u16,
-        _consensus_port: u16,  // Not used - consensus is configured via config file
-        _peer_addresses: Vec<String>,  // Not used - mesh networking handles discovery
+        _consensus_port: u16, // Not used - consensus is configured via config file
+        _peer_addresses: Vec<String>, // Not used - mesh networking handles discovery
     ) -> anyhow::Result<Self> {
         let temp_dir = TempDir::new()?;
         let root_path = temp_dir.path().to_path_buf();
@@ -40,8 +40,10 @@ impl GridComputeNode {
         let child = Command::new("./target/release/ninep-server")
             .args(&[
                 "serve",
-                "--port", &tcp_port.to_string(),
-                "--root", root_path.to_str().unwrap(),
+                "--port",
+                &tcp_port.to_string(),
+                "--root",
+                root_path.to_str().unwrap(),
                 "--no-quic",
             ])
             .stdout(Stdio::null())
@@ -80,29 +82,41 @@ impl Drop for GridComputeNode {
 fn test_e2e_grid_three_node_startup() {
     println!("Starting 3-node grid computing cluster...");
 
-    let node1 = GridComputeNode::start(18001, 18101, vec![])
-        .expect("Failed to start node1");
+    let node1 = GridComputeNode::start(18001, 18101, vec![]).expect("Failed to start node1");
 
     let node2 = GridComputeNode::start(18002, 18102, vec![node1.consensus_address()])
         .expect("Failed to start node2");
 
-    let node3 = GridComputeNode::start(18003, 18103, vec![
-        node1.consensus_address(),
-        node2.consensus_address(),
-    ])
-        .expect("Failed to start node3");
+    let node3 = GridComputeNode::start(
+        18003,
+        18103,
+        vec![node1.consensus_address(), node2.consensus_address()],
+    )
+    .expect("Failed to start node3");
 
     // Verify all nodes are running
     assert!(
-        TcpStream::connect_timeout(&node1.tcp_address().parse().unwrap(), Duration::from_secs(5)).is_ok(),
+        TcpStream::connect_timeout(
+            &node1.tcp_address().parse().unwrap(),
+            Duration::from_secs(5)
+        )
+        .is_ok(),
         "Node1 should be reachable"
     );
     assert!(
-        TcpStream::connect_timeout(&node2.tcp_address().parse().unwrap(), Duration::from_secs(5)).is_ok(),
+        TcpStream::connect_timeout(
+            &node2.tcp_address().parse().unwrap(),
+            Duration::from_secs(5)
+        )
+        .is_ok(),
         "Node2 should be reachable"
     );
     assert!(
-        TcpStream::connect_timeout(&node3.tcp_address().parse().unwrap(), Duration::from_secs(5)).is_ok(),
+        TcpStream::connect_timeout(
+            &node3.tcp_address().parse().unwrap(),
+            Duration::from_secs(5)
+        )
+        .is_ok(),
         "Node3 should be reachable"
     );
 
@@ -114,8 +128,7 @@ fn test_e2e_grid_three_node_startup() {
 fn test_e2e_grid_distributed_vector_add() {
     println!("Testing distributed SYCL vector addition across grid...");
 
-    let node1 = GridComputeNode::start(18011, 18111, vec![])
-        .expect("Failed to start node1");
+    let node1 = GridComputeNode::start(18011, 18111, vec![]).expect("Failed to start node1");
     let node2 = GridComputeNode::start(18012, 18112, vec![node1.consensus_address()])
         .expect("Failed to start node2");
 
@@ -142,15 +155,15 @@ fn test_e2e_grid_distributed_vector_add() {
 fn test_e2e_grid_distributed_matmul() {
     println!("Testing distributed matrix multiplication...");
 
-    let node1 = GridComputeNode::start(18021, 18121, vec![])
-        .expect("Failed to start node1");
+    let node1 = GridComputeNode::start(18021, 18121, vec![]).expect("Failed to start node1");
     let node2 = GridComputeNode::start(18022, 18122, vec![node1.consensus_address()])
         .expect("Failed to start node2");
-    let node3 = GridComputeNode::start(18023, 18123, vec![
-        node1.consensus_address(),
-        node2.consensus_address(),
-    ])
-        .expect("Failed to start node3");
+    let node3 = GridComputeNode::start(
+        18023,
+        18123,
+        vec![node1.consensus_address(), node2.consensus_address()],
+    )
+    .expect("Failed to start node3");
 
     thread::sleep(Duration::from_secs(3));
 
@@ -171,8 +184,7 @@ fn test_e2e_grid_distributed_matmul() {
 fn test_e2e_grid_load_balancing() {
     println!("Testing grid load balancing...");
 
-    let node1 = GridComputeNode::start(18031, 18131, vec![])
-        .expect("Failed to start node1");
+    let node1 = GridComputeNode::start(18031, 18131, vec![]).expect("Failed to start node1");
     let node2 = GridComputeNode::start(18032, 18132, vec![node1.consensus_address()])
         .expect("Failed to start node2");
 
@@ -194,15 +206,15 @@ fn test_e2e_grid_load_balancing() {
 fn test_e2e_grid_fault_tolerance() {
     println!("Testing grid fault tolerance...");
 
-    let node1 = GridComputeNode::start(18041, 18141, vec![])
-        .expect("Failed to start node1");
+    let node1 = GridComputeNode::start(18041, 18141, vec![]).expect("Failed to start node1");
     let mut node2 = GridComputeNode::start(18042, 18142, vec![node1.consensus_address()])
         .expect("Failed to start node2");
-    let node3 = GridComputeNode::start(18043, 18143, vec![
-        node1.consensus_address(),
-        node2.consensus_address(),
-    ])
-        .expect("Failed to start node3");
+    let node3 = GridComputeNode::start(
+        18043,
+        18143,
+        vec![node1.consensus_address(), node2.consensus_address()],
+    )
+    .expect("Failed to start node3");
 
     thread::sleep(Duration::from_secs(3));
 
@@ -214,11 +226,19 @@ fn test_e2e_grid_fault_tolerance() {
 
     // Node1 and Node3 should still be running
     assert!(
-        TcpStream::connect_timeout(&node1.tcp_address().parse().unwrap(), Duration::from_secs(5)).is_ok(),
+        TcpStream::connect_timeout(
+            &node1.tcp_address().parse().unwrap(),
+            Duration::from_secs(5)
+        )
+        .is_ok(),
         "Node1 should still be running after node2 failure"
     );
     assert!(
-        TcpStream::connect_timeout(&node3.tcp_address().parse().unwrap(), Duration::from_secs(5)).is_ok(),
+        TcpStream::connect_timeout(
+            &node3.tcp_address().parse().unwrap(),
+            Duration::from_secs(5)
+        )
+        .is_ok(),
         "Node3 should still be running after node2 failure"
     );
 
@@ -233,8 +253,7 @@ fn test_e2e_grid_fault_tolerance() {
 fn test_e2e_grid_multi_gpu() {
     println!("Testing multi-GPU grid (each node has GPU)...");
 
-    let node1 = GridComputeNode::start(18051, 18151, vec![])
-        .expect("Failed to start node1");
+    let node1 = GridComputeNode::start(18051, 18151, vec![]).expect("Failed to start node1");
     let node2 = GridComputeNode::start(18052, 18152, vec![node1.consensus_address()])
         .expect("Failed to start node2");
 
@@ -258,8 +277,7 @@ fn test_e2e_grid_multi_gpu() {
 fn test_e2e_grid_work_stealing() {
     println!("Testing work stealing between nodes...");
 
-    let node1 = GridComputeNode::start(18061, 18161, vec![])
-        .expect("Failed to start node1");
+    let node1 = GridComputeNode::start(18061, 18161, vec![]).expect("Failed to start node1");
     let node2 = GridComputeNode::start(18062, 18162, vec![node1.consensus_address()])
         .expect("Failed to start node2");
 
@@ -281,15 +299,15 @@ fn test_e2e_grid_work_stealing() {
 fn test_e2e_grid_result_aggregation() {
     println!("Testing result aggregation across grid...");
 
-    let node1 = GridComputeNode::start(18071, 18171, vec![])
-        .expect("Failed to start node1");
+    let node1 = GridComputeNode::start(18071, 18171, vec![]).expect("Failed to start node1");
     let node2 = GridComputeNode::start(18072, 18172, vec![node1.consensus_address()])
         .expect("Failed to start node2");
-    let node3 = GridComputeNode::start(18073, 18173, vec![
-        node1.consensus_address(),
-        node2.consensus_address(),
-    ])
-        .expect("Failed to start node3");
+    let node3 = GridComputeNode::start(
+        18073,
+        18173,
+        vec![node1.consensus_address(), node2.consensus_address()],
+    )
+    .expect("Failed to start node3");
 
     thread::sleep(Duration::from_secs(3));
 
@@ -312,8 +330,7 @@ fn test_e2e_grid_result_aggregation() {
 fn test_e2e_grid_heterogeneous_compute() {
     println!("Testing heterogeneous grid (CPU + GPU nodes)...");
 
-    let node1 = GridComputeNode::start(18081, 18181, vec![])
-        .expect("Failed to start node1");
+    let node1 = GridComputeNode::start(18081, 18181, vec![]).expect("Failed to start node1");
     let node2 = GridComputeNode::start(18082, 18182, vec![node1.consensus_address()])
         .expect("Failed to start node2");
 
@@ -337,15 +354,15 @@ fn test_e2e_grid_heterogeneous_compute() {
 fn test_e2e_grid_consensus_coordination() {
     println!("Testing consensus-based work coordination...");
 
-    let node1 = GridComputeNode::start(18091, 18191, vec![])
-        .expect("Failed to start node1");
+    let node1 = GridComputeNode::start(18091, 18191, vec![]).expect("Failed to start node1");
     let node2 = GridComputeNode::start(18092, 18192, vec![node1.consensus_address()])
         .expect("Failed to start node2");
-    let node3 = GridComputeNode::start(18093, 18193, vec![
-        node1.consensus_address(),
-        node2.consensus_address(),
-    ])
-        .expect("Failed to start node3");
+    let node3 = GridComputeNode::start(
+        18093,
+        18193,
+        vec![node1.consensus_address(), node2.consensus_address()],
+    )
+    .expect("Failed to start node3");
 
     thread::sleep(Duration::from_secs(3));
 

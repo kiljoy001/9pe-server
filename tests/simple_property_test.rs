@@ -1,8 +1,8 @@
 //! Simple property test to demonstrate property testing works
 //! Tests basic NinePeeMessage serialization properties
 
-use proptest::prelude::*;
 use ninep_server::protocol::NinePeeMessage;
+use proptest::prelude::*;
 
 /// Test that NinePeeMessage serialization works
 #[test]

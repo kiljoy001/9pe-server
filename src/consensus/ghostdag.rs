@@ -1,12 +1,10 @@
 //! GHOSTDAG consensus implementation
-//!
-//! This implements the GHOSTDAG consensus algorithm for ordering work
-//! in a distributed environment with Byzantine fault tolerance.
-
 use anyhow::Result;
 use serde::{Serialize, Deserialize};
 use std::collections::{HashMap, HashSet, VecDeque};
-use super::crypto::{CryptoProvider, Signature, WorkProof};
+use std::sync::Arc;
+use tokio::sync::RwLock;
+use super::crypto::{CryptoProvider, Signature, WorkProof, TrustedKeyStore};
 
 /// Unique identifier for blocks in the DAG
 pub type BlockId = String;
@@ -20,10 +18,16 @@ pub struct GhostdagConsensus {
     pending_work: HashMap<String, PendingWork>,
     ghost_score: HashMap<BlockId, u64>,
     confirmation_depth: u64,
+    crypto: Arc<dyn CryptoProvider>,
+    trusted_keys: Arc<RwLock<TrustedKeyStore>>,
 }
 
 impl GhostdagConsensus {
-    pub fn new(node_id: String) -> Self {
+    pub fn new(
+        node_id: String,
+        crypto: Arc<dyn CryptoProvider>,
+        trusted_keys: Arc<RwLock<TrustedKeyStore>>,
+    ) -> Self {
         Self {
             node_id,
             dag: HashMap::new(),
@@ -32,6 +36,8 @@ impl GhostdagConsensus {
             pending_work: HashMap::new(),
             ghost_score: HashMap::new(),
             confirmation_depth: 6, // Blocks deep for confirmation
+            crypto,
+            trusted_keys,
         }
     }
 
@@ -114,7 +120,6 @@ impl GhostdagConsensus {
     pub async fn create_work_block(
         &self,
         work_results: Vec<WorkResult>,
-        crypto: &dyn CryptoProvider,
     ) -> Result<WorkBlock> {
         let block_id = format!("block_{}", uuid::Uuid::new_v4());
         let timestamp = std::time::SystemTime::now()
@@ -124,16 +129,8 @@ impl GhostdagConsensus {
         // Select parents (current tips)
         let parents: Vec<BlockId> = self.tips.iter().cloned().collect();
 
-        // Create block data
-        let mut block_data = Vec::new();
-        block_data.extend_from_slice(block_id.as_bytes());
-        block_data.extend_from_slice(&timestamp.to_le_bytes());
-        for parent in &parents {
-            block_data.extend_from_slice(parent.as_bytes());
-        }
-
-        // Sign the block
-        let signature = crypto.sign(&block_data).await?;
+        let signature_payload = block_signature_payload(&block_id, timestamp, &parents);
+        let signature = self.crypto.sign(&signature_payload).await?;
 
         let block = WorkBlock {
             id: block_id,
@@ -150,7 +147,7 @@ impl GhostdagConsensus {
 
     // Private helper methods
 
-    async fn validate_block(&self, block: &WorkBlock) -> Result<()> {
+    async fn validate_block(&mut self, block: &WorkBlock) -> Result<()> {
         // Validate parents exist
         for parent in &block.parents {
             if !self.dag.contains_key(parent) {
@@ -167,7 +164,45 @@ impl GhostdagConsensus {
             anyhow::bail!("Block timestamp too far in future");
         }
 
-        // TODO: Validate signature and work results
+        let creator_key = {
+            let store = self.trusted_keys.read().await;
+            store.get_key(&block.creator)
+        }.ok_or_else(|| anyhow::anyhow!("Untrusted block creator {}", block.creator))?;
+
+        let payload = block_signature_payload(&block.id, block.timestamp, &block.parents);
+        let signature_valid = self.crypto.verify(&payload, &block.signature, &creator_key).await?;
+        if !signature_valid {
+            anyhow::bail!("Invalid block signature for {}", block.id);
+        }
+
+        for result in &block.work_results {
+            let pending_submission = if let Some(pending) = self.pending_work.get(&result.work_id) {
+                pending.submission.clone()
+            } else {
+                anyhow::bail!("Work result {} has no pending submission", result.work_id);
+            };
+
+            let executor_key = {
+                let store = self.trusted_keys.read().await;
+                store.get_key(&result.executor_node)
+            }.ok_or_else(|| anyhow::anyhow!("Untrusted executor {}", result.executor_node))?;
+
+            let proof_valid = result.computation_proof.verify(
+                &pending_submission.input_data,
+                &executor_key,
+                self.crypto.as_ref(),
+            ).await?;
+
+            if !proof_valid {
+                anyhow::bail!("Invalid computation proof for work {}", result.work_id);
+            }
+
+            if !result.computation_proof.matches_output(&result.result_data) {
+                anyhow::bail!("Result hash mismatch for work {}", result.work_id);
+            }
+
+            self.pending_work.remove(&result.work_id);
+        }
 
         Ok(())
     }
@@ -251,6 +286,16 @@ impl GhostdagConsensus {
     }
 }
 
+fn block_signature_payload(id: &str, timestamp: u64, parents: &[BlockId]) -> Vec<u8> {
+    let mut payload = Vec::new();
+    payload.extend_from_slice(id.as_bytes());
+    payload.extend_from_slice(&timestamp.to_le_bytes());
+    for parent in parents {
+        payload.extend_from_slice(parent.as_bytes());
+    }
+    payload
+}
+
 /// A block in the GHOSTDAG
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WorkBlock {
@@ -299,6 +344,7 @@ pub struct ResourceRequirements {
 }
 
 /// Pending work in the system
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 struct PendingWork {
     id: String,
@@ -308,6 +354,7 @@ struct PendingWork {
     status: WorkStatus,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 enum WorkStatus {
     Pending,

@@ -17,12 +17,15 @@ pub struct NinePeeExtensionsHandler {
     translator_registry: Arc<ThreadSafeTranslatorRegistry>,
 
     /// Virtual settrans system
+    #[allow(dead_code)]
     settrans_system: Arc<VirtualSettransSystem>,
 
     /// Synthetic filesystem
+    #[allow(dead_code)]
     synth_fs: Arc<SyntheticFilesystem>,
 
     /// Connection state
+    #[allow(dead_code)]
     connection_state: ConnectionState,
 }
 
@@ -43,6 +46,7 @@ impl NinePeeExtensionsHandler {
     }
 
     /// Handle settrans request
+    #[allow(dead_code)]
     pub async fn handle_settrans(
         &self,
         path: String,
@@ -72,7 +76,7 @@ impl NinePeeExtensionsHandler {
         &self,
         path: String,
         function: String,
-        args: Vec<u8>,
+        _args: Vec<u8>,
     ) -> Result<NinePeeMessage> {
         debug!("WasmInvoke: path={}, function={}", path, function);
 
@@ -80,7 +84,7 @@ impl NinePeeExtensionsHandler {
         let path_buf = std::path::PathBuf::from(&path);
 
         match self.translator_registry.get_translator(&path_buf).await {
-            Some(translator) => {
+            Some(_translator) => {
                 // TODO: Implement invoke_function when method is available
                 // match translator.invoke_function(&function, args.clone()).await {
                 match async { Err::<Vec<u8>, anyhow::Error>(anyhow::anyhow!("invoke_function not implemented")) }.await {
@@ -105,6 +109,7 @@ impl NinePeeExtensionsHandler {
     }
 
     /// Handle compute invoke (placeholder)
+    #[allow(dead_code)]
     pub async fn handle_compute_invoke(
         &self,
         kernel_id: String,
@@ -122,6 +127,7 @@ impl NinePeeExtensionsHandler {
     }
 
     /// Handle consensus request (placeholder)
+    #[allow(dead_code)]
     pub async fn handle_consensus_request(
         &self,
         block: Vec<u8>,
@@ -138,6 +144,7 @@ impl NinePeeExtensionsHandler {
     }
 
     /// Handle mesh connect (placeholder)
+    #[allow(dead_code)]
     pub async fn handle_mesh_connect(
         &self,
         node_id: String,
@@ -156,6 +163,7 @@ impl NinePeeExtensionsHandler {
     }
 
     /// Handle work submit (placeholder)
+    #[allow(dead_code)]
     pub async fn handle_work_submit(
         &self,
         task_id: String,
@@ -173,6 +181,7 @@ impl NinePeeExtensionsHandler {
     }
 
     /// Handle work result (placeholder)
+    #[allow(dead_code)]
     pub async fn handle_work_result(
         &self,
         task_id: String,

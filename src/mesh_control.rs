@@ -4,10 +4,11 @@
 //! Control mesh networking by reading/writing files in /srv/mesh/
 
 use crate::synth::{ControlHandler, SyntheticFilesystem};
-use crate::mesh::MeshNetwork;
+use crate::mesh::{MeshNetwork, MeshStatus};
 use anyhow::Result;
 use std::sync::Arc;
 use std::path::PathBuf;
+use hex;
 
 /// Register mesh control files in the synthetic filesystem
 pub async fn register_mesh_control(
@@ -71,7 +72,7 @@ impl ControlHandler for PeersHandler {
             output.push_str(&format!(
                 "{}\t{}\t{}\t{:?}\n",
                 peer_id,
-                peer.address().unwrap_or("unknown".to_string()),
+                peer.address().unwrap_or_else(|| "unknown".to_string()),
                 status,
                 peer.last_seen()
             ));
@@ -169,7 +170,7 @@ struct StatusHandler {
 
 impl ControlHandler for StatusHandler {
     fn read(&self) -> Result<Vec<u8>> {
-        let status = futures::executor::block_on(self.mesh.get_status());
+        let status: MeshStatus = futures::executor::block_on(self.mesh.get_status());
 
         let output = format!(
             "Mesh Network Status\n\
@@ -206,8 +207,8 @@ impl ControlHandler for DhtHandler {
         let routing_table = futures::executor::block_on(self.mesh.get_dht_routing_table());
 
         let mut output = String::from("DHT Routing Table\n=================\n");
-        for (key, peer_id) in routing_table {
-            output.push_str(&format!("{} -> {}\n", hex::encode(&key), peer_id));
+        for (key, peer) in routing_table {
+            output.push_str(&format!("{} -> {}\n", hex::encode(&key), peer));
         }
 
         Ok(output.into_bytes())

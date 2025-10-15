@@ -26,26 +26,43 @@ use anyhow::Result;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use serde::{Serialize, Deserialize};
+use crypto::TrustedKeyStore;
 
 /// Main consensus coordinator for the 9P.e server
 pub struct ConsensusCoordinator {
     ghostdag: Arc<RwLock<GhostdagConsensus>>,
     work_distributor: Arc<WorkDistributor>,
     network: Arc<NetworkConsensus>,
+    #[allow(dead_code)]
     crypto: Arc<dyn CryptoProvider>,
+    trusted_keys: Arc<RwLock<TrustedKeyStore>>,
 }
 
 impl ConsensusCoordinator {
     pub fn new(node_id: String, crypto: Arc<dyn CryptoProvider>) -> Self {
-        let ghostdag = Arc::new(RwLock::new(GhostdagConsensus::new(node_id.clone())));
+        let mut key_store = TrustedKeyStore::new();
+        let local_public_key = crypto.get_public_key();
+        key_store.add_trusted_key(node_id.clone(), local_public_key);
+
+        let trusted_keys = Arc::new(RwLock::new(key_store));
+
+        let ghostdag = Arc::new(RwLock::new(GhostdagConsensus::new(
+            node_id.clone(),
+            Arc::clone(&crypto),
+            Arc::clone(&trusted_keys),
+        )));
         let work_distributor = Arc::new(WorkDistributor::new(node_id.clone()));
-        let network = Arc::new(NetworkConsensus::new(node_id));
+        let network = Arc::new(
+            NetworkConsensus::new(node_id.clone())
+                .with_trusted_store(Arc::clone(&trusted_keys)),
+        );
 
         Self {
             ghostdag,
             work_distributor,
             network,
             crypto,
+            trusted_keys,
         }
     }
 
@@ -68,6 +85,12 @@ impl ConsensusCoordinator {
     /// Get work results
     pub async fn get_work_result(&self, job_id: &str) -> Result<Option<WorkResult>> {
         self.work_distributor.get_result(job_id).await
+    }
+
+    /// Trust a new node's public key for block and work validation
+    pub async fn trust_node(&self, node_id: String, public_key: PublicKey) {
+        let mut store = self.trusted_keys.write().await;
+        store.add_trusted_key(node_id, public_key);
     }
 
     /// Submit a transaction to the consensus system (for /srv/consensus/submit)

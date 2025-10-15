@@ -13,6 +13,7 @@ use tokio::fs;
 use std::os::unix::fs::MetadataExt;
 
 /// Server-side protocol handler
+#[allow(dead_code)]
 pub struct ProtocolHandler {
     /// Root directory for the filesystem
     root: PathBuf,
@@ -27,6 +28,7 @@ pub struct ProtocolHandler {
     sessions: Arc<RwLock<HashMap<String, SessionInfo>>>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 struct FidState {
     path: PathBuf,
@@ -36,6 +38,7 @@ struct FidState {
     user: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 struct SessionInfo {
     user: String,
@@ -43,6 +46,7 @@ struct SessionInfo {
     root_fid: Option<Fid>,
 }
 
+#[allow(dead_code)]
 impl ProtocolHandler {
     /// Create a new protocol handler
     pub fn new(root: PathBuf) -> Self {
@@ -260,6 +264,7 @@ impl ProtocolHandler {
     }
 
     /// Convert path to Qid
+    #[allow(dead_code)]
     async fn path_to_qid(&self, path: &Path) -> Result<Qid> {
         let metadata = fs::metadata(path).await
             .context("Failed to get metadata")?;
@@ -278,6 +283,7 @@ impl ProtocolHandler {
     }
 
     /// Convert path to Stat
+    #[allow(dead_code)]
     async fn path_to_stat(&self, path: &Path) -> Result<Stat> {
         let metadata = fs::metadata(path).await
             .context("Failed to get metadata")?;
@@ -310,6 +316,7 @@ impl ProtocolHandler {
     }
 
     /// Read file contents
+    #[allow(dead_code)]
     async fn read_file(&self, path: &Path, offset: u64, count: u32) -> Result<Vec<u8>> {
         use tokio::io::{AsyncReadExt, AsyncSeekExt};
 
@@ -326,6 +333,7 @@ impl ProtocolHandler {
     }
 
     /// Write file contents
+    #[allow(dead_code)]
     async fn write_file(&self, path: &Path, offset: u64, data: &[u8]) -> Result<usize> {
         use tokio::io::{AsyncWriteExt, AsyncSeekExt};
 
@@ -342,6 +350,7 @@ impl ProtocolHandler {
     }
 
     /// Read directory entries
+    #[allow(dead_code)]
     async fn read_directory(&self, path: &Path, offset: u64, count: u32) -> Result<Vec<u8>> {
         let mut entries = fs::read_dir(path).await
             .context("Failed to read directory")?;
@@ -355,7 +364,7 @@ impl ProtocolHandler {
                 continue;
             }
 
-            let stat = self.path_to_stat(&entry.path()).await?;
+            let _stat = self.path_to_stat(&entry.path()).await?;
 
             // Encode stat to buffer (simplified)
             // In production, properly encode the stat structure

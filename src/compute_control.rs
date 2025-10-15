@@ -2,10 +2,7 @@
 //!
 //! Submit GPU/WASM compute jobs by writing to files in /srv/compute/
 
-use crate::sycl::ffi::{
-    sycl_create_queue, sycl_discover_devices, sycl_get_device, SyclDevice, SyclDeviceInfo,
-    SyclQueue,
-};
+use crate::sycl::ffi::{sycl_discover_devices, SyclDeviceInfo};
 use crate::synth::{ControlHandler, SyntheticFilesystem};
 use anyhow::Result;
 use std::collections::HashMap;

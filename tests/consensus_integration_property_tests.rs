@@ -2,15 +2,15 @@
 //! Tests complete workflows combining file operations with consensus tracking
 
 use proptest::prelude::*;
-use std::sync::Arc;
-use tokio::sync::RwLock;
-use std::path::PathBuf;
-use tempfile::TempDir;
 use std::collections::HashMap;
+use std::path::PathBuf;
+use std::sync::Arc;
+use tempfile::TempDir;
+use tokio::sync::RwLock;
 
-use ninep_server::consensus::{BoundedGhostdag, NamespaceOp, Block, BlockState};
+use ninep_server::consensus::{Block, BlockState, BoundedGhostdag, NamespaceOp};
+use ninep_server::protocol::{NinePeeMessage, Qid, Stat};
 use ninep_server::server::handler::{BasicOpsHandler, ConnectionState};
-use ninep_server::protocol::{NinePeeMessage, Stat, Qid};
 
 /// Strategy for generating complete file operation workflows
 fn file_workflow_strategy() -> impl Strategy<Value = Vec<FileOperation>> {
@@ -21,30 +21,25 @@ fn file_workflow_strategy() -> impl Strategy<Value = Vec<FileOperation>> {
 fn file_operation_strategy() -> impl Strategy<Value = FileOperation> {
     prop::oneof![
         // Create file
-        (filename_strategy(), permissions_strategy()).prop_map(|(name, perm)| {
-            FileOperation::Create { name, perm }
-        }),
-
+        (filename_strategy(), permissions_strategy())
+            .prop_map(|(name, perm)| { FileOperation::Create { name, perm } }),
         // Write to file
-        (filename_strategy(), offset_strategy(), file_data_strategy()).prop_map(|(name, offset, data)| {
-            FileOperation::Write { name, offset, data }
-        }),
-
+        (filename_strategy(), offset_strategy(), file_data_strategy())
+            .prop_map(|(name, offset, data)| { FileOperation::Write { name, offset, data } }),
         // Read from file
         (filename_strategy(), offset_strategy(), any::<u32>()).prop_map(|(name, offset, count)| {
-            FileOperation::Read { name, offset, count }
+            FileOperation::Read {
+                name,
+                offset,
+                count,
+            }
         }),
-
         // Change permissions
-        (filename_strategy(), permissions_strategy()).prop_map(|(name, new_perm)| {
-            FileOperation::ChmodFile { name, new_perm }
-        }),
-
+        (filename_strategy(), permissions_strategy())
+            .prop_map(|(name, new_perm)| { FileOperation::ChmodFile { name, new_perm } }),
         // Rename file
-        (filename_strategy(), filename_strategy()).prop_map(|(old_name, new_name)| {
-            FileOperation::RenameFile { old_name, new_name }
-        }),
-
+        (filename_strategy(), filename_strategy())
+            .prop_map(|(old_name, new_name)| { FileOperation::RenameFile { old_name, new_name } }),
         // Remove file
         filename_strategy().prop_map(|name| FileOperation::Remove { name }),
     ]
@@ -52,18 +47,12 @@ fn file_operation_strategy() -> impl Strategy<Value = FileOperation> {
 
 /// Strategy for generating valid file names
 fn filename_strategy() -> impl Strategy<Value = String> {
-    prop::collection::vec("[a-zA-Z0-9_-]", 1..15)
-        .prop_map(|chars| chars.join(""))
+    prop::collection::vec("[a-zA-Z0-9_-]", 1..15).prop_map(|chars| chars.join(""))
 }
 
 /// Strategy for generating file permissions
 fn permissions_strategy() -> impl Strategy<Value = u32> {
-    prop::oneof![
-        Just(0o644),
-        Just(0o755),
-        Just(0o600),
-        0o000u32..=0o777u32,
-    ]
+    prop::oneof![Just(0o644), Just(0o755), Just(0o600), 0o000u32..=0o777u32,]
 }
 
 /// Strategy for generating file data
@@ -73,22 +62,37 @@ fn file_data_strategy() -> impl Strategy<Value = Vec<u8>> {
 
 /// Strategy for generating file offsets
 fn offset_strategy() -> impl Strategy<Value = u64> {
-    prop::oneof![
-        Just(0u64),
-        1u64..100u64,
-        100u64..1000u64,
-    ]
+    prop::oneof![Just(0u64), 1u64..100u64, 100u64..1000u64,]
 }
 
 /// File operation types for testing
 #[derive(Debug, Clone)]
 enum FileOperation {
-    Create { name: String, perm: u32 },
-    Write { name: String, offset: u64, data: Vec<u8> },
-    Read { name: String, offset: u64, count: u32 },
-    ChmodFile { name: String, new_perm: u32 },
-    RenameFile { old_name: String, new_name: String },
-    Remove { name: String },
+    Create {
+        name: String,
+        perm: u32,
+    },
+    Write {
+        name: String,
+        offset: u64,
+        data: Vec<u8>,
+    },
+    Read {
+        name: String,
+        offset: u64,
+        count: u32,
+    },
+    ChmodFile {
+        name: String,
+        new_perm: u32,
+    },
+    RenameFile {
+        old_name: String,
+        new_name: String,
+    },
+    Remove {
+        name: String,
+    },
 }
 
 /// Test complete file workflow with consensus tracking
@@ -97,283 +101,358 @@ async fn prop_complete_file_workflow_with_consensus() {
     let strategy = file_workflow_strategy();
     let mut runner = proptest::test_runner::TestRunner::default();
 
-    runner.run(&strategy, |workflow| {
-        futures::executor::block_on(async {
-            // Setup
-            let temp_dir = TempDir::new().unwrap();
-            let dag = Arc::new(BoundedGhostdag::new("test_consensus".to_string()));
-            let connection_state = ConnectionState::new();
+    runner
+        .run(&strategy, |workflow| {
+            futures::executor::block_on(async {
+                // Setup
+                let temp_dir = TempDir::new().unwrap();
+                let dag = Arc::new(BoundedGhostdag::new("test_consensus".to_string()));
+                let connection_state = ConnectionState::new();
 
-            let mut handler = BasicOpsHandler::new(
-                temp_dir.path().to_path_buf(),
-                connection_state.clone(),
-            );
-            handler.set_consensus_dag(dag.clone());
+                let mut handler =
+                    BasicOpsHandler::new(temp_dir.path().to_path_buf(), connection_state.clone());
+                handler.set_consensus_dag(dag.clone());
 
-            // Track created files and their FIDs
-            let mut file_registry: HashMap<String, u32> = HashMap::new();
-            let mut next_fid = 2u32; // Start after root
+                // Track created files and their FIDs
+                let mut file_registry: HashMap<String, u32> = HashMap::new();
+                let mut next_fid = 2u32; // Start after root
 
-            let initial_stats = dag.get_stats().await;
-            let initial_block_count = initial_stats.total_blocks;
+                let initial_stats = dag.get_stats().await;
+                let initial_block_count = initial_stats.total_blocks;
 
-            // Attach to root
-            let attach_result = handler.handle_attach(1, 0, "test".to_string(), "/".to_string()).await;
-            prop_assert!(matches!(attach_result, Ok(NinePeeMessage::Attach { .. })));
+                // Attach to root
+                let attach_result = handler
+                    .handle_attach(1, 0, "test".to_string(), "/".to_string())
+                    .await;
+                prop_assert!(matches!(attach_result, Ok(NinePeeMessage::Attach { .. })));
 
-            let mut consensus_ops_count = 0;
+                let mut consensus_ops_count = 0;
 
-            // Execute workflow operations
-            for operation in workflow {
-                match operation {
-                    FileOperation::Create { name, perm } => {
-                        // Skip if file already exists
-                        if file_registry.contains_key(&name) {
-                            continue;
+                // Execute workflow operations
+                for operation in workflow {
+                    match operation {
+                        FileOperation::Create { name, perm } => {
+                            // Skip if file already exists
+                            if file_registry.contains_key(&name) {
+                                continue;
+                            }
+
+                            let result = handler.handle_create(1, name.clone(), perm, 0).await;
+                            if result.is_ok() {
+                                file_registry.insert(name.clone(), next_fid);
+                                next_fid += 1;
+                                consensus_ops_count += 1;
+
+                                // Verify file was created
+                                let file_path = temp_dir.path().join(&name);
+                                prop_assert!(
+                                    file_path.exists(),
+                                    "Created file should exist on disk"
+                                );
+                            }
                         }
 
-                        let result = handler.handle_create(1, name.clone(), perm, 0).await;
-                        if result.is_ok() {
-                            file_registry.insert(name.clone(), next_fid);
-                            next_fid += 1;
-                            consensus_ops_count += 1;
+                        FileOperation::Write { name, offset, data } => {
+                            // Only write to existing files
+                            if let Some(&fid) = file_registry.get(&name) {
+                                // Walk to the file first
+                                let walk_result =
+                                    handler.handle_walk(1, fid, vec![name.clone()]).await;
+                                if walk_result.is_ok() {
+                                    // Open for writing
+                                    let open_result = handler.handle_open(fid, 2).await; // ORDWR
+                                    if open_result.is_ok() {
+                                        let write_result =
+                                            handler.handle_write(fid, offset, data.clone()).await;
+                                        if write_result.is_ok() {
+                                            consensus_ops_count += 1;
 
-                            // Verify file was created
-                            let file_path = temp_dir.path().join(&name);
-                            prop_assert!(file_path.exists(), "Created file should exist on disk");
-                        }
-                    },
-
-                    FileOperation::Write { name, offset, data } => {
-                        // Only write to existing files
-                        if let Some(&fid) = file_registry.get(&name) {
-                            // Walk to the file first
-                            let walk_result = handler.handle_walk(1, fid, vec![name.clone()]).await;
-                            if walk_result.is_ok() {
-                                // Open for writing
-                                let open_result = handler.handle_open(fid, 2).await; // ORDWR
-                                if open_result.is_ok() {
-                                    let write_result = handler.handle_write(fid, offset, data.clone()).await;
-                                    if write_result.is_ok() {
-                                        consensus_ops_count += 1;
-
-                                        // Verify data was written
-                                        let file_path = temp_dir.path().join(&name);
-                                        if file_path.exists() {
-                                            let file_content = std::fs::read(&file_path).unwrap_or_default();
-                                            if offset == 0 && file_content.len() >= data.len() {
-                                                prop_assert_eq!(&file_content[..data.len()], &data,
-                                                    "Written data should match expected data");
+                                            // Verify data was written
+                                            let file_path = temp_dir.path().join(&name);
+                                            if file_path.exists() {
+                                                let file_content =
+                                                    std::fs::read(&file_path).unwrap_or_default();
+                                                if offset == 0 && file_content.len() >= data.len() {
+                                                    prop_assert_eq!(
+                                                        &file_content[..data.len()],
+                                                        &data,
+                                                        "Written data should match expected data"
+                                                    );
+                                                }
                                             }
                                         }
                                     }
                                 }
                             }
                         }
-                    },
 
-                    FileOperation::Read { name, offset, count } => {
-                        // Only read from existing files
-                        if let Some(&fid) = file_registry.get(&name) {
-                            let walk_result = handler.handle_walk(1, fid, vec![name.clone()]).await;
-                            if walk_result.is_ok() {
-                                let open_result = handler.handle_open(fid, 0).await; // OREAD
-                                if open_result.is_ok() {
-                                    let read_result = handler.handle_read(fid, offset, count).await;
-                                    // Read operations don't modify consensus, just verify they work
-                                    if let Ok(NinePeeMessage::Read { fid: _, offset: _, count: _ }) = read_result {
-                                        // Read successful
-                                    }
-                                }
-                            }
-                        }
-                    },
-
-                    FileOperation::ChmodFile { name, new_perm } => {
-                        // Only chmod existing files
-                        if let Some(&fid) = file_registry.get(&name) {
-                            let walk_result = handler.handle_walk(1, fid, vec![name.clone()]).await;
-                            if walk_result.is_ok() {
-                                // Create wstat data for permission change
-                                let new_stat = Stat {
-                                    size: 0, typ: 0, dev: 0,
-                                    qid: Qid { qtype: 0, version: 0, path: 0 },
-                                    mode: new_perm, atime: 0, mtime: 0, length: 0,
-                                    name: name.clone(),
-                                    uid: "test".to_string(), gid: "test".to_string(), muid: "test".to_string(),
-                                };
-                                let stat_data = bincode::serialize(&new_stat).unwrap();
-
-                                let wstat_result = handler.handle_wstat(fid, stat_data).await;
-                                if wstat_result.is_ok() {
-                                    // Verify permissions changed
-                                    let file_path = temp_dir.path().join(&name);
-                                    if file_path.exists() {
-                                        let metadata = std::fs::metadata(&file_path).unwrap();
-                                        let actual_perm = metadata.permissions().mode() & 0o777;
-                                        prop_assert_eq!(actual_perm, new_perm,
-                                            "File permissions should be updated");
-                                    }
-                                }
-                            }
-                        }
-                    },
-
-                    FileOperation::RenameFile { old_name, new_name } => {
-                        // Only rename existing files, and skip if new name already exists
-                        if file_registry.contains_key(&old_name) && !file_registry.contains_key(&new_name) && old_name != new_name {
-                            if let Some(&fid) = file_registry.get(&old_name) {
-                                let walk_result = handler.handle_walk(1, fid, vec![old_name.clone()]).await;
+                        FileOperation::Read {
+                            name,
+                            offset,
+                            count,
+                        } => {
+                            // Only read from existing files
+                            if let Some(&fid) = file_registry.get(&name) {
+                                let walk_result =
+                                    handler.handle_walk(1, fid, vec![name.clone()]).await;
                                 if walk_result.is_ok() {
-                                    // Create wstat data for rename
+                                    let open_result = handler.handle_open(fid, 0).await; // OREAD
+                                    if open_result.is_ok() {
+                                        let read_result =
+                                            handler.handle_read(fid, offset, count).await;
+                                        // Read operations don't modify consensus, just verify they work
+                                        if let Ok(NinePeeMessage::Read {
+                                            fid: _,
+                                            offset: _,
+                                            count: _,
+                                        }) = read_result
+                                        {
+                                            // Read successful
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        FileOperation::ChmodFile { name, new_perm } => {
+                            // Only chmod existing files
+                            if let Some(&fid) = file_registry.get(&name) {
+                                let walk_result =
+                                    handler.handle_walk(1, fid, vec![name.clone()]).await;
+                                if walk_result.is_ok() {
+                                    // Create wstat data for permission change
                                     let new_stat = Stat {
-                                        size: 0, typ: 0, dev: 0,
-                                        qid: Qid { qtype: 0, version: 0, path: 0 },
-                                        mode: 0o644, atime: 0, mtime: 0, length: 0,
-                                        name: new_name.clone(),
-                                        uid: "test".to_string(), gid: "test".to_string(), muid: "test".to_string(),
+                                        size: 0,
+                                        typ: 0,
+                                        dev: 0,
+                                        qid: Qid {
+                                            qtype: 0,
+                                            version: 0,
+                                            path: 0,
+                                        },
+                                        mode: new_perm,
+                                        atime: 0,
+                                        mtime: 0,
+                                        length: 0,
+                                        name: name.clone(),
+                                        uid: "test".to_string(),
+                                        gid: "test".to_string(),
+                                        muid: "test".to_string(),
                                     };
                                     let stat_data = bincode::serialize(&new_stat).unwrap();
 
                                     let wstat_result = handler.handle_wstat(fid, stat_data).await;
                                     if wstat_result.is_ok() {
-                                        consensus_ops_count += 1;
-
-                                        // Update registry
-                                        file_registry.remove(&old_name);
-                                        file_registry.insert(new_name.clone(), fid);
-
-                                        // Verify rename on disk
-                                        let old_path = temp_dir.path().join(&old_name);
-                                        let new_path = temp_dir.path().join(&new_name);
-                                        prop_assert!(!old_path.exists(), "Old file should not exist after rename");
-                                        prop_assert!(new_path.exists(), "New file should exist after rename");
+                                        // Verify permissions changed
+                                        let file_path = temp_dir.path().join(&name);
+                                        if file_path.exists() {
+                                            let metadata = std::fs::metadata(&file_path).unwrap();
+                                            let actual_perm = metadata.permissions().mode() & 0o777;
+                                            prop_assert_eq!(
+                                                actual_perm,
+                                                new_perm,
+                                                "File permissions should be updated"
+                                            );
+                                        }
                                     }
                                 }
                             }
                         }
-                    },
 
-                    FileOperation::Remove { name } => {
-                        // Only remove existing files
-                        if let Some(&fid) = file_registry.get(&name) {
-                            let walk_result = handler.handle_walk(1, fid, vec![name.clone()]).await;
-                            if walk_result.is_ok() {
-                                let remove_result = handler.handle_remove(fid).await;
-                                if remove_result.is_ok() {
-                                    consensus_ops_count += 1;
-                                    file_registry.remove(&name);
+                        FileOperation::RenameFile { old_name, new_name } => {
+                            // Only rename existing files, and skip if new name already exists
+                            if file_registry.contains_key(&old_name)
+                                && !file_registry.contains_key(&new_name)
+                                && old_name != new_name
+                            {
+                                if let Some(&fid) = file_registry.get(&old_name) {
+                                    let walk_result =
+                                        handler.handle_walk(1, fid, vec![old_name.clone()]).await;
+                                    if walk_result.is_ok() {
+                                        // Create wstat data for rename
+                                        let new_stat = Stat {
+                                            size: 0,
+                                            typ: 0,
+                                            dev: 0,
+                                            qid: Qid {
+                                                qtype: 0,
+                                                version: 0,
+                                                path: 0,
+                                            },
+                                            mode: 0o644,
+                                            atime: 0,
+                                            mtime: 0,
+                                            length: 0,
+                                            name: new_name.clone(),
+                                            uid: "test".to_string(),
+                                            gid: "test".to_string(),
+                                            muid: "test".to_string(),
+                                        };
+                                        let stat_data = bincode::serialize(&new_stat).unwrap();
 
-                                    // Verify file was removed
-                                    let file_path = temp_dir.path().join(&name);
-                                    prop_assert!(!file_path.exists(), "Removed file should not exist on disk");
+                                        let wstat_result =
+                                            handler.handle_wstat(fid, stat_data).await;
+                                        if wstat_result.is_ok() {
+                                            consensus_ops_count += 1;
+
+                                            // Update registry
+                                            file_registry.remove(&old_name);
+                                            file_registry.insert(new_name.clone(), fid);
+
+                                            // Verify rename on disk
+                                            let old_path = temp_dir.path().join(&old_name);
+                                            let new_path = temp_dir.path().join(&new_name);
+                                            prop_assert!(
+                                                !old_path.exists(),
+                                                "Old file should not exist after rename"
+                                            );
+                                            prop_assert!(
+                                                new_path.exists(),
+                                                "New file should exist after rename"
+                                            );
+                                        }
+                                    }
                                 }
                             }
                         }
-                    },
+
+                        FileOperation::Remove { name } => {
+                            // Only remove existing files
+                            if let Some(&fid) = file_registry.get(&name) {
+                                let walk_result =
+                                    handler.handle_walk(1, fid, vec![name.clone()]).await;
+                                if walk_result.is_ok() {
+                                    let remove_result = handler.handle_remove(fid).await;
+                                    if remove_result.is_ok() {
+                                        consensus_ops_count += 1;
+                                        file_registry.remove(&name);
+
+                                        // Verify file was removed
+                                        let file_path = temp_dir.path().join(&name);
+                                        prop_assert!(
+                                            !file_path.exists(),
+                                            "Removed file should not exist on disk"
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
-            }
 
-            // Verify consensus integrity after all operations
-            let final_stats = dag.get_stats().await;
-            let blocks_added = final_stats.total_blocks - initial_block_count;
+                // Verify consensus integrity after all operations
+                let final_stats = dag.get_stats().await;
+                let blocks_added = final_stats.total_blocks - initial_block_count;
 
-            // Should have added blocks for consensus operations
-            if consensus_ops_count > 0 {
-                prop_assert!(blocks_added >= consensus_ops_count as u64,
-                    "Should have added at least one block per consensus operation");
-            }
+                // Should have added blocks for consensus operations
+                if consensus_ops_count > 0 {
+                    prop_assert!(
+                        blocks_added >= consensus_ops_count as u64,
+                        "Should have added at least one block per consensus operation"
+                    );
+                }
 
-            // Verify DAG integrity
-            prop_assert!(final_stats.total_blocks >= initial_block_count,
-                "Consensus should never lose blocks");
-            prop_assert!(final_stats.tip_count > 0 || final_stats.total_blocks == 0,
-                "DAG should have tips if it has blocks");
+                // Verify DAG integrity
+                prop_assert!(
+                    final_stats.total_blocks >= initial_block_count,
+                    "Consensus should never lose blocks"
+                );
+                prop_assert!(
+                    final_stats.tip_count > 0 || final_stats.total_blocks == 0,
+                    "DAG should have tips if it has blocks"
+                );
 
-            Ok(())
+                Ok(())
+            })
         })
-    }).unwrap();
+        .unwrap();
 }
 
 /// Test consensus ordering under concurrent file operations
 #[tokio::test]
 async fn prop_concurrent_consensus_ordering() {
-    let strategy = prop::collection::vec(
-        (filename_strategy(), file_data_strategy()),
-        2..5
-    );
+    let strategy = prop::collection::vec((filename_strategy(), file_data_strategy()), 2..5);
     let mut runner = proptest::test_runner::TestRunner::default();
 
-    runner.run(&strategy, |file_operations| {
-        futures::executor::block_on(async {
-            // Setup
-            let temp_dir = TempDir::new().unwrap();
-            let dag = Arc::new(BoundedGhostdag::new("test_consensus".to_string()));
-            let connection_state = ConnectionState::new();
+    runner
+        .run(&strategy, |file_operations| {
+            futures::executor::block_on(async {
+                // Setup
+                let temp_dir = TempDir::new().unwrap();
+                let dag = Arc::new(BoundedGhostdag::new("test_consensus".to_string()));
+                let connection_state = ConnectionState::new();
 
-            let mut handler = BasicOpsHandler::new(
-                temp_dir.path().to_path_buf(),
-                connection_state.clone(),
-            );
-            handler.set_consensus_dag(dag.clone());
+                let mut handler =
+                    BasicOpsHandler::new(temp_dir.path().to_path_buf(), connection_state.clone());
+                handler.set_consensus_dag(dag.clone());
 
-            let initial_stats = dag.get_stats().await;
-            let initial_block_count = initial_stats.total_blocks;
+                let initial_stats = dag.get_stats().await;
+                let initial_block_count = initial_stats.total_blocks;
 
-            // Perform concurrent create-write-remove sequences
-            let mut handles = vec![];
-            for (i, (filename, data)) in file_operations.iter().enumerate() {
-                let handler = Arc::new(handler.clone());
-                let filename = filename.clone();
-                let data = data.clone();
-                let fid = (i + 2) as u32; // Start after root
+                // Perform concurrent create-write-remove sequences
+                let mut handles = vec![];
+                for (i, (filename, data)) in file_operations.iter().enumerate() {
+                    let handler = Arc::new(handler.clone());
+                    let filename = filename.clone();
+                    let data = data.clone();
+                    let fid = (i + 2) as u32; // Start after root
 
-                let handle = tokio::spawn(async move {
-                    // Attach
-                    let _ = handler.handle_attach(fid, 0, "test".to_string(), "/".to_string()).await;
+                    let handle = tokio::spawn(async move {
+                        // Attach
+                        let _ = handler
+                            .handle_attach(fid, 0, "test".to_string(), "/".to_string())
+                            .await;
 
-                    // Create file
-                    let create_result = handler.handle_create(fid, filename.clone(), 0o644, 0).await;
-                    if create_result.is_ok() {
-                        // Walk to created file
-                        let walk_fid = fid + 100;
-                        let _ = handler.handle_walk(fid, walk_fid, vec![filename.clone()]).await;
+                        // Create file
+                        let create_result =
+                            handler.handle_create(fid, filename.clone(), 0o644, 0).await;
+                        if create_result.is_ok() {
+                            // Walk to created file
+                            let walk_fid = fid + 100;
+                            let _ = handler
+                                .handle_walk(fid, walk_fid, vec![filename.clone()])
+                                .await;
 
-                        // Open for writing
-                        let _ = handler.handle_open(walk_fid, 2).await;
+                            // Open for writing
+                            let _ = handler.handle_open(walk_fid, 2).await;
 
-                        // Write data
-                        let _ = handler.handle_write(walk_fid, 0, data).await;
+                            // Write data
+                            let _ = handler.handle_write(walk_fid, 0, data).await;
 
-                        // Remove file
-                        let _ = handler.handle_remove(walk_fid).await;
-                    }
-                });
-                handles.push(handle);
-            }
+                            // Remove file
+                            let _ = handler.handle_remove(walk_fid).await;
+                        }
+                    });
+                    handles.push(handle);
+                }
 
-            // Wait for all operations to complete
-            for handle in handles {
-                let _ = handle.await;
-            }
+                // Wait for all operations to complete
+                for handle in handles {
+                    let _ = handle.await;
+                }
 
-            // Verify consensus maintained ordering and integrity
-            let final_stats = dag.get_stats().await;
-            prop_assert!(final_stats.total_blocks >= initial_block_count,
-                "Consensus should maintain or increase block count");
-            prop_assert!(final_stats.tip_count > 0 || final_stats.total_blocks == 0,
-                "DAG should maintain tip invariants");
+                // Verify consensus maintained ordering and integrity
+                let final_stats = dag.get_stats().await;
+                prop_assert!(
+                    final_stats.total_blocks >= initial_block_count,
+                    "Consensus should maintain or increase block count"
+                );
+                prop_assert!(
+                    final_stats.tip_count > 0 || final_stats.total_blocks == 0,
+                    "DAG should maintain tip invariants"
+                );
 
-            // Verify all temporary files were cleaned up
-            for (filename, _) in &file_operations {
-                let file_path = temp_dir.path().join(filename);
-                // File may or may not exist depending on operation success/failure
-                // The key is that the system remains in a consistent state
-            }
+                // Verify all temporary files were cleaned up
+                for (filename, _) in &file_operations {
+                    let file_path = temp_dir.path().join(filename);
+                    // File may or may not exist depending on operation success/failure
+                    // The key is that the system remains in a consistent state
+                }
 
-            Ok(())
+                Ok(())
+            })
         })
-    }).unwrap();
+        .unwrap();
 }
 
 /// Test consensus recovery after partial failures
@@ -382,126 +461,147 @@ async fn prop_consensus_partial_failure_recovery() {
     let strategy = (filename_strategy(), file_data_strategy(), any::<bool>());
     let mut runner = proptest::test_runner::TestRunner::default();
 
-    runner.run(&strategy, |(filename, data, should_fail)| {
-        futures::executor::block_on(async {
-            // Setup
-            let temp_dir = TempDir::new().unwrap();
-            let dag = Arc::new(BoundedGhostdag::new("test_consensus".to_string()));
-            let connection_state = ConnectionState::new();
+    runner
+        .run(&strategy, |(filename, data, should_fail)| {
+            futures::executor::block_on(async {
+                // Setup
+                let temp_dir = TempDir::new().unwrap();
+                let dag = Arc::new(BoundedGhostdag::new("test_consensus".to_string()));
+                let connection_state = ConnectionState::new();
 
-            let mut handler = BasicOpsHandler::new(
-                temp_dir.path().to_path_buf(),
-                connection_state.clone(),
-            );
-            handler.set_consensus_dag(dag.clone());
+                let mut handler =
+                    BasicOpsHandler::new(temp_dir.path().to_path_buf(), connection_state.clone());
+                handler.set_consensus_dag(dag.clone());
 
-            let initial_stats = dag.get_stats().await;
-            let initial_block_count = initial_stats.total_blocks;
+                let initial_stats = dag.get_stats().await;
+                let initial_block_count = initial_stats.total_blocks;
 
-            // Attach to root
-            let attach_result = handler.handle_attach(1, 0, "test".to_string(), "/".to_string()).await;
-            prop_assert!(matches!(attach_result, Ok(NinePeeMessage::Attach { .. })));
+                // Attach to root
+                let attach_result = handler
+                    .handle_attach(1, 0, "test".to_string(), "/".to_string())
+                    .await;
+                prop_assert!(matches!(attach_result, Ok(NinePeeMessage::Attach { .. })));
 
-            // Intentionally create conditions that might cause partial failures
-            if should_fail {
-                // Try to create a file with invalid name or permission
-                let invalid_filename = if filename.is_empty() { "".to_string() } else { filename.clone() };
-                let _ = handler.handle_create(1, invalid_filename, 0xFFFFFFFF, 0).await;
-            } else {
-                // Normal operation
-                let create_result = handler.handle_create(1, filename.clone(), 0o644, 0).await;
-                if create_result.is_ok() {
-                    // Walk and write
-                    let walk_result = handler.handle_walk(1, 2, vec![filename.clone()]).await;
-                    if walk_result.is_ok() {
-                        let open_result = handler.handle_open(2, 2).await;
-                        if open_result.is_ok() {
-                            let _ = handler.handle_write(2, 0, data).await;
+                // Intentionally create conditions that might cause partial failures
+                if should_fail {
+                    // Try to create a file with invalid name or permission
+                    let invalid_filename = if filename.is_empty() {
+                        "".to_string()
+                    } else {
+                        filename.clone()
+                    };
+                    let _ = handler
+                        .handle_create(1, invalid_filename, 0xFFFFFFFF, 0)
+                        .await;
+                } else {
+                    // Normal operation
+                    let create_result = handler.handle_create(1, filename.clone(), 0o644, 0).await;
+                    if create_result.is_ok() {
+                        // Walk and write
+                        let walk_result = handler.handle_walk(1, 2, vec![filename.clone()]).await;
+                        if walk_result.is_ok() {
+                            let open_result = handler.handle_open(2, 2).await;
+                            if open_result.is_ok() {
+                                let _ = handler.handle_write(2, 0, data).await;
+                            }
                         }
                     }
                 }
-            }
 
-            // Verify consensus remains in valid state regardless of operation success/failure
-            let final_stats = dag.get_stats().await;
-            prop_assert!(final_stats.total_blocks >= initial_block_count,
-                "Consensus should never lose blocks even after failures");
-            prop_assert!(final_stats.tip_count > 0 || final_stats.total_blocks == 0,
-                "DAG should maintain invariants even after failures");
+                // Verify consensus remains in valid state regardless of operation success/failure
+                let final_stats = dag.get_stats().await;
+                prop_assert!(
+                    final_stats.total_blocks >= initial_block_count,
+                    "Consensus should never lose blocks even after failures"
+                );
+                prop_assert!(
+                    final_stats.tip_count > 0 || final_stats.total_blocks == 0,
+                    "DAG should maintain invariants even after failures"
+                );
 
-            Ok(())
+                Ok(())
+            })
         })
-    }).unwrap();
+        .unwrap();
 }
 
 /// Test long-running consensus consistency
 #[tokio::test]
 async fn prop_long_running_consensus_consistency() {
-    let strategy = prop::collection::vec(
-        (filename_strategy(), file_data_strategy()),
-        10..20
-    );
+    let strategy = prop::collection::vec((filename_strategy(), file_data_strategy()), 10..20);
     let mut runner = proptest::test_runner::TestRunner::default();
 
-    runner.run(&strategy, |operations| {
-        futures::executor::block_on(async {
-            // Setup
-            let temp_dir = TempDir::new().unwrap();
-            let dag = Arc::new(BoundedGhostdag::new("test_consensus".to_string()));
-            let connection_state = ConnectionState::new();
+    runner
+        .run(&strategy, |operations| {
+            futures::executor::block_on(async {
+                // Setup
+                let temp_dir = TempDir::new().unwrap();
+                let dag = Arc::new(BoundedGhostdag::new("test_consensus".to_string()));
+                let connection_state = ConnectionState::new();
 
-            let mut handler = BasicOpsHandler::new(
-                temp_dir.path().to_path_buf(),
-                connection_state.clone(),
-            );
-            handler.set_consensus_dag(dag.clone());
+                let mut handler =
+                    BasicOpsHandler::new(temp_dir.path().to_path_buf(), connection_state.clone());
+                handler.set_consensus_dag(dag.clone());
 
-            let initial_stats = dag.get_stats().await;
+                let initial_stats = dag.get_stats().await;
 
-            // Perform many operations to test long-running consistency
-            let mut successful_ops = 0;
-            for (i, (filename, data)) in operations.iter().enumerate() {
-                let fid = (i + 1) as u32;
+                // Perform many operations to test long-running consistency
+                let mut successful_ops = 0;
+                for (i, (filename, data)) in operations.iter().enumerate() {
+                    let fid = (i + 1) as u32;
 
-                // Attach
-                let attach_result = handler.handle_attach(fid, 0, "test".to_string(), "/".to_string()).await;
-                if attach_result.is_ok() {
-                    // Create
-                    let create_result = handler.handle_create(fid, filename.clone(), 0o644, 0).await;
-                    if create_result.is_ok() {
-                        successful_ops += 1;
+                    // Attach
+                    let attach_result = handler
+                        .handle_attach(fid, 0, "test".to_string(), "/".to_string())
+                        .await;
+                    if attach_result.is_ok() {
+                        // Create
+                        let create_result =
+                            handler.handle_create(fid, filename.clone(), 0o644, 0).await;
+                        if create_result.is_ok() {
+                            successful_ops += 1;
 
-                        // Write
-                        let walk_fid = fid + 1000;
-                        let walk_result = handler.handle_walk(fid, walk_fid, vec![filename.clone()]).await;
-                        if walk_result.is_ok() {
-                            let open_result = handler.handle_open(walk_fid, 2).await;
-                            if open_result.is_ok() {
-                                let write_result = handler.handle_write(walk_fid, 0, data.clone()).await;
-                                if write_result.is_ok() {
-                                    successful_ops += 1;
+                            // Write
+                            let walk_fid = fid + 1000;
+                            let walk_result = handler
+                                .handle_walk(fid, walk_fid, vec![filename.clone()])
+                                .await;
+                            if walk_result.is_ok() {
+                                let open_result = handler.handle_open(walk_fid, 2).await;
+                                if open_result.is_ok() {
+                                    let write_result =
+                                        handler.handle_write(walk_fid, 0, data.clone()).await;
+                                    if write_result.is_ok() {
+                                        successful_ops += 1;
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
 
-            // Verify consensus consistency after many operations
-            let final_stats = dag.get_stats().await;
-            prop_assert!(final_stats.total_blocks >= initial_stats.total_blocks,
-                "Long-running consensus should maintain consistency");
+                // Verify consensus consistency after many operations
+                let final_stats = dag.get_stats().await;
+                prop_assert!(
+                    final_stats.total_blocks >= initial_stats.total_blocks,
+                    "Long-running consensus should maintain consistency"
+                );
 
-            if successful_ops > 0 {
-                prop_assert!(final_stats.total_blocks > initial_stats.total_blocks,
-                    "Successful operations should add blocks to consensus");
-            }
+                if successful_ops > 0 {
+                    prop_assert!(
+                        final_stats.total_blocks > initial_stats.total_blocks,
+                        "Successful operations should add blocks to consensus"
+                    );
+                }
 
-            // Verify DAG maintains structural integrity
-            prop_assert!(final_stats.tip_count > 0 || final_stats.total_blocks == 0,
-                "DAG should maintain tips after long-running operations");
+                // Verify DAG maintains structural integrity
+                prop_assert!(
+                    final_stats.tip_count > 0 || final_stats.total_blocks == 0,
+                    "DAG should maintain tips after long-running operations"
+                );
 
-            Ok(())
+                Ok(())
+            })
         })
-    }).unwrap();
+        .unwrap();
 }

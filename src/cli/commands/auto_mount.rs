@@ -69,11 +69,9 @@ impl AutoMountCommand {
                 // Start daemon in background
                 let daemon_clone = daemon.clone();
                 let start_result: tokio::task::JoinHandle<Result<()>> = tokio::spawn(async move {
-                    let daemon_ref = daemon_clone.as_ref();
-                    // We need to make start method work with Arc
-                    // For now, let's create a simpler approach
-                    info!("Auto-mount daemon starting...");
-                    Ok(())
+                let _daemon_ref = daemon_clone.as_ref();
+                info!("Auto-mount daemon starting...");
+                Ok(())
                 });
 
                 // Store daemon instance for management
@@ -96,7 +94,7 @@ impl AutoMountCommand {
                 info!("Stopping auto-mount daemon");
 
                 let mut daemon_guard = DAEMON_INSTANCE.write().await;
-                if let Some(daemon) = daemon_guard.take() {
+                if daemon_guard.take().is_some() {
                     // For now, just remove the reference
                     // TODO: implement proper stop() method for Arc<AutoMountDaemon>
                     info!("Auto-mount daemon stopped");

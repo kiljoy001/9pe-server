@@ -109,6 +109,7 @@ impl ClientCommand {
         Ok(())
     }
 
+    #[allow(dead_code)]
     async fn ensure_plan9_namespace() -> Result<()> {
         // Try to create Plan 9 directories
         let srv_dir = PathBuf::from("/srv");
@@ -136,6 +137,7 @@ impl ClientCommand {
     }
 
     /// Check if we can create directories in the Plan 9 namespace
+    #[allow(dead_code)]
     async fn can_create_plan9_namespace(mount_path: &PathBuf) -> bool {
         match fs::create_dir_all(mount_path) {
             Ok(_) => {

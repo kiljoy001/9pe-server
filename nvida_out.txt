@@ -1,0 +1,30 @@
+system76-cuda - NVIDIA CUDA Compiler / Libraries / Toolkit Metapackage
+system76-cuda-11.1 - NVIDIA CUDA 11.1 Compiler / Libraries / Toolkit
+system76-cuda-11.2 - NVIDIA CUDA 11.2 Compiler / Libraries / Toolkit
+system76-cudnn-11.1 - NVIDIA CUDA Deep Neural Network library (cuDNN) for CUDA 11.1
+system76-cudnn-11.2 - NVIDIA CUDA Deep Neural Network library (cuDNN) for CUDA 11.2
+system76-nccl-11.1 - Optimized primitives for collective multi-GPU communication.
+system76-nccl-11.2 - Optimized primitives for collective multi-GPU communication.
+system76-cuda-latest - Metapackage for the latest version of the CUDA Toolkit
+network-manager-config-connectivity-pop - NetworkManager configuration to enable connectivity checking
+cosmic-applets - Cosmic Applets
+gnome-shell-extension-system76-power - Gnome-shell extension for System76 Power Management
+libs76-hidpi-widget-dev - Pop theme switcher widget library header
+libs76-hidpi-widget - System76 HiDPI daemon widget library
+libsystem76-keyboard-configurator-dev - Pop keyboard backlight library header
+libsystem76-keyboard-configurator - Pop keyboard backlight library
+system76-keyboard-configurator - System76 Keyboard Configurator
+test-launch-system76-keyboard-configurator - Internal testing version of the System76 keyboard configurator.
+pop-launcher-system76-power - System76 Power scripts for the launcher
+linux-system76 - System76 recommended Linux kernel
+system76-acpi-dkms - System76 ACPI Driver (DKMS)
+system76-dkms - System76 DKMS driver
+system76-driver-nvidia - Latest nvidia driver for System76 computers
+system76-driver - Universal driver for System76 computers
+system76-firmware-daemon - System76 Firmware Daemon
+system76-firmware - System76 Firmware CLI
+system76-io-dkms - System76 Io DKMS driver
+system76-oled - Control brightness on OLED displays
+system76-power - System76 Power Management
+system76-scheduler - Oneshot service to tweak the CFS scheduler on boot
+system76-wallpapers - System76 Wallpapers

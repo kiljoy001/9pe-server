@@ -21,6 +21,7 @@ pub struct WorkDistributor {
     completed_jobs: Arc<RwLock<HashMap<String, WorkResult>>>,
     node_capabilities: Arc<RwLock<HashMap<String, NodeCapabilities>>>,
     job_scheduler: JobScheduler,
+    #[allow(dead_code)]
     result_collector: ResultCollector,
 }
 
@@ -200,6 +201,7 @@ impl WorkDistributor {
 }
 
 /// Job scheduler manages work allocation across nodes
+#[allow(dead_code)]
 pub struct JobScheduler {
     node_id: String,
     scheduling_queue: Arc<RwLock<VecDeque<JobRequest>>>,

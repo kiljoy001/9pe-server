@@ -8,10 +8,11 @@ fn main() {
     println!("cargo:rerun-if-changed=sycl_wrapper/sycl_ffi.hpp");
 
     // Check if AdaptiveCpp (acpp) compiler is available
-    let acpp_available = Command::new("acpp")
-        .arg("--version")
-        .output()
-        .is_ok();
+    let acpp_available = Command::new("acpp").arg("--version").output().is_ok()
+        || Command::new("/opt/adaptivecpp/bin/acpp")
+            .arg("--version")
+            .output()
+            .is_ok();
 
     if !acpp_available {
         println!("cargo:warning=AdaptiveCpp (acpp) not found - SYCL support will be disabled");
@@ -30,10 +31,16 @@ fn main() {
     let sycl_wrapper_dir = PathBuf::from("sycl_wrapper");
 
     // Compile SYCL C++ code with acpp
-    let output = Command::new("acpp")
+    let acpp_cmd = if Command::new("acpp").arg("--version").output().is_ok() {
+        "acpp"
+    } else {
+        "/opt/adaptivecpp/bin/acpp"
+    };
+
+    let output = Command::new(acpp_cmd)
         .arg("-c")
         .arg("-fPIC") // Position independent code for shared library
-        .arg("-O3")   // Optimize for performance
+        .arg("-O3") // Optimize for performance
         .arg("-std=c++17")
         .arg(sycl_wrapper_dir.join("sycl_ffi.cpp"))
         .arg("-o")

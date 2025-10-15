@@ -24,6 +24,7 @@ static OPENCL_STATE: Lazy<Arc<Mutex<OpenCLState>>> = Lazy::new(|| {
 });
 
 /// OpenCL state management
+#[allow(dead_code)]
 struct OpenCLState {
     platforms: Vec<Platform>,
     devices: HashMap<u32, Device>,
@@ -229,10 +230,11 @@ fn opencl_create_context<T>(_caller: Caller<'_, T>, device_id: i32) -> i32 {
 fn opencl_create_queue<T>(_caller: Caller<'_, T>, context_id: i32, device_id: i32) -> i32 {
     match OPENCL_STATE.lock() {
         Ok(mut state) => {
-            if let (Some(context), Some(device)) = (
+            if let (Some(context), Some(_device)) = (
                 state.contexts.get(&(context_id as u32)),
                 state.devices.get(&(device_id as u32))
             ) {
+                #[allow(deprecated)]
                 match CommandQueue::create_default(context, 0) {
                     Ok(queue) => {
                         let queue_id = state.get_next_id();

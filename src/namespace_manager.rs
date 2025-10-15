@@ -7,17 +7,65 @@
 //! Exposed at: /srv/namespace/
 
 use anyhow::{anyhow, Result, Context};
+use bincode;
 use serde::{Deserialize, Serialize};
+use serde_json;
 use serde_with::{serde_as, Bytes};
 use std::collections::HashMap;
+use std::convert::TryInto;
 use std::sync::Arc;
+use tokio::runtime::Handle;
 use tokio::sync::RwLock;
+use tokio::task;
+use std::future::Future;
 use chrono::{DateTime, Utc};
 use ed25519_dalek::{SigningKey, VerifyingKey, Signature, Signer, Verifier};
-use tracing::info;
+use tracing::{info, debug};
+use async_trait::async_trait;
+use crate::{
+    consensus::{BlockState, BoundedGhostdag, NamespaceOp},
+    mesh::MeshNetwork,
+    synth::{ControlHandler, SyntheticFilesystem},
+};
 
-use crate::consensus::{BoundedGhostdag, NamespaceOp};
-use crate::synth::{SyntheticFilesystem, ControlHandler};
+/// Trait for handling mesh messages in namespace manager
+#[async_trait::async_trait]
+pub trait MeshMessageHandler: Send + Sync {
+    async fn handle_namespace_access_request(
+        &self,
+        from_peer: String,
+        namespace_path: String,
+        _requester_pubkey: [u8; 32],
+        _requested_role: String,
+        _message: String,
+    ) -> Result<()>;
+    
+    async fn handle_namespace_access_response(
+        &self,
+        from_peer: String,
+        namespace_path: String,
+        _requester_pubkey: [u8; 32],
+        approved: bool,
+        _message: String,
+    ) -> Result<()>;
+}
+
+fn block_on_async<F, T>(future: F) -> Result<T>
+where
+    F: Future<Output = Result<T>> + Send + 'static,
+    T: Send + 'static,
+{
+    task::block_in_place(|| Handle::current().block_on(future))
+}
+
+fn decode_hex_array<const N: usize>(input: &str, label: &str) -> Result<[u8; N]> {
+    let bytes = hex::decode(input)
+        .map_err(|e| anyhow!("Invalid {} (hex decode failed): {}", label, e))?;
+    let arr: [u8; N] = bytes
+        .try_into()
+        .map_err(|_| anyhow!("{} must be {} bytes", label, N))?;
+    Ok(arr)
+}
 
 /// Cryptographic namespace claim
 #[serde_as]
@@ -97,15 +145,18 @@ pub struct NamespaceMetadata {
 pub struct NamespaceManager {
     /// All registered namespace claims (path → claim)
     claims: Arc<RwLock<HashMap<String, NamespaceClaim>>>,
-
+    
     /// Synthetic filesystem for /srv/namespace/
     synth_fs: Arc<SyntheticFilesystem>,
-
+    
     /// Consensus DAG for global agreement
     consensus: Option<Arc<BoundedGhostdag>>,
-
+    
     /// This server's signing key (for signing system namespaces)
     system_keypair: SigningKey,
+    
+    /// Mesh network for distributed communication (optional)
+    mesh_network: Option<Arc<MeshNetwork>>,
 }
 
 impl NamespaceManager {
@@ -113,21 +164,22 @@ impl NamespaceManager {
     pub fn new(synth_fs: Arc<SyntheticFilesystem>) -> Result<Self> {
         // Generate system signing key (in production, load from secure storage)
         let system_keypair = SigningKey::from_bytes(&rand::random());
-
+        
         info!("Namespace manager system public key: {}",
               hex::encode(system_keypair.verifying_key().as_bytes()));
-
+        
         Ok(Self {
             claims: Arc::new(RwLock::new(HashMap::new())),
             synth_fs,
             consensus: None,
             system_keypair,
+            mesh_network: None,
         })
     }
-
-    /// Set consensus coordinator
-    pub fn with_consensus(mut self, consensus: Arc<BoundedGhostdag>) -> Self {
-        self.consensus = Some(consensus);
+    
+    /// Set mesh network for distributed communication
+    pub fn with_mesh_network(mut self, mesh: Arc<MeshNetwork>) -> Self {
+        self.mesh_network = Some(mesh);
         self
     }
 
@@ -153,13 +205,10 @@ impl NamespaceManager {
         let base = std::path::Path::new("/srv/namespace");
 
         // /srv/namespace/register - Register new namespace
-        let register_handler = Arc::new(RegisterNamespaceHandler {
-            manager: Arc::new(self.clone_without_synth()),
-        });
-        self.synth_fs.create_control_file(
-            &base.join("register"),
-            register_handler,
-        ).await?;
+        let register_handler = self.create_register_handler();
+        self.synth_fs
+            .create_control_file(&base.join("register"), register_handler)
+            .await?;
 
         // /srv/namespace/list - List all registered namespaces
         let list_handler = Arc::new(ListNamespacesHandler {
@@ -173,6 +222,7 @@ impl NamespaceManager {
         // /srv/namespace/verify - Verify namespace ownership
         let verify_handler = Arc::new(VerifyNamespaceHandler {
             claims: self.claims.clone(),
+            last_response: Arc::new(RwLock::new(None)),
         });
         self.synth_fs.create_control_file(
             &base.join("verify"),
@@ -180,13 +230,10 @@ impl NamespaceManager {
         ).await?;
 
         // /srv/namespace/delete - Delete namespace
-        let delete_handler = Arc::new(DeleteNamespaceHandler {
-            manager: Arc::new(self.clone_without_synth()),
-        });
-        self.synth_fs.create_control_file(
-            &base.join("delete"),
-            delete_handler,
-        ).await?;
+        let delete_handler = self.create_delete_handler();
+        self.synth_fs
+            .create_control_file(&base.join("delete"), delete_handler)
+            .await?;
 
         // /srv/namespace/system_pubkey - System public key
         self.synth_fs.create_file(
@@ -205,6 +252,20 @@ impl NamespaceManager {
         ).await?;
 
         Ok(())
+    }
+
+    /// Expose register handler for tests and external callers
+    pub fn create_register_handler(&self) -> Arc<dyn ControlHandler> {
+        Arc::new(RegisterNamespaceHandler {
+            manager: Arc::new(self.clone_without_synth()),
+        })
+    }
+
+    /// Expose delete handler for tests and external callers
+    pub fn create_delete_handler(&self) -> Arc<dyn ControlHandler> {
+        Arc::new(DeleteNamespaceHandler {
+            manager: Arc::new(self.clone_without_synth()),
+        })
     }
 
     /// Register built-in system namespaces
@@ -293,7 +354,7 @@ impl NamespaceManager {
         );
         let signature = owner_keypair.sign(sign_data.as_bytes());
 
-        let mut claim = NamespaceClaim {
+        let claim = NamespaceClaim {
             path: path.to_string(),
             owner_pubkey: owner_keypair.verifying_key().to_bytes(),
             created_at,
@@ -303,71 +364,260 @@ impl NamespaceManager {
             consensus_block_id: None,
         };
 
-        // Submit to consensus for global agreement
+        let claim = self.persist_claim(claim).await?;
+
+        info!(
+            "Registered namespace: {} (owner: {}, type: {})",
+            path,
+            hex::encode(&claim.owner_pubkey[..8]),
+            namespace_type
+        );
+
+        Ok(claim)
+    }
+
+    async fn persist_claim(&self, mut claim: NamespaceClaim) -> Result<NamespaceClaim> {
         if let Some(ref consensus) = self.consensus {
             use crate::consensus::Block;
             use std::time::{SystemTime, UNIX_EPOCH};
 
             let op = NamespaceOp::RegisterNamespace {
-                path: path.to_string(),
+                path: claim.path.clone(),
                 owner_pubkey: claim.owner_pubkey,
                 signature: claim.signature.to_vec(),
             };
 
-            // Create block with the namespace operation
             let block_id = format!("ns_{}", hex::encode(&claim.owner_pubkey[..8]));
             let timestamp = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
                 .as_secs();
 
+            let operations = vec![op];
+            let block_signature = self.sign_namespace_block(&block_id, timestamp, &operations)?;
+
             let block = Block {
                 id: block_id.clone(),
-                parents: vec![], // Will be set by consensus
-                operations: vec![op],
+                parents: vec![],
+                operations,
                 timestamp,
-                creator: "namespace_manager".to_string(),
-                signature: vec![], // TODO: Sign block
-                state: crate::consensus::BlockState::Pending,
+                creator: hex::encode(self.system_keypair.verifying_key().as_bytes()),
+                signature: block_signature,
+                state: BlockState::Pending,
                 ghost_weight: 1,
-                height: 0, // Will be computed by consensus
+                height: 0,
             };
 
             consensus.add_block(block).await?;
-            claim.consensus_block_id = Some(block_id);
+            claim.consensus_block_id = Some(block_id.clone());
 
-            info!("Namespace {} registered with consensus block {}",
-                  path, claim.consensus_block_id.as_ref().unwrap());
+            info!(
+                "Namespace {} registered with consensus block {}",
+                claim.path,
+                block_id
+            );
         }
 
-        // Store claim
-        self.claims.write().await.insert(path.to_string(), claim.clone());
-
-        info!("Registered namespace: {} (owner: {}, type: {})",
-              path,
-              hex::encode(&claim.owner_pubkey[..8]),
-              namespace_type);
+        self.claims
+            .write()
+            .await
+            .insert(claim.path.clone(), claim.clone());
 
         Ok(claim)
+    }
+
+    async fn handle_register_payload(&self, payload: &[u8]) -> Result<()> {
+        let request: RegisterNamespaceRequest = serde_json::from_slice(payload)
+            .context("Failed to parse register namespace request")?;
+        self.register_namespace_from_request(request).await
+    }
+
+    async fn register_namespace_from_request(
+        &self,
+        request: RegisterNamespaceRequest,
+    ) -> Result<()> {
+        let path = request.path.trim();
+        if !path.starts_with('/') {
+            anyhow::bail!("Namespace path must start with /");
+        }
+
+        {
+            let claims = self.claims.read().await;
+            if claims.contains_key(path) {
+                anyhow::bail!("Namespace {} already registered", path);
+            }
+        }
+
+        let participant_requirements = parse_participant_requirements(&request)?;
+
+        let expires_at = if let Some(exp_ts) = request.expires_at {
+            Some(
+                DateTime::<Utc>::from_timestamp(exp_ts, 0)
+                    .ok_or_else(|| anyhow!("Invalid expires_at timestamp"))?,
+            )
+        } else {
+            None
+        };
+
+        let pubkey_bytes = decode_hex_array::<32>(&request.pubkey, "pubkey")?;
+        let verifying_key = VerifyingKey::from_bytes(&pubkey_bytes)
+            .map_err(|e| anyhow!("Invalid public key: {}", e))?;
+
+        let signature_bytes = decode_hex_array::<64>(&request.signature, "signature")?;
+        let signature = Signature::from_bytes(&signature_bytes);
+
+        let requirements_str = participant_requirements
+            .map(|(n, m)| format!("{}:{}", n, m))
+            .unwrap_or_default();
+
+        let candidate_timestamps = if let Some(ts) = request.created_at {
+            vec![ts]
+        } else {
+            let now = chrono::Utc::now().timestamp();
+            vec![now, now - 1, now + 1]
+        };
+
+        let mut verified_timestamp = None;
+        for ts in candidate_timestamps {
+            let sign_data = format!("{}{}{}{}", path, request.pubkey, ts, requirements_str);
+            if verifying_key.verify(sign_data.as_bytes(), &signature).is_ok() {
+                verified_timestamp = Some(ts);
+                break;
+            }
+        }
+
+        let created_at_ts = verified_timestamp.ok_or_else(|| anyhow!("Signature verification failed"))?;
+
+        let created_at = DateTime::<Utc>::from_timestamp(created_at_ts, 0)
+            .ok_or_else(|| anyhow!("Invalid created_at timestamp"))?;
+
+        let description = if request.description.is_empty() {
+            "Unnamed namespace".to_string()
+        } else {
+            request.description
+        };
+
+        let namespace_type = if request.namespace_type.is_empty() {
+            "user".to_string()
+        } else {
+            request.namespace_type
+        };
+
+        let mut metadata = NamespaceMetadata {
+            description,
+            namespace_type,
+            participant_requirements,
+            participants: vec![request.pubkey.clone()],
+            access_requests: Vec::new(),
+            last_activity: created_at,
+            custom: HashMap::new(),
+        };
+
+        if metadata.participant_requirements.is_none() {
+            metadata.participants = vec![request.pubkey.clone()];
+        }
+
+        let claim = NamespaceClaim {
+            path: path.to_string(),
+            owner_pubkey: pubkey_bytes,
+            created_at,
+            expires_at,
+            metadata,
+            signature: signature_bytes,
+            consensus_block_id: None,
+        };
+
+        self.persist_claim(claim).await?;
+        Ok(())
+    }
+
+    async fn handle_delete_payload(&self, payload: &[u8]) -> Result<()> {
+        let request: DeleteNamespaceRequest = serde_json::from_slice(payload)
+            .context("Failed to parse delete namespace request")?;
+        self.delete_namespace_from_request(request).await
+    }
+
+    async fn delete_namespace_from_request(
+        &self,
+        request: DeleteNamespaceRequest,
+    ) -> Result<()> {
+        let path = request.path.trim();
+        if path.is_empty() {
+            anyhow::bail!("Namespace path is required");
+        }
+
+        let pubkey_bytes = decode_hex_array::<32>(&request.pubkey, "pubkey")?;
+        let verifying_key = VerifyingKey::from_bytes(&pubkey_bytes)
+            .map_err(|e| anyhow!("Invalid public key: {}", e))?;
+
+        let signature_bytes = decode_hex_array::<64>(&request.signature, "signature")?;
+        let signature = Signature::from_bytes(&signature_bytes);
+
+        let sign_data = format!("DELETE:{}:{}", path, request.pubkey);
+        verifying_key
+            .verify(sign_data.as_bytes(), &signature)
+            .map_err(|_| anyhow!("Signature verification failed"))?;
+
+        if !self.verify_namespace(path, &pubkey_bytes).await? {
+            anyhow::bail!("Not authorized to delete namespace {}", path);
+        }
+
+        self.delete_claim(path, &pubkey_bytes).await
+    }
+
+    async fn delete_claim(&self, path: &str, owner_pubkey: &[u8; 32]) -> Result<()> {
+        if let Some(ref consensus) = self.consensus {
+            use crate::consensus::Block;
+            use std::time::{SystemTime, UNIX_EPOCH};
+
+            let op = NamespaceOp::Delete {
+                path: path.to_string(),
+            };
+
+            let block_id = format!("del_{}", hex::encode(&owner_pubkey[..8]));
+            let timestamp = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs();
+
+            let operations = vec![op];
+            let block_signature = self.sign_namespace_block(&block_id, timestamp, &operations)?;
+
+            let block = Block {
+                id: block_id.clone(),
+                parents: vec![],
+                operations,
+                timestamp,
+                creator: hex::encode(self.system_keypair.verifying_key().as_bytes()),
+                signature: block_signature,
+                state: BlockState::Pending,
+                ghost_weight: 1,
+                height: 0,
+            };
+
+            consensus.add_block(block).await?;
+        }
+
+        let mut claims = self.claims.write().await;
+        claims.remove(path);
+        info!("Deleted namespace: {}", path);
+        Ok(())
     }
 
     /// Verify namespace ownership
     pub async fn verify_namespace(&self, path: &str, pubkey: &[u8; 32]) -> Result<bool> {
         let claims = self.claims.read().await;
 
-        match claims.get(path) {
-            Some(claim) => {
-                // Check if expired
-                if let Some(expires_at) = claim.expires_at {
-                    if Utc::now() > expires_at {
-                        return Ok(false);
-                    }
+        if let Some(claim) = claims.get(path) {
+            if let Some(expires_at) = claim.expires_at {
+                if Utc::now() > expires_at {
+                    return Ok(false);
                 }
-
-                // Check ownership
-                Ok(&claim.owner_pubkey == pubkey)
             }
-            None => Ok(false),
+
+            Ok(&claim.owner_pubkey == pubkey)
+        } else {
+            Ok(false)
         }
     }
 
@@ -382,45 +632,14 @@ impl NamespaceManager {
     /// Delete namespace (requires owner signature)
     pub async fn delete_namespace(&self, path: &str, owner_keypair: &SigningKey) -> Result<()> {
         // Verify ownership
-        if !self.verify_namespace(path, &owner_keypair.verifying_key().to_bytes()).await? {
+        if !self
+            .verify_namespace(path, &owner_keypair.verifying_key().to_bytes())
+            .await?
+        {
             return Err(anyhow!("Not authorized to delete namespace {}", path));
         }
 
-        // Submit to consensus
-        if let Some(ref consensus) = self.consensus {
-            use crate::consensus::Block;
-            use std::time::{SystemTime, UNIX_EPOCH};
-
-            let op = NamespaceOp::Delete {
-                path: path.to_string(),
-            };
-
-            let block_id = format!("del_{}", hex::encode(&owner_keypair.verifying_key().to_bytes()[..8]));
-            let timestamp = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_secs();
-
-            let block = Block {
-                id: block_id.clone(),
-                parents: vec![],
-                operations: vec![op],
-                timestamp,
-                creator: "namespace_manager".to_string(),
-                signature: vec![],
-                state: crate::consensus::BlockState::Pending,
-                ghost_weight: 1,
-                height: 0,
-            };
-
-            consensus.add_block(block).await?;
-        }
-
-        // Remove claim
-        self.claims.write().await.remove(path);
-
-        info!("Deleted namespace: {}", path);
-        Ok(())
+        self.delete_claim(path, &owner_keypair.verifying_key().to_bytes()).await
     }
 
     /// List all registered namespaces
@@ -770,8 +989,26 @@ impl NamespaceManager {
             claims: self.claims.clone(),
             synth_fs: self.synth_fs.clone(),
             consensus: self.consensus.clone(),
-            system_keypair: SigningKey::from_bytes(&self.system_keypair.to_bytes()),
+            system_keypair: self.system_keypair.clone(),
+            mesh_network: self.mesh_network.clone(),
         }
+    }
+
+    fn sign_namespace_block(
+        &self,
+        block_id: &str,
+        timestamp: u64,
+        operations: &[NamespaceOp],
+    ) -> Result<Vec<u8>> {
+        let mut payload = Vec::new();
+        payload.extend_from_slice(block_id.as_bytes());
+        payload.extend_from_slice(&timestamp.to_le_bytes());
+
+        let serialized_ops = bincode::serialize(operations)
+            .context("Failed to serialize namespace operations for signature")?;
+        payload.extend_from_slice(&serialized_ops);
+
+        Ok(self.system_keypair.sign(&payload).to_bytes().to_vec())
     }
 }
 
@@ -779,318 +1016,253 @@ impl NamespaceManager {
 // Control File Handlers
 // ============================================================================
 
-/// Handler for /srv/namespace/register
+#[derive(Debug, Deserialize)]
+struct RegisterNamespaceRequest {
+    path: String,
+    #[serde(default)]
+    description: String,
+    #[serde(rename = "type", default)]
+    namespace_type: String,
+    pubkey: String,
+    signature: String,
+    #[serde(default)]
+    participant_requirements: Option<String>,
+    #[serde(default)]
+    min_signatures: Option<usize>,
+    #[serde(default)]
+    total_participants: Option<usize>,
+    #[serde(default)]
+    created_at: Option<i64>,
+    #[serde(default)]
+    expires_at: Option<i64>,
+}
+
+#[derive(Debug, Deserialize)]
+struct DeleteNamespaceRequest {
+    path: String,
+    pubkey: String,
+    signature: String,
+}
+
 struct RegisterNamespaceHandler {
     manager: Arc<NamespaceManager>,
 }
 
 impl ControlHandler for RegisterNamespaceHandler {
     fn read(&self) -> Result<Vec<u8>> {
-        Ok(b"Write JSON to register namespace:\n\
-            {\"path\":\"/srv/myapp\",\
-             \"description\":\"My application\",\
-             \"type\":\"app\",\
-             \"pubkey\":\"<hex_ed25519_pubkey>\",\
-             \"signature\":\"<hex_signature>\"}\n".to_vec())
+        Ok(b"Write JSON with fields: path, description, type, pubkey, signature\n".to_vec())
     }
 
     fn write(&self, data: &[u8]) -> Result<()> {
-        // Parse registration request
-        #[derive(Deserialize)]
-        struct RegRequest {
-            path: String,
-            description: String,
-            #[serde(rename = "type")]
-            namespace_type: String,
-            pubkey: String,
-            signature: String,
-        }
-
-        let req: RegRequest = serde_json::from_slice(data)
-            .context("Invalid registration JSON")?;
-
-        // Decode pubkey and signature
-        let pubkey_bytes = hex::decode(&req.pubkey)
-            .context("Invalid pubkey hex")?;
-        let sig_bytes = hex::decode(&req.signature)
-            .context("Invalid signature hex")?;
-
-        if pubkey_bytes.len() != 32 {
-            return Err(anyhow!("Public key must be 32 bytes"));
-        }
-        if sig_bytes.len() != 64 {
-            return Err(anyhow!("Signature must be 64 bytes"));
-        }
-
-        let mut pubkey = [0u8; 32];
-        pubkey.copy_from_slice(&pubkey_bytes);
-
-        // Verify signature
-        let public_key = VerifyingKey::from_bytes(&pubkey)
-            .map_err(|e| anyhow!("Invalid public key: {}", e))?;
-
-        let mut signature = [0u8; 64];
-        signature.copy_from_slice(&sig_bytes);
-        let sig = Signature::from_bytes(&signature);
-
-        let sign_data = format!("{}{}", req.path, hex::encode(pubkey));
-        public_key.verify(sign_data.as_bytes(), &sig)
-            .map_err(|e| anyhow!("Signature verification failed: {}", e))?;
-
-        // Create keypair (just for API compatibility - we already have signature)
-        // In practice, user provides signature, we don't need their private key
-        // TODO: Refactor register_namespace to accept signature directly
-
-        info!("Namespace registration request for {} verified", req.path);
-        Ok(())
+        let payload = data.to_vec();
+        block_on_async({
+            let manager = self.manager.clone();
+            async move { manager.handle_register_payload(&payload).await }
+        })
     }
 }
 
-/// Handler for /srv/namespace/list
-struct ListNamespacesHandler {
-    claims: Arc<RwLock<HashMap<String, NamespaceClaim>>>,
-}
-
-impl ControlHandler for ListNamespacesHandler {
-    fn read(&self) -> Result<Vec<u8>> {
-        let claims = tokio::runtime::Handle::current()
-            .block_on(self.claims.read());
-
-        let mut output = String::from("Registered namespaces:\n\n");
-
-        for claim in claims.values() {
-            output.push_str(&format!(
-                "Path: {}\nOwner: {}\nType: {}\nDescription: {}\nCreated: {}\n\n",
-                claim.path,
-                hex::encode(&claim.owner_pubkey[..8]),
-                claim.metadata.namespace_type,
-                claim.metadata.description,
-                claim.created_at.format("%Y-%m-%d %H:%M:%S UTC")
-            ));
-        }
-
-        Ok(output.into_bytes())
-    }
-
-    fn write(&self, _data: &[u8]) -> Result<()> {
-        Err(anyhow!("Read-only file"))
-    }
-}
-
-/// Handler for /srv/namespace/list_public
-struct ListPublicNamespacesHandler {
-    claims: Arc<RwLock<HashMap<String, NamespaceClaim>>>,
-}
-
-impl ControlHandler for ListPublicNamespacesHandler {
-    fn read(&self) -> Result<Vec<u8>> {
-        let claims = tokio::runtime::Handle::current()
-            .block_on(self.claims.read());
-
-        let mut output = String::from("Public namespaces:\n\n");
-
-        for claim in claims.values().filter(|c| c.metadata.namespace_type == "public") {
-            let requirements = claim.metadata.participant_requirements
-                .map(|(n, m)| format!("{}-of-{}", n, m))
-                .unwrap_or_else(|| "owner-only".to_string());
-            
-            output.push_str(&format!(
-                "Path: {}\nDescription: {}\nOwner: {}\nParticipants: {}\nRequirements: {}\nCreated: {}\n\n",
-                claim.path,
-                claim.metadata.description,
-                hex::encode(&claim.owner_pubkey[..8]),
-                claim.metadata.participants.len(),
-                requirements,
-                claim.created_at.format("%Y-%m-%d %H:%M:%S UTC")
-            ));
-        }
-
-        Ok(output.into_bytes())
-    }
-
-    fn write(&self, _data: &[u8]) -> Result<()> {
-        Err(anyhow!("Read-only file"))
-    }
-}
-
-/// Handler for /srv/namespace/verify
-struct VerifyNamespaceHandler {
-    claims: Arc<RwLock<HashMap<String, NamespaceClaim>>>,
-}
-
-impl ControlHandler for VerifyNamespaceHandler {
-    fn read(&self) -> Result<Vec<u8>> {
-        Ok(b"Write path to verify ownership\n".to_vec())
-    }
-
-    fn write(&self, data: &[u8]) -> Result<()> {
-        let path = std::str::from_utf8(data)?.trim();
-
-        let claims = tokio::runtime::Handle::current()
-            .block_on(self.claims.read());
-
-        match claims.get(path) {
-            Some(claim) => {
-                info!("Namespace {} is owned by {}",
-                      path, hex::encode(&claim.owner_pubkey[..8]));
-                Ok(())
-            }
-            None => Err(anyhow!("Namespace {} not registered", path)),
-        }
-    }
-}
-
-/// Handler for /srv/namespace/delete
 struct DeleteNamespaceHandler {
     manager: Arc<NamespaceManager>,
 }
 
 impl ControlHandler for DeleteNamespaceHandler {
     fn read(&self) -> Result<Vec<u8>> {
-        Ok(b"Write JSON to delete namespace:\n\
-            {\"path\":\"/srv/myapp\",\
-             \"pubkey\":\"<hex_ed25519_pubkey>\",\
-             \"signature\":\"<hex_signature>\"}\n".to_vec())
+        Ok(b"Write JSON with fields: path, pubkey, signature to delete namespace\n".to_vec())
     }
 
     fn write(&self, data: &[u8]) -> Result<()> {
-        #[derive(Deserialize)]
-        struct DelRequest {
-            path: String,
-            pubkey: String,
-            signature: String,
+        let payload = data.to_vec();
+        block_on_async({
+            let manager = self.manager.clone();
+            async move { manager.handle_delete_payload(&payload).await }
+        })
+    }
+}
+
+struct ListNamespacesHandler {
+    claims: Arc<RwLock<HashMap<String, NamespaceClaim>>>,
+}
+
+impl ControlHandler for ListNamespacesHandler {
+    fn read(&self) -> Result<Vec<u8>> {
+        block_on_async({
+            let claims = self.claims.clone();
+            async move {
+                let snapshot = claims.read().await;
+                let mut paths: Vec<_> = snapshot.keys().cloned().collect();
+                paths.sort();
+                Ok(paths.join("\n").into_bytes())
+            }
+        })
+    }
+
+    fn write(&self, _data: &[u8]) -> Result<()> {
+        anyhow::bail!("Listing namespaces is read-only")
+    }
+}
+
+struct VerifyNamespaceHandler {
+    claims: Arc<RwLock<HashMap<String, NamespaceClaim>>>,
+    last_response: Arc<RwLock<Option<Vec<u8>>>>,
+}
+
+impl ControlHandler for VerifyNamespaceHandler {
+    fn read(&self) -> Result<Vec<u8>> {
+        block_on_async({
+            let last = self.last_response.clone();
+            async move {
+                let mut guard = last.write().await;
+                if let Some(response) = guard.take() {
+                    Ok(response)
+                } else {
+                    Ok(b"Write JSON {\"path\":..., \"pubkey\":...} to verify ownership\n".to_vec())
+                }
+            }
+        })
+    }
+
+    fn write(&self, data: &[u8]) -> Result<()> {
+        let payload = data.to_vec();
+        block_on_async({
+            let claims = self.claims.clone();
+            let last = self.last_response.clone();
+            async move {
+                #[derive(Deserialize)]
+                struct VerifyPayload {
+                    path: String,
+                    pubkey: String,
+                }
+
+                let request: VerifyPayload = serde_json::from_slice(&payload)
+                    .context("Failed to parse verify namespace request")?;
+
+                let pubkey = decode_hex_array::<32>(&request.pubkey, "pubkey")?;
+                let snapshot = claims.read().await;
+                let owns = snapshot
+                    .get(request.path.trim())
+                    .map(|claim| claim.owner_pubkey == pubkey)
+                    .unwrap_or(false);
+
+                let mut guard = last.write().await;
+                guard.replace(if owns {
+                    b"owner\n".to_vec()
+                } else {
+                    b"not-owner\n".to_vec()
+                });
+                Ok(())
+            }
+        })
+    }
+}
+
+struct ListPublicNamespacesHandler {
+    claims: Arc<RwLock<HashMap<String, NamespaceClaim>>>,
+}
+
+impl ControlHandler for ListPublicNamespacesHandler {
+    fn read(&self) -> Result<Vec<u8>> {
+        block_on_async({
+            let claims = self.claims.clone();
+            async move {
+                let snapshot = claims.read().await;
+                let mut paths: Vec<_> = snapshot
+                    .values()
+                    .filter(|claim| claim.metadata.namespace_type == "public")
+                    .map(|claim| claim.path.clone())
+                    .collect();
+                paths.sort();
+                Ok(paths.join("\n").into_bytes())
+            }
+        })
+    }
+
+    fn write(&self, _data: &[u8]) -> Result<()> {
+        anyhow::bail!("Listing namespaces is read-only")
+    }
+}
+
+fn parse_participant_requirements(
+    request: &RegisterNamespaceRequest,
+) -> Result<Option<(usize, usize)>> {
+    if let (Some(n), Some(m)) = (request.min_signatures, request.total_participants) {
+        return Ok(Some((n, m)));
+    }
+
+    if let Some(ref spec) = request.participant_requirements {
+        if spec.trim().is_empty() {
+            return Ok(None);
         }
 
-        let req: DelRequest = serde_json::from_slice(data)
-            .context("Invalid delete JSON")?;
+        let parts: Vec<&str> = spec.split(':').collect();
+        if parts.len() != 2 {
+            anyhow::bail!("participant_requirements must be in N:M format");
+        }
 
-        // TODO: Verify signature and delete
-        info!("Namespace delete request for {}", req.path);
+        let n = parts[0]
+            .parse::<usize>()
+            .map_err(|_| anyhow!("Invalid min signatures"))?;
+        let m = parts[1]
+            .parse::<usize>()
+            .map_err(|_| anyhow!("Invalid total participants"))?;
+        return Ok(Some((n, m)));
+    }
+
+    Ok(None)
+}
+
+#[async_trait]
+impl MeshMessageHandler for NamespaceManager {
+    async fn handle_namespace_access_request(
+        &self,
+        from_peer: String,
+        namespace_path: String,
+        _requester_pubkey: [u8; 32],
+        _requested_role: String,
+        _message: String,
+    ) -> Result<()> {
+        info!("Handling namespace access request from {} for namespace {}", from_peer, namespace_path);
+        
+        // For now, we'll just log the request
+        // In a real implementation, this would check if we own the namespace
+        // and either auto-approve or queue for manual approval
+        
+        // Dummy implementation - always approve for now
+        debug!("Would process access request for namespace {} from peer {}", namespace_path, from_peer);
+        
+        Ok(())
+    }
+    
+    async fn handle_namespace_access_response(
+        &self,
+        from_peer: String,
+        namespace_path: String,
+        _requester_pubkey: [u8; 32],
+        approved: bool,
+        _message: String,
+    ) -> Result<()> {
+        info!("Handling namespace access response from {} for namespace {}: {}", from_peer, namespace_path, approved);
+        
+        // For now, we'll just log the response
+        // In a real implementation, this would update our local state
+        
+        debug!("Would process access response for namespace {} from peer {}: {}", namespace_path, from_peer, approved);
+        
         Ok(())
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn test_namespace_registration() {
-        let synth_fs = Arc::new(SyntheticFilesystem::new());
-        let manager = NamespaceManager::new(synth_fs).unwrap();
-
-        let keypair = SigningKey::from_bytes(&rand::random());
-
-        let claim = manager.register_namespace(
-            "/srv/test",
-            "Test namespace",
-            "test",
-            None,
-            None,
-            &keypair,
-        ).await.unwrap();
-
-        assert_eq!(claim.path, "/srv/test");
-        assert_eq!(claim.owner_pubkey, keypair.verifying_key().to_bytes());
-    }
-
-    #[tokio::test]
-    async fn test_namespace_verification() {
-        let synth_fs = Arc::new(SyntheticFilesystem::new());
-        let manager = NamespaceManager::new(synth_fs).unwrap();
-
-        let keypair = SigningKey::from_bytes(&rand::random());
-
-        manager.register_namespace(
-            "/srv/test",
-            "Test namespace",
-            "test",
-            None,
-            None,
-            &keypair,
-        ).await.unwrap();
-
-        assert!(manager.verify_namespace("/srv/test", &keypair.verifying_key().to_bytes())
-            .await.unwrap());
-
-        let other_keypair = SigningKey::from_bytes(&rand::random());
-        assert!(!manager.verify_namespace("/srv/test", &other_keypair.verifying_key().to_bytes())
-            .await.unwrap());
-    }
-
-    /// Fuzz test: Namespace path validation
-    #[test]
-    fn fuzz_namespace_path_validation() {
-        use proptest::prelude::*;
-
-        proptest!(|(path in ".*")| {
-            // Paths must start with /
-            let is_valid = path.starts_with('/');
-            // Should not panic on any input
-            let _ = is_valid;
-        });
-    }
-
-    /// Fuzz test: JSON deserialization for namespace registration
-    #[test]
-    fn fuzz_namespace_json_deserialization() {
-        use proptest::prelude::*;
-
-        proptest!(|(bytes: Vec<u8>)| {
-            #[derive(serde::Deserialize)]
-            struct RegRequest {
-                path: String,
-                description: String,
-                #[serde(rename = "type")]
-                namespace_type: String,
-                pubkey: String,
-                signature: String,
-            }
-
-            // Should never panic, only return Ok or Err
-            let _ = serde_json::from_slice::<RegRequest>(&bytes);
-        });
-    }
-
-    /// Fuzz test: Ed25519 signature verification
-    #[test]
-    fn fuzz_signature_verification() {
-        use proptest::prelude::*;
-
-        proptest!(|(
-            pubkey_bytes in prop::collection::vec(any::<u8>(), 32),
-            sig_bytes in prop::collection::vec(any::<u8>(), 64),
-            data in prop::collection::vec(any::<u8>(), 0..1000)
-        )| {
-            let mut pubkey = [0u8; 32];
-            let mut signature = [0u8; 64];
-            pubkey.copy_from_slice(&pubkey_bytes);
-            signature.copy_from_slice(&sig_bytes);
-
-            // Should safely handle invalid keys/signatures
-            if let Ok(vk) = VerifyingKey::from_bytes(&pubkey) {
-                let sig = Signature::from_bytes(&signature);
-                let _ = vk.verify(&data, &sig);
-            }
-        });
-    }
-
-    /// Fuzz test: Hex encoding/decoding
-    #[test]
-    fn fuzz_hex_encoding() {
-        use proptest::prelude::*;
-
-        proptest!(|(hex_str in ".*")| {
-            // Should never panic on invalid hex
-            let _ = hex::decode(&hex_str);
-        });
-    }
-}
-
-
 /// Register namespace manager controls with the synthetic filesystem
-pub async fn register_namespace_controls(synth_fs: &Arc<SyntheticFilesystem>) -> Result<Arc<NamespaceManager>> {
-    let namespace_mgr = NamespaceManager::new(synth_fs.clone())?;
+pub async fn register_namespace_controls(
+    synth_fs: &Arc<SyntheticFilesystem>,
+    mesh_network: Option<Arc<MeshNetwork>>,
+) -> Result<Arc<NamespaceManager>> {
+    let mut namespace_mgr = NamespaceManager::new(synth_fs.clone())?;
+    
+    if let Some(mesh) = mesh_network {
+        namespace_mgr = namespace_mgr.with_mesh_network(mesh);
+    }
+    
     namespace_mgr.initialize().await?;
     Ok(Arc::new(namespace_mgr))
 }

@@ -1,0 +1,20 @@
+#!/bin/bash
+# Launcher script for 9P.e GPU server
+# Automatically sets up library path for bundled libraries
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BINARY="$SCRIPT_DIR/gpu_synthetic_demo"
+LIB_DIR="$SCRIPT_DIR"
+
+# Check if binary exists
+if [ ! -f "$BINARY" ]; then
+    echo "Error: Application binary not found at $BINARY"
+    exit 1
+fi
+
+# Set library path to include bundled libraries
+export LD_LIBRARY_PATH="$LIB_DIR:$LD_LIBRARY_PATH"
+
+# Run the application
+exec "$BINARY" "$@"

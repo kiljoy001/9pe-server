@@ -296,8 +296,8 @@ impl ThreadSafeTranslator {
 
     /// Handle read file operation
     fn handle_read_file(
-        store: &mut Store<StoreData>,
-        instance: &Instance,
+        _store: &mut Store<StoreData>,
+        _instance: &Instance,
         path: &str,
     ) -> Result<Vec<u8>> {
         // For now, just return test data without memory access
@@ -308,8 +308,8 @@ impl ThreadSafeTranslator {
 
     /// Handle write file operation
     fn handle_write_file(
-        store: &mut Store<StoreData>,
-        instance: &Instance,
+        _store: &mut Store<StoreData>,
+        _instance: &Instance,
         path: &str,
         data: Vec<u8>,
     ) -> Result<()> {
@@ -320,8 +320,8 @@ impl ThreadSafeTranslator {
 
     /// Handle list files operation
     fn handle_list_files(
-        store: &mut Store<StoreData>,
-        instance: &Instance,
+        _store: &mut Store<StoreData>,
+        _instance: &Instance,
         path: &str,
     ) -> Result<Vec<String>> {
         // For now, return test data without memory access

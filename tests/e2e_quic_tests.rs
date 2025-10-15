@@ -2,12 +2,12 @@
 //!
 //! Tests QUIC connections with encryption and TLS
 
-use std::process::{Command, Child, Stdio};
-use std::time::Duration;
-use std::thread;
 use std::fs;
-use tempfile::TempDir;
 use std::net::UdpSocket;
+use std::process::{Child, Command, Stdio};
+use std::thread;
+use std::time::Duration;
+use tempfile::TempDir;
 
 /// Helper to start a QUIC-enabled server
 struct QuicServer {
@@ -28,8 +28,10 @@ impl QuicServer {
 
         let mut args = vec![
             "serve".to_string(),
-            "--port".to_string(), port.to_string(),
-            "--root".to_string(), root_path.to_str().unwrap().to_string(),
+            "--port".to_string(),
+            port.to_string(),
+            "--root".to_string(),
+            root_path.to_str().unwrap().to_string(),
             "--quic".to_string(), // Explicitly enable QUIC
         ];
 
@@ -70,8 +72,7 @@ impl Drop for QuicServer {
 /// Test QUIC server starts and binds UDP port
 #[test]
 fn test_e2e_quic_server_binding() {
-    let server = QuicServer::start(16640, None)
-        .expect("Failed to start QUIC server");
+    let server = QuicServer::start(16640, None).expect("Failed to start QUIC server");
 
     thread::sleep(Duration::from_secs(2));
 
@@ -88,8 +89,7 @@ fn test_e2e_quic_server_binding() {
 /// Test QUIC client can connect to QUIC server
 #[test]
 fn test_e2e_quic_client_connection() {
-    let server = QuicServer::start(16641, Some("localhost"))
-        .expect("Failed to start QUIC server");
+    let server = QuicServer::start(16641, Some("localhost")).expect("Failed to start QUIC server");
 
     // Connect using QUIC client (default)
     let output = Command::new("./target/release/ninep-server")
@@ -125,26 +125,22 @@ fn test_e2e_quic_with_server_name() {
 /// Test QUIC server handles multiple connections
 #[test]
 fn test_e2e_quic_multiple_connections() {
-    let server = QuicServer::start(16643, None)
-        .expect("Failed to start QUIC server");
+    let server = QuicServer::start(16643, None).expect("Failed to start QUIC server");
 
     thread::sleep(Duration::from_secs(2));
 
     // Try multiple client connections sequentially
     for i in 0..3 {
         let output = Command::new("./target/release/ninep-server")
-            .args(&[
-                "client",
-                "connect",
-                &server.address(),
-            ])
+            .args(&["client", "connect", &server.address()])
             .output();
 
         if let Ok(result) = output {
             // Each connection attempt should be handled
             assert!(
                 result.status.success() || result.status.code() == Some(1),
-                "Connection {} should be handled", i
+                "Connection {} should be handled",
+                i
             );
         }
 
@@ -155,11 +151,9 @@ fn test_e2e_quic_multiple_connections() {
 /// Test QUIC connection with different ports
 #[test]
 fn test_e2e_quic_different_ports() {
-    let server1 = QuicServer::start(16644, None)
-        .expect("Failed to start server 1");
+    let server1 = QuicServer::start(16644, None).expect("Failed to start server 1");
 
-    let server2 = QuicServer::start(16645, None)
-        .expect("Failed to start server 2");
+    let server2 = QuicServer::start(16645, None).expect("Failed to start server 2");
 
     thread::sleep(Duration::from_secs(2));
 
@@ -176,8 +170,7 @@ fn test_e2e_quic_different_ports() {
 fn test_e2e_quic_server_cleanup() {
     let port = 16646;
     {
-        let _server = QuicServer::start(port, None)
-            .expect("Failed to start server");
+        let _server = QuicServer::start(port, None).expect("Failed to start server");
 
         thread::sleep(Duration::from_secs(2));
 
@@ -201,8 +194,7 @@ fn test_e2e_quic_server_cleanup() {
 #[test]
 fn test_e2e_quic_vs_tcp_servers() {
     // Start QUIC server
-    let quic_server = QuicServer::start(16647, None)
-        .expect("Failed to start QUIC server");
+    let quic_server = QuicServer::start(16647, None).expect("Failed to start QUIC server");
 
     thread::sleep(Duration::from_secs(2));
 
@@ -215,8 +207,10 @@ fn test_e2e_quic_vs_tcp_servers() {
         Command::new("./target/release/ninep-server")
             .args(&[
                 "serve",
-                "--port", "16648",
-                "--root", root_path.to_str().unwrap(),
+                "--port",
+                "16648",
+                "--root",
+                root_path.to_str().unwrap(),
                 "--no-quic",
             ])
             .stdout(Stdio::null())
@@ -242,8 +236,7 @@ fn test_e2e_quic_vs_tcp_servers() {
 /// Test QUIC server handles connection attempts on wrong protocol
 #[test]
 fn test_e2e_quic_wrong_protocol_handling() {
-    let server = QuicServer::start(16649, None)
-        .expect("Failed to start QUIC server");
+    let server = QuicServer::start(16649, None).expect("Failed to start QUIC server");
 
     thread::sleep(Duration::from_secs(2));
 
@@ -269,8 +262,7 @@ fn test_e2e_quic_wrong_protocol_handling() {
 /// Test QUIC encryption is actually enabled
 #[test]
 fn test_e2e_quic_encryption_enabled() {
-    let server = QuicServer::start(16650, Some("localhost"))
-        .expect("Failed to start QUIC server");
+    let server = QuicServer::start(16650, Some("localhost")).expect("Failed to start QUIC server");
 
     thread::sleep(Duration::from_secs(2));
 
@@ -286,19 +278,14 @@ fn test_e2e_quic_encryption_enabled() {
 /// Test QUIC connection with rapid reconnects
 #[test]
 fn test_e2e_quic_rapid_reconnects() {
-    let server = QuicServer::start(16651, None)
-        .expect("Failed to start QUIC server");
+    let server = QuicServer::start(16651, None).expect("Failed to start QUIC server");
 
     thread::sleep(Duration::from_secs(2));
 
     // Rapidly attempt connections
     for _ in 0..5 {
         let _ = Command::new("./target/release/ninep-server")
-            .args(&[
-                "client",
-                "connect",
-                &server.address(),
-            ])
+            .args(&["client", "connect", &server.address()])
             .output();
     }
 
@@ -313,8 +300,7 @@ fn test_e2e_quic_rapid_reconnects() {
 /// Test QUIC server with IPv4 vs IPv6
 #[test]
 fn test_e2e_quic_ipv4_binding() {
-    let server = QuicServer::start(16652, None)
-        .expect("Failed to start QUIC server");
+    let server = QuicServer::start(16652, None).expect("Failed to start QUIC server");
 
     thread::sleep(Duration::from_secs(2));
 
@@ -334,8 +320,10 @@ fn test_e2e_quic_default_behavior() {
     let server = Command::new("./target/release/ninep-server")
         .args(&[
             "serve",
-            "--port", "16653",
-            "--root", root_path.to_str().unwrap(),
+            "--port",
+            "16653",
+            "--root",
+            root_path.to_str().unwrap(),
             // No transport flag - should default to QUIC
         ])
         .stdout(Stdio::null())
@@ -347,10 +335,7 @@ fn test_e2e_quic_default_behavior() {
 
     // Should be using QUIC (UDP port)
     let bind_result = UdpSocket::bind("127.0.0.1:16653");
-    assert!(
-        bind_result.is_err(),
-        "Server should default to QUIC (UDP)"
-    );
+    assert!(bind_result.is_err(), "Server should default to QUIC (UDP)");
 
     drop(server);
 }
@@ -380,8 +365,7 @@ fn test_e2e_quic_connection_timeout() {
 #[test]
 fn test_e2e_quic_certificate_generation() {
     // Server should auto-generate self-signed cert for QUIC
-    let server = QuicServer::start(16654, None)
-        .expect("Failed to start QUIC server");
+    let server = QuicServer::start(16654, None).expect("Failed to start QUIC server");
 
     thread::sleep(Duration::from_secs(2));
 

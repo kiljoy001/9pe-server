@@ -11,7 +11,7 @@ use serde_json;
 fn test_namespace_access_request_message() {
     let mut requester_pubkey = [0u8; 32];
     requester_pubkey.copy_from_slice(&rand::random::<[u8; 32]>());
-    
+
     let message = NinePeeMessage::NamespaceAccessRequest {
         namespace_path: "/srv/compute/pool".to_string(),
         requester_pubkey,
@@ -22,7 +22,7 @@ fn test_namespace_access_request_message() {
     // Test serialization
     let serialized = bincode::serialize(&message).unwrap();
     let deserialized: NinePeeMessage = bincode::deserialize(&serialized).unwrap();
-    
+
     match deserialized {
         NinePeeMessage::NamespaceAccessRequest {
             namespace_path,
@@ -41,7 +41,7 @@ fn test_namespace_access_request_message() {
     // Test JSON serialization
     let json = serde_json::to_string(&message).unwrap();
     let from_json: NinePeeMessage = serde_json::from_str(&json).unwrap();
-    
+
     match from_json {
         NinePeeMessage::NamespaceAccessRequest {
             namespace_path,
@@ -62,7 +62,7 @@ fn test_namespace_access_request_message() {
 fn test_namespace_access_response_message() {
     let mut requester_pubkey = [0u8; 32];
     requester_pubkey.copy_from_slice(&rand::random::<[u8; 32]>());
-    
+
     let message = NinePeeMessage::NamespaceAccessResponse {
         namespace_path: "/srv/compute/pool".to_string(),
         requester_pubkey,
@@ -73,7 +73,7 @@ fn test_namespace_access_response_message() {
     // Test serialization
     let serialized = bincode::serialize(&message).unwrap();
     let deserialized: NinePeeMessage = bincode::deserialize(&serialized).unwrap();
-    
+
     match deserialized {
         NinePeeMessage::NamespaceAccessResponse {
             namespace_path,
@@ -92,7 +92,7 @@ fn test_namespace_access_response_message() {
     // Test JSON serialization
     let json = serde_json::to_string(&message).unwrap();
     let from_json: NinePeeMessage = serde_json::from_str(&json).unwrap();
-    
+
     match from_json {
         NinePeeMessage::NamespaceAccessResponse {
             namespace_path,
@@ -118,7 +118,7 @@ fn test_namespace_access_response_message() {
 
     let json = serde_json::to_string(&reject_message).unwrap();
     let from_json: NinePeeMessage = serde_json::from_str(&json).unwrap();
-    
+
     match from_json {
         NinePeeMessage::NamespaceAccessResponse {
             namespace_path,
@@ -139,7 +139,7 @@ fn test_namespace_access_response_message() {
 fn test_namespace_extension_message_identification() {
     let mut requester_pubkey = [0u8; 32];
     requester_pubkey.copy_from_slice(&rand::random::<[u8; 32]>());
-    
+
     // Test that namespace extension messages are properly identified
     let access_request = NinePeeMessage::NamespaceAccessRequest {
         namespace_path: "/test".to_string(),
@@ -147,18 +147,18 @@ fn test_namespace_extension_message_identification() {
         requested_role: "participant".to_string(),
         message: "test".to_string(),
     };
-    
+
     let access_response = NinePeeMessage::NamespaceAccessResponse {
         namespace_path: "/test".to_string(),
         requester_pubkey,
         approved: true,
         message: "test".to_string(),
     };
-    
+
     // These should NOT be identified as errors
     assert!(!access_request.is_error());
     assert!(!access_response.is_error());
-    
+
     // These should NOT be identified as basic extensions
     // (They're namespace extensions, not the original translator/consensus extensions)
     assert!(!access_request.is_extension());
@@ -169,7 +169,7 @@ fn test_namespace_extension_message_identification() {
 fn test_namespace_extension_message_fid_handling() {
     let mut requester_pubkey = [0u8; 32];
     requester_pubkey.copy_from_slice(&rand::random::<[u8; 32]>());
-    
+
     // Namespace extension messages don't have FIDs, so they should return None
     let access_request = NinePeeMessage::NamespaceAccessRequest {
         namespace_path: "/test".to_string(),
@@ -177,14 +177,14 @@ fn test_namespace_extension_message_fid_handling() {
         requested_role: "participant".to_string(),
         message: "test".to_string(),
     };
-    
+
     let access_response = NinePeeMessage::NamespaceAccessResponse {
         namespace_path: "/test".to_string(),
         requester_pubkey,
         approved: true,
         message: "test".to_string(),
     };
-    
+
     assert_eq!(access_request.fid(), None);
     assert_eq!(access_response.fid(), None);
 }
@@ -193,10 +193,10 @@ fn test_namespace_extension_message_fid_handling() {
 fn test_namespace_access_request_with_different_roles() {
     let mut requester_pubkey = [0u8; 32];
     requester_pubkey.copy_from_slice(&rand::random::<[u8; 32]>());
-    
+
     // Test different roles
     let roles = vec!["participant", "contributor", "admin"];
-    
+
     for role in roles {
         let message = NinePeeMessage::NamespaceAccessRequest {
             namespace_path: "/test".to_string(),
@@ -207,11 +207,10 @@ fn test_namespace_access_request_with_different_roles() {
 
         let json = serde_json::to_string(&message).unwrap();
         let from_json: NinePeeMessage = serde_json::from_str(&json).unwrap();
-        
+
         match from_json {
             NinePeeMessage::NamespaceAccessRequest {
-                requested_role: r,
-                ..
+                requested_role: r, ..
             } => {
                 assert_eq!(r, role);
             }

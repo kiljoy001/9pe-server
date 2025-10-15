@@ -9,22 +9,24 @@ use std::collections::{HashMap, HashSet};
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::{RwLock, broadcast};
-use tokio::time::{Duration, Interval, interval};
+use tokio::time::{Duration, interval, Interval};
 use tracing::{debug, warn, info};
 
-use super::crypto::PublicKey;
+use super::crypto::{PublicKey, TrustedKeyStore};
 use super::ghostdag::BlockId;
 use super::work_distribution::{NodeInfo, NodeCapabilities};
 
 /// Network consensus coordinator
 pub struct NetworkConsensus {
     node_id: String,
+    #[allow(dead_code)]
     local_addr: Option<SocketAddr>,
     peers: Arc<RwLock<HashMap<String, PeerInfo>>>,
     message_handlers: Arc<RwLock<HashMap<MessageType, MessageHandler>>>,
     event_sender: broadcast::Sender<NetworkEvent>,
     peer_manager: PeerManager,
     resource_discovery: ResourceDiscovery,
+    trusted_keys: Option<Arc<RwLock<TrustedKeyStore>>>,
 }
 
 impl NetworkConsensus {
@@ -39,7 +41,13 @@ impl NetworkConsensus {
             event_sender,
             peer_manager: PeerManager::new(node_id.clone()),
             resource_discovery: ResourceDiscovery::new(node_id),
+            trusted_keys: None,
         }
+    }
+
+    pub fn with_trusted_store(mut self, store: Arc<RwLock<TrustedKeyStore>>) -> Self {
+        self.trusted_keys = Some(store);
+        self
     }
 
     /// Start the network consensus system
@@ -142,7 +150,6 @@ impl NetworkConsensus {
     async fn start_periodic_tasks(&self) -> Result<()> {
         // Peer heartbeat task
         let peers_clone = Arc::clone(&self.peers);
-        let node_id = self.node_id.clone();
         tokio::spawn(async move {
             let mut heartbeat_interval = interval(Duration::from_secs(30));
             loop {
@@ -182,6 +189,7 @@ impl NetworkConsensus {
 
     /// Add a new peer to the network
     pub async fn add_peer(&self, peer_id: String, address: SocketAddr, public_key: PublicKey) -> Result<()> {
+        let key_clone = public_key.clone();
         let peer_info = PeerInfo {
             node_id: peer_id.clone(),
             address,
@@ -197,6 +205,11 @@ impl NetworkConsensus {
         {
             let mut peers = self.peers.write().await;
             peers.insert(peer_id.clone(), peer_info);
+        }
+
+        if let Some(store) = &self.trusted_keys {
+            let mut guard = store.write().await;
+            guard.add_trusted_key(peer_id.clone(), key_clone);
         }
 
         // Notify event subscribers
@@ -270,7 +283,6 @@ impl PeerManager {
 
     async fn start_discovery_loop(&self) {
         let discovery_peers = Arc::clone(&self.discovery_peers);
-        let node_id = self.node_id.clone();
 
         tokio::spawn(async move {
             let mut discovery_interval = interval(Duration::from_secs(60));
@@ -314,6 +326,7 @@ pub struct ResourceDiscovery {
     node_id: String,
     local_capabilities: Arc<RwLock<NodeCapabilities>>,
     network_resources: Arc<RwLock<HashMap<String, NodeInfo>>>,
+    #[allow(dead_code)]
     discovery_interval: Arc<RwLock<Interval>>,
 }
 
@@ -368,7 +381,6 @@ impl ResourceDiscovery {
 
     async fn start_resource_discovery_loop(&self) {
         let network_resources = Arc::clone(&self.network_resources);
-        let node_id = self.node_id.clone();
 
         tokio::spawn(async move {
             let mut discovery_interval = interval(Duration::from_secs(120));
@@ -552,8 +564,10 @@ impl Default for NodeCapabilities {
 
 /// Network topology manager for optimizing peer connections
 pub struct NetworkTopology {
+    #[allow(dead_code)]
     node_id: String,
     peer_distances: Arc<RwLock<HashMap<String, f64>>>,
+    #[allow(dead_code)]
     connection_graph: Arc<RwLock<HashMap<String, HashSet<String>>>>,
 }
 
@@ -568,7 +582,6 @@ impl NetworkTopology {
 
     /// Calculate optimal peer set for maximum network connectivity
     pub async fn optimize_peer_connections(&self, max_connections: usize) -> Vec<String> {
-        let graph = self.connection_graph.read().await;
         let distances = self.peer_distances.read().await;
 
         // Simple greedy algorithm - in real implementation, use more sophisticated graph algorithms

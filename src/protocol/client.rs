@@ -37,6 +37,7 @@ pub struct NinePClient {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 struct FidInfo {
     path: PathBuf,
     qid: Qid,

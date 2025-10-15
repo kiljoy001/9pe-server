@@ -2,12 +2,12 @@
 //!
 //! These tests start actual server instances and test real client connections
 
-use std::process::{Command, Child, Stdio};
-use std::time::Duration;
-use std::path::PathBuf;
 use std::fs;
-use std::net::TcpStream;
 use std::io::{Read, Write};
+use std::net::TcpStream;
+use std::path::PathBuf;
+use std::process::{Child, Command, Stdio};
+use std::time::Duration;
 use tempfile::TempDir;
 
 /// Helper to start a server instance
@@ -31,8 +31,10 @@ impl TestServer {
         let child = Command::new("./target/release/ninep-server")
             .args(&[
                 "serve",
-                "--port", &port.to_string(),
-                "--root", root_path.to_str().unwrap(),
+                "--port",
+                &port.to_string(),
+                "--root",
+                root_path.to_str().unwrap(),
                 "--no-quic", // Use TCP for simpler E2E tests
             ])
             .stdout(Stdio::null())
@@ -67,12 +69,13 @@ fn test_e2e_tcp_connection() {
     let server = TestServer::start(15640).expect("Failed to start server");
 
     // Try to connect via TCP
-    let result = TcpStream::connect_timeout(
-        &server.address().parse().unwrap(),
-        Duration::from_secs(5)
-    );
+    let result =
+        TcpStream::connect_timeout(&server.address().parse().unwrap(), Duration::from_secs(5));
 
-    assert!(result.is_ok(), "Should be able to connect to server via TCP");
+    assert!(
+        result.is_ok(),
+        "Should be able to connect to server via TCP"
+    );
 }
 
 /// Test client can connect and perform version negotiation
@@ -82,12 +85,7 @@ fn test_e2e_client_connection() {
 
     // Connect using our client
     let output = Command::new("./target/release/ninep-server")
-        .args(&[
-            "client",
-            "connect",
-            &server.address(),
-            "--no-quic",
-        ])
+        .args(&["client", "connect", &server.address(), "--no-quic"])
         .output()
         .expect("Failed to run client");
 
@@ -106,10 +104,8 @@ fn test_e2e_concurrent_connections() {
     // Try 5 concurrent connections
     let mut streams = Vec::new();
     for _ in 0..5 {
-        let stream = TcpStream::connect_timeout(
-            &server.address().parse().unwrap(),
-            Duration::from_secs(5)
-        );
+        let stream =
+            TcpStream::connect_timeout(&server.address().parse().unwrap(), Duration::from_secs(5));
         assert!(stream.is_ok(), "Should accept concurrent connections");
         streams.push(stream.unwrap());
     }
@@ -138,10 +134,9 @@ fn test_e2e_invalid_connection_handling() {
     let server = TestServer::start(15644).expect("Failed to start server");
 
     // Connect and send garbage data
-    let mut stream = TcpStream::connect_timeout(
-        &server.address().parse().unwrap(),
-        Duration::from_secs(5)
-    ).expect("Should connect");
+    let mut stream =
+        TcpStream::connect_timeout(&server.address().parse().unwrap(), Duration::from_secs(5))
+            .expect("Should connect");
 
     // Send invalid 9P data
     let garbage = vec![0xFF; 100];
@@ -151,11 +146,12 @@ fn test_e2e_invalid_connection_handling() {
     std::thread::sleep(Duration::from_secs(1));
 
     // Try connecting again to verify server still works
-    let result = TcpStream::connect_timeout(
-        &server.address().parse().unwrap(),
-        Duration::from_secs(5)
+    let result =
+        TcpStream::connect_timeout(&server.address().parse().unwrap(), Duration::from_secs(5));
+    assert!(
+        result.is_ok(),
+        "Server should still accept connections after receiving garbage"
     );
-    assert!(result.is_ok(), "Server should still accept connections after receiving garbage");
 }
 
 /// Test server responds to multiple requests
@@ -164,10 +160,9 @@ fn test_e2e_multiple_requests() {
     let server = TestServer::start(15645).expect("Failed to start server");
 
     // Connect
-    let mut stream = TcpStream::connect_timeout(
-        &server.address().parse().unwrap(),
-        Duration::from_secs(5)
-    ).expect("Should connect");
+    let mut stream =
+        TcpStream::connect_timeout(&server.address().parse().unwrap(), Duration::from_secs(5))
+            .expect("Should connect");
 
     // Send multiple simple requests (even if invalid, server shouldn't crash)
     for _ in 0..10 {
@@ -177,10 +172,8 @@ fn test_e2e_multiple_requests() {
     }
 
     // Server should still be alive
-    let result = TcpStream::connect_timeout(
-        &server.address().parse().unwrap(),
-        Duration::from_secs(5)
-    );
+    let result =
+        TcpStream::connect_timeout(&server.address().parse().unwrap(), Duration::from_secs(5));
     assert!(result.is_ok(), "Server should handle multiple requests");
 }
 
@@ -204,7 +197,7 @@ fn test_e2e_server_shutdown() {
 
         let result = TcpStream::connect_timeout(
             &format!("127.0.0.1:{}", port).parse().unwrap(),
-            Duration::from_secs(5)
+            Duration::from_secs(5),
         );
         assert!(result.is_ok(), "Should connect while server running");
     } // Server drops here
@@ -215,9 +208,12 @@ fn test_e2e_server_shutdown() {
     // Port should be available again
     let result = TcpStream::connect_timeout(
         &format!("127.0.0.1:{}", port).parse().unwrap(),
-        Duration::from_millis(500)
+        Duration::from_millis(500),
     );
-    assert!(result.is_err(), "Port should be released after server shutdown");
+    assert!(
+        result.is_err(),
+        "Port should be released after server shutdown"
+    );
 }
 
 /// Test client connection timeout handling
@@ -226,7 +222,7 @@ fn test_e2e_connection_timeout() {
     // Try to connect to non-existent server
     let result = TcpStream::connect_timeout(
         &"127.0.0.1:19999".parse().unwrap(),
-        Duration::from_millis(500)
+        Duration::from_millis(500),
     );
 
     assert!(result.is_err(), "Should timeout on non-existent server");
@@ -239,18 +235,17 @@ fn test_e2e_rapid_connections() {
 
     // Rapidly connect and disconnect 20 times
     for _ in 0..20 {
-        let stream = TcpStream::connect_timeout(
-            &server.address().parse().unwrap(),
-            Duration::from_secs(5)
-        );
+        let stream =
+            TcpStream::connect_timeout(&server.address().parse().unwrap(), Duration::from_secs(5));
         assert!(stream.is_ok(), "Should handle rapid connections");
         drop(stream); // Immediately disconnect
     }
 
     // Server should still be responsive
-    let result = TcpStream::connect_timeout(
-        &server.address().parse().unwrap(),
-        Duration::from_secs(5)
+    let result =
+        TcpStream::connect_timeout(&server.address().parse().unwrap(), Duration::from_secs(5));
+    assert!(
+        result.is_ok(),
+        "Server should remain stable after rapid connections"
     );
-    assert!(result.is_ok(), "Server should remain stable after rapid connections");
 }

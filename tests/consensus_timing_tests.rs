@@ -6,8 +6,8 @@ use std::time::Duration;
 use tokio::time::{sleep, timeout};
 
 use ninep_server::consensus::{
+    dynamic_scaling::{DynamicScaler, ScaleDecision, ScalingParams},
     BoundedGhostdag, NamespaceOp,
-    dynamic_scaling::{DynamicScaler, ScalingParams, ScaleDecision},
 };
 
 /// Test that cooldown periods prevent rapid scaling
@@ -35,10 +35,17 @@ async fn test_cooldown_prevents_rapid_scaling() {
     // First scale decision should work when we have enough data
     // Let's calculate: 0.5 * 0.95 + 0.3 * 1.0 + 0.2 * 0.2 = 0.475 + 0.3 + 0.04 = 0.815 > 0.8
     let decision1 = scaler.calculate_scale_decision(&params).await;
-    assert_eq!(decision1, ScaleDecision::ScaleUp, "High load should trigger scale up");
+    assert_eq!(
+        decision1,
+        ScaleDecision::ScaleUp,
+        "High load should trigger scale up"
+    );
 
     let size1 = scaler.apply_scale(decision1, &params).await;
-    assert!(size1 > params.initial_size, "Size should increase after scaling");
+    assert!(
+        size1 > params.initial_size,
+        "Size should increase after scaling"
+    );
 
     // Continue adding high load metrics
     for _ in 0..10 {
@@ -47,14 +54,22 @@ async fn test_cooldown_prevents_rapid_scaling() {
 
     // Immediate second decision should be blocked by cooldown (apply_scale sets the cooldown timer)
     let decision2 = scaler.calculate_scale_decision(&params).await;
-    assert_eq!(decision2, ScaleDecision::Hold, "Cooldown should prevent immediate scaling");
+    assert_eq!(
+        decision2,
+        ScaleDecision::Hold,
+        "Cooldown should prevent immediate scaling"
+    );
 
     // After cooldown expires, scaling should work again
     sleep(Duration::from_secs(params.cooldown_secs + 1)).await;
 
     let decision3 = scaler.calculate_scale_decision(&params).await;
     // Should be able to scale again (either up or hold, but not blocked)
-    assert_ne!(decision3, ScaleDecision::Hold, "After cooldown, scaling should be unblocked");
+    assert_ne!(
+        decision3,
+        ScaleDecision::Hold,
+        "After cooldown, scaling should be unblocked"
+    );
 }
 
 /// Test scaling behavior under sustained high load
@@ -84,11 +99,21 @@ async fn test_sustained_high_load_scaling() {
     // Should trigger scale up
     sleep(Duration::from_millis(100)).await; // Brief pause for metrics to settle
     let decision = scaler.calculate_scale_decision(&params).await;
-    assert_eq!(decision, ScaleDecision::ScaleUp, "High sustained load should trigger scale up");
+    assert_eq!(
+        decision,
+        ScaleDecision::ScaleUp,
+        "High sustained load should trigger scale up"
+    );
 
     let new_size = scaler.apply_scale(decision, &params).await;
-    assert!(new_size > initial_size, "Size should increase after scaling up");
-    assert!(new_size <= params.max_size, "Size should not exceed maximum");
+    assert!(
+        new_size > initial_size,
+        "Size should increase after scaling up"
+    );
+    assert!(
+        new_size <= params.max_size,
+        "Size should not exceed maximum"
+    );
 }
 
 /// Test scaling behavior under sustained low load
@@ -116,11 +141,21 @@ async fn test_sustained_low_load_scaling() {
 
     sleep(Duration::from_millis(100)).await;
     let decision = scaler.calculate_scale_decision(&params).await;
-    assert_eq!(decision, ScaleDecision::ScaleDown, "Low sustained load should trigger scale down");
+    assert_eq!(
+        decision,
+        ScaleDecision::ScaleDown,
+        "Low sustained load should trigger scale down"
+    );
 
     let new_size = scaler.apply_scale(decision, &params).await;
-    assert!(new_size < initial_size, "Size should decrease after scaling down");
-    assert!(new_size >= params.min_size, "Size should not go below minimum");
+    assert!(
+        new_size < initial_size,
+        "Size should decrease after scaling down"
+    );
+    assert!(
+        new_size >= params.min_size,
+        "Size should not go below minimum"
+    );
 }
 
 /// Test that scaling respects absolute bounds
@@ -149,8 +184,14 @@ async fn test_scaling_bounds_enforcement() {
 
     if decision == ScaleDecision::ScaleUp {
         let size_after = scaler.apply_scale(decision, &params).await;
-        assert!(size_after <= params.max_size, "Scaling should not exceed max_size");
-        assert!(size_after >= size_before, "Scale up should increase or maintain size");
+        assert!(
+            size_after <= params.max_size,
+            "Scaling should not exceed max_size"
+        );
+        assert!(
+            size_after >= size_before,
+            "Scale up should increase or maintain size"
+        );
     }
 
     // Now test minimum bound by starting fresh at minimum
@@ -179,8 +220,14 @@ async fn test_scaling_bounds_enforcement() {
 
     if decision == ScaleDecision::ScaleDown {
         let size_after = low_scaler.apply_scale(decision, &low_params).await;
-        assert!(size_after >= low_params.min_size, "Scaling should not go below min_size");
-        assert!(size_after <= size_before, "Scale down should decrease or maintain size");
+        assert!(
+            size_after >= low_params.min_size,
+            "Scaling should not go below min_size"
+        );
+        assert!(
+            size_after <= size_before,
+            "Scale down should decrease or maintain size"
+        );
     }
 }
 
@@ -228,8 +275,12 @@ async fn test_block_temporal_ordering() {
     };
 
     // Add blocks in order
-    dag.add_block(block1).await.expect("Block 1 should be added");
-    dag.add_block(block2).await.expect("Block 2 should be added");
+    dag.add_block(block1)
+        .await
+        .expect("Block 1 should be added");
+    dag.add_block(block2)
+        .await
+        .expect("Block 2 should be added");
 
     let stats = dag.get_stats().await;
     assert_eq!(stats.total_blocks, 2, "Both blocks should be added");
@@ -253,7 +304,11 @@ async fn test_concurrent_block_processing_timing() {
         let dag_clone = dag.clone();
         let block = ninep_server::consensus::Block {
             id: format!("concurrent_block_{}", i),
-            parents: if i == 0 { vec![] } else { vec![format!("concurrent_block_{}", i - 1)] },
+            parents: if i == 0 {
+                vec![]
+            } else {
+                vec![format!("concurrent_block_{}", i - 1)]
+            },
             operations: vec![NamespaceOp::Create {
                 path: format!("/concurrent_file_{}", i),
                 mode: 644,
@@ -281,11 +336,16 @@ async fn test_concurrent_block_processing_timing() {
             results.push(handle.await.unwrap());
         }
         results
-    }).await.expect("Block processing should complete within timeout");
+    })
+    .await
+    .expect("Block processing should complete within timeout");
 
     // Verify results
     let successful_adds = results.iter().filter(|r| r.is_ok()).count();
-    assert!(successful_adds > 0, "At least some blocks should be added successfully");
+    assert!(
+        successful_adds > 0,
+        "At least some blocks should be added successfully"
+    );
 
     let stats = dag.get_stats().await;
     assert!(stats.total_blocks > 0, "Some blocks should be in the DAG");
@@ -308,8 +368,14 @@ async fn test_scaling_prediction_temporal() {
     let prediction_long = scaler.predict_size_needed(300).await; // 5 minutes
     let current_size = scaler.get_current_size().await;
 
-    assert!(prediction_short >= current_size, "Short-term prediction should be at least current size");
-    assert!(prediction_long >= prediction_short, "Longer horizon should predict larger size with increasing trend");
+    assert!(
+        prediction_short >= current_size,
+        "Short-term prediction should be at least current size"
+    );
+    assert!(
+        prediction_long >= prediction_short,
+        "Longer horizon should predict larger size with increasing trend"
+    );
 }
 
 /// Test that operations respect temporal causality
@@ -372,10 +438,19 @@ async fn test_operation_temporal_causality() {
     };
 
     // Add blocks in correct temporal/causal order
-    dag.add_block(create_block).await.expect("Create should succeed");
-    dag.add_block(write_block).await.expect("Write should succeed after create");
-    dag.add_block(delete_block).await.expect("Delete should succeed after write");
+    dag.add_block(create_block)
+        .await
+        .expect("Create should succeed");
+    dag.add_block(write_block)
+        .await
+        .expect("Write should succeed after create");
+    dag.add_block(delete_block)
+        .await
+        .expect("Delete should succeed after write");
 
     let stats = dag.get_stats().await;
-    assert_eq!(stats.total_blocks, 3, "All causally-ordered blocks should be accepted");
+    assert_eq!(
+        stats.total_blocks, 3,
+        "All causally-ordered blocks should be accepted"
+    );
 }

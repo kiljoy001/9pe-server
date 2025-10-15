@@ -1,6 +1,5 @@
 use std::sync::{Arc, atomic::{AtomicU64, Ordering}};
 use tokio::sync::mpsc::{UnboundedSender, UnboundedReceiver, unbounded_channel};
-use anyhow::Result;
 use uuid::Uuid;
 
 /// Runtime state for a single GPU.

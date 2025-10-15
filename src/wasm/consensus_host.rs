@@ -13,6 +13,7 @@ use once_cell::sync::Lazy;
 use crate::consensus::ConsensusState;
 
 /// Placeholder network statistics structure
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 struct NetworkStats {
     pub node_count: u32,

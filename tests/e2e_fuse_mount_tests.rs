@@ -2,11 +2,11 @@
 //!
 //! Tests actual FUSE mounts and file operations through mounted filesystem
 
-use std::process::{Command, Child, Stdio};
-use std::time::Duration;
-use std::thread;
-use std::path::PathBuf;
 use std::fs;
+use std::path::PathBuf;
+use std::process::{Child, Command, Stdio};
+use std::thread;
+use std::time::Duration;
 use tempfile::TempDir;
 
 /// Helper to manage server and FUSE mount
@@ -27,16 +27,19 @@ impl FuseTestSetup {
         fs::create_dir(server_root.path().join("docs"))?;
         fs::write(
             server_root.path().join("docs/info.txt"),
-            b"Documentation content"
+            b"Documentation content",
         )?;
 
         // Start server
         let server = Command::new("./target/release/ninep-server")
             .args(&[
                 "serve",
-                "--port", &port.to_string(),
-                "--root", server_root.path().to_str().unwrap(),
-                "--transport", "tcp",
+                "--port",
+                &port.to_string(),
+                "--root",
+                server_root.path().to_str().unwrap(),
+                "--transport",
+                "tcp",
             ])
             .stdout(Stdio::null())
             .stderr(Stdio::null())
@@ -58,7 +61,8 @@ impl FuseTestSetup {
             .args(&[
                 "auto-mount",
                 "start",
-                "--mount-point", self.mount_point.to_str().unwrap(),
+                "--mount-point",
+                self.mount_point.to_str().unwrap(),
             ])
             .stdout(Stdio::null())
             .stderr(Stdio::null())
@@ -98,8 +102,7 @@ impl Drop for FuseTestSetup {
 #[test]
 #[ignore] // Requires FUSE privileges
 fn test_e2e_fuse_mount_creation() {
-    let setup = FuseTestSetup::start(17001)
-        .expect("Failed to start test setup");
+    let setup = FuseTestSetup::start(17001).expect("Failed to start test setup");
 
     // Try to mount
     let mount_result = setup.mount_fuse();
@@ -127,8 +130,7 @@ fn test_e2e_fuse_mount_creation() {
 #[test]
 #[ignore] // Requires FUSE privileges
 fn test_e2e_fuse_read_file() {
-    let setup = FuseTestSetup::start(17002)
-        .expect("Failed to start test setup");
+    let setup = FuseTestSetup::start(17002).expect("Failed to start test setup");
 
     let mount_child = match setup.mount_fuse() {
         Ok(child) => child,
@@ -143,8 +145,8 @@ fn test_e2e_fuse_read_file() {
     // Try to read file through FUSE mount
     let mounted_file = setup.mount_point.join("readme.txt");
     if mounted_file.exists() {
-        let content = fs::read_to_string(&mounted_file)
-            .expect("Should be able to read file through FUSE");
+        let content =
+            fs::read_to_string(&mounted_file).expect("Should be able to read file through FUSE");
 
         assert_eq!(content, "FUSE test file");
     }
@@ -156,8 +158,7 @@ fn test_e2e_fuse_read_file() {
 #[test]
 #[ignore] // Requires FUSE privileges
 fn test_e2e_fuse_list_directory() {
-    let setup = FuseTestSetup::start(17003)
-        .expect("Failed to start test setup");
+    let setup = FuseTestSetup::start(17003).expect("Failed to start test setup");
 
     let mount_child = match setup.mount_fuse() {
         Ok(child) => child,
@@ -187,8 +188,7 @@ fn test_e2e_fuse_list_directory() {
 #[test]
 #[ignore] // Requires FUSE privileges
 fn test_e2e_fuse_server_disconnect() {
-    let mut setup = FuseTestSetup::start(17004)
-        .expect("Failed to start test setup");
+    let mut setup = FuseTestSetup::start(17004).expect("Failed to start test setup");
 
     let mount_child = match setup.mount_fuse() {
         Ok(child) => child,
@@ -216,8 +216,7 @@ fn test_e2e_fuse_server_disconnect() {
 #[test]
 #[ignore] // Requires FUSE privileges
 fn test_e2e_multiple_fuse_mounts() {
-    let setup = FuseTestSetup::start(17005)
-        .expect("Failed to start test setup");
+    let setup = FuseTestSetup::start(17005).expect("Failed to start test setup");
 
     // Try to create first mount
     let mount1 = setup.mount_fuse();
@@ -229,7 +228,8 @@ fn test_e2e_multiple_fuse_mounts() {
         .args(&[
             "auto-mount",
             "start",
-            "--mount-point", mount_point2.to_str().unwrap(),
+            "--mount-point",
+            mount_point2.to_str().unwrap(),
         ])
         .spawn();
 
@@ -255,8 +255,7 @@ fn test_e2e_multiple_fuse_mounts() {
 #[test]
 #[ignore] // Requires FUSE privileges
 fn test_e2e_fuse_permissions() {
-    let setup = FuseTestSetup::start(17006)
-        .expect("Failed to start test setup");
+    let setup = FuseTestSetup::start(17006).expect("Failed to start test setup");
 
     let mount_child = match setup.mount_fuse() {
         Ok(child) => child,
@@ -280,8 +279,7 @@ fn test_e2e_fuse_permissions() {
 #[test]
 #[ignore] // Requires FUSE privileges
 fn test_e2e_fuse_cleanup() {
-    let setup = FuseTestSetup::start(17007)
-        .expect("Failed to start test setup");
+    let setup = FuseTestSetup::start(17007).expect("Failed to start test setup");
 
     {
         let mount_child = match setup.mount_fuse() {
@@ -327,7 +325,8 @@ fn test_e2e_automount_invalid_path() {
         .args(&[
             "auto-mount",
             "start",
-            "--mount-point", "/invalid/nonexistent/path/that/should/fail"
+            "--mount-point",
+            "/invalid/nonexistent/path/that/should/fail",
         ])
         .output()
         .expect("Failed to run command");

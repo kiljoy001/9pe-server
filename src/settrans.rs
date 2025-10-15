@@ -51,12 +51,15 @@ pub enum SettransCommand {
 /// Virtual settrans system - translator management through synthetic filesystem
 pub struct VirtualSettransSystem {
     /// Base directory (/srv/settrans) - virtual only
+    #[allow(dead_code)]
     base_dir: PathBuf,
     /// Synthetic filesystem for virtual directories
     synth_fs: Arc<SyntheticFilesystem>,
     /// Registry for WASM translators
+    #[allow(dead_code)]
     translator_registry: Arc<ThreadSafeTranslatorRegistry>,
     /// Known translators and their state
+    #[allow(dead_code)]
     translators: Arc<RwLock<HashMap<String, TranslatorInfo>>>,
     /// Command channel for control operations
     command_tx: mpsc::UnboundedSender<SettransCommand>,
@@ -77,7 +80,6 @@ impl VirtualSettransSystem {
         let translators = Arc::new(RwLock::new(HashMap::new()));
 
         // Create control file handlers
-        let translators_clone = Arc::clone(&translators);
         let cmd_tx = command_tx.clone();
 
         // Enable control file handler

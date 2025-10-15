@@ -2,8 +2,8 @@
 
 //! Test WASM translator integration with 9P.e server
 
+use ninep_server::{transport::TransportType, NetworkConfig, Server};
 use std::path::PathBuf;
-use ninep_server::{Server, NetworkConfig, transport::TransportType};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

@@ -3,7 +3,7 @@
 //! Provides cryptographic security for distributed work coordination,
 //! including signatures, key management, and secure communication.
 
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
 use async_trait::async_trait;
@@ -62,6 +62,7 @@ pub struct SharedSecret {
 
 /// Ed25519-based cryptographic provider
 pub struct Ed25519Provider {
+    #[allow(dead_code)]
     private_key: PrivateKey,
     public_key: PublicKey,
 }
@@ -134,6 +135,7 @@ impl CryptoProvider for Ed25519Provider {
             return Ok(false);
         }
 
+        let _ = data;
         // Mock verification - in real implementation, use ed25519-dalek
         Ok(signature.data.len() == 64 && !signature.data.iter().all(|&b| b == 0))
     }
@@ -278,7 +280,7 @@ impl TrustedKeyStore {
     }
 
     pub fn revoke_key(&mut self, node_id: &str) {
-        if let Some(key) = self.trusted_keys.remove(node_id) {
+        if self.trusted_keys.remove(node_id).is_some() {
             let timestamp = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap_or_default()
@@ -299,6 +301,21 @@ impl TrustedKeyStore {
 
     pub fn get_trusted_keys(&self) -> &HashMap<String, PublicKey> {
         &self.trusted_keys
+    }
+
+    pub fn get_key(&self, node_id: &str) -> Option<PublicKey> {
+        self.trusted_keys.get(node_id).cloned()
+    }
+}
+
+impl PublicKey {
+    pub fn from_hex<S: AsRef<str>>(algorithm: String, key_hex: S) -> Result<Self> {
+        let bytes = hex::decode(key_hex.as_ref())
+            .map_err(|e| anyhow!("Invalid {} public key (hex decode failed): {}", algorithm, e))?;
+        Ok(Self {
+            algorithm,
+            key_data: bytes,
+        })
     }
 }
 
@@ -399,6 +416,10 @@ impl WorkProof {
                 Ok(true)
             },
         }
+    }
+
+    pub fn matches_output(&self, output_data: &[u8]) -> bool {
+        self.result_hash == sha256_hash(output_data)
     }
 }
 

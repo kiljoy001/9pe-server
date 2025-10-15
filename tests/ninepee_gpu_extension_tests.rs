@@ -23,7 +23,7 @@ fn test_compute_submit_message() {
     // Test serialization
     let serialized = bincode::serialize(&message).unwrap();
     let deserialized: NinePeeMessage = bincode::deserialize(&serialized).unwrap();
-    
+
     match deserialized {
         NinePeeMessage::ComputeSubmit {
             job_type,
@@ -42,7 +42,7 @@ fn test_compute_submit_message() {
     // Test JSON serialization
     let json = serde_json::to_string(&message).unwrap();
     let from_json: NinePeeMessage = serde_json::from_str(&json).unwrap();
-    
+
     match from_json {
         NinePeeMessage::ComputeSubmit {
             job_type,
@@ -69,7 +69,7 @@ fn test_compute_status_message() {
     // Test serialization
     let serialized = bincode::serialize(&message).unwrap();
     let deserialized: NinePeeMessage = bincode::deserialize(&serialized).unwrap();
-    
+
     match deserialized {
         NinePeeMessage::ComputeStatus { job_id: id } => {
             assert_eq!(id, job_id);
@@ -80,7 +80,7 @@ fn test_compute_status_message() {
     // Test JSON serialization
     let json = serde_json::to_string(&message).unwrap();
     let from_json: NinePeeMessage = serde_json::from_str(&json).unwrap();
-    
+
     match from_json {
         NinePeeMessage::ComputeStatus { job_id: id } => {
             assert_eq!(id, job_id);
@@ -99,7 +99,7 @@ fn test_vram_allocate_message() {
     // Test serialization
     let serialized = bincode::serialize(&message).unwrap();
     let deserialized: NinePeeMessage = bincode::deserialize(&serialized).unwrap();
-    
+
     match deserialized {
         NinePeeMessage::VRAMAllocate { device, bytes } => {
             assert_eq!(device, 1);
@@ -111,7 +111,7 @@ fn test_vram_allocate_message() {
     // Test JSON serialization
     let json = serde_json::to_string(&message).unwrap();
     let from_json: NinePeeMessage = serde_json::from_str(&json).unwrap();
-    
+
     match from_json {
         NinePeeMessage::VRAMAllocate { device, bytes } => {
             assert_eq!(device, 1);
@@ -123,14 +123,12 @@ fn test_vram_allocate_message() {
 
 #[test]
 fn test_gpu_info_message() {
-    let message = NinePeeMessage::GPUInfo {
-        device: 2,
-    };
+    let message = NinePeeMessage::GPUInfo { device: 2 };
 
     // Test serialization
     let serialized = bincode::serialize(&message).unwrap();
     let deserialized: NinePeeMessage = bincode::deserialize(&serialized).unwrap();
-    
+
     match deserialized {
         NinePeeMessage::GPUInfo { device } => {
             assert_eq!(device, 2);
@@ -141,7 +139,7 @@ fn test_gpu_info_message() {
     // Test JSON serialization
     let json = serde_json::to_string(&message).unwrap();
     let from_json: NinePeeMessage = serde_json::from_str(&json).unwrap();
-    
+
     match from_json {
         NinePeeMessage::GPUInfo { device } => {
             assert_eq!(device, 2);
@@ -163,7 +161,7 @@ fn test_compute_response_message() {
     // Test serialization
     let serialized = bincode::serialize(&message).unwrap();
     let deserialized: NinePeeMessage = bincode::deserialize(&serialized).unwrap();
-    
+
     match deserialized {
         NinePeeMessage::ComputeResponse {
             job_id,
@@ -182,7 +180,7 @@ fn test_compute_response_message() {
     // Test JSON serialization
     let json = serde_json::to_string(&message).unwrap();
     let from_json: NinePeeMessage = serde_json::from_str(&json).unwrap();
-    
+
     match from_json {
         NinePeeMessage::ComputeResponse {
             job_id,
@@ -208,7 +206,7 @@ fn test_compute_response_message() {
 
     let json = serde_json::to_string(&error_message).unwrap();
     let from_json: NinePeeMessage = serde_json::from_str(&json).unwrap();
-    
+
     match from_json {
         NinePeeMessage::ComputeResponse {
             job_id,
@@ -234,34 +232,32 @@ fn test_gpu_extension_message_identification() {
         data: vec![],
         device_hint: None,
     };
-    
+
     let compute_status = NinePeeMessage::ComputeStatus {
         job_id: "test".to_string(),
     };
-    
+
     let vram_allocate = NinePeeMessage::VRAMAllocate {
         device: 0,
         bytes: 1024,
     };
-    
-    let gpu_info = NinePeeMessage::GPUInfo {
-        device: 0,
-    };
-    
+
+    let gpu_info = NinePeeMessage::GPUInfo { device: 0 };
+
     let compute_response = NinePeeMessage::ComputeResponse {
         job_id: "test".to_string(),
         success: true,
         result: vec![],
         error_msg: "".to_string(),
     };
-    
+
     // These should NOT be identified as errors
     assert!(!compute_submit.is_error());
     assert!(!compute_status.is_error());
     assert!(!vram_allocate.is_error());
     assert!(!gpu_info.is_error());
     assert!(!compute_response.is_error());
-    
+
     // These should NOT be identified as basic extensions
     // (They're GPU extensions, not the original translator/consensus extensions)
     assert!(!compute_submit.is_extension());
@@ -280,27 +276,25 @@ fn test_gpu_extension_message_fid_handling() {
         data: vec![],
         device_hint: None,
     };
-    
+
     let compute_status = NinePeeMessage::ComputeStatus {
         job_id: "test".to_string(),
     };
-    
+
     let vram_allocate = NinePeeMessage::VRAMAllocate {
         device: 0,
         bytes: 1024,
     };
-    
-    let gpu_info = NinePeeMessage::GPUInfo {
-        device: 0,
-    };
-    
+
+    let gpu_info = NinePeeMessage::GPUInfo { device: 0 };
+
     let compute_response = NinePeeMessage::ComputeResponse {
         job_id: "test".to_string(),
         success: true,
         result: vec![],
         error_msg: "".to_string(),
     };
-    
+
     assert_eq!(compute_submit.fid(), None);
     assert_eq!(compute_status.fid(), None);
     assert_eq!(vram_allocate.fid(), None);

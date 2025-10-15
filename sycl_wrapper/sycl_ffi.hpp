@@ -109,6 +109,12 @@ SyclError sycl_matmul_f32(SyclQueue queue,
                           SyclBuffer buffer_a, SyclBuffer buffer_b, SyclBuffer buffer_c,
                           uint32_t M, uint32_t N, uint32_t K);
 
+// Execute half-precision matrix multiplication: C = A * B
+// All buffers are float16, dimensions: A[M*K], B[K*N], C[M*N]
+SyclError sycl_matmul_f16(SyclQueue queue,
+                          SyclBuffer buffer_a, SyclBuffer buffer_b, SyclBuffer buffer_c,
+                          uint32_t M, uint32_t N, uint32_t K);
+
 // Execute element-wise vector addition: c = a + b
 SyclError sycl_vector_add_f32(SyclQueue queue,
                               SyclBuffer buffer_a, SyclBuffer buffer_b, SyclBuffer buffer_c,
@@ -119,16 +125,24 @@ SyclError sycl_relu_f32(SyclQueue queue,
                         SyclBuffer buffer_in, SyclBuffer buffer_out,
                         size_t length);
 
-// Execute 2D convolution (simplified - full version in translators)
-// input: [batch, in_channels, height, width]
-// kernel: [out_channels, in_channels, kernel_h, kernel_w]
-// output: [batch, out_channels, out_height, out_width]
+// Execute 2D convolution: output = input * kernel (naive reference implementation)
 SyclError sycl_conv2d_f32(SyclQueue queue,
-                          SyclBuffer input, SyclBuffer kernel, SyclBuffer output,
+                          SyclBuffer buffer_input, SyclBuffer buffer_kernel, SyclBuffer buffer_output,
                           uint32_t batch, uint32_t in_channels, uint32_t out_channels,
                           uint32_t height, uint32_t width,
                           uint32_t kernel_h, uint32_t kernel_w,
                           uint32_t stride, uint32_t padding);
+
+// Execute half-precision matrix multiplication: C = A * B
+// All buffers are float16, dimensions: A[M*K], B[K*N], C[M*N]
+SyclError sycl_matmul_f16(SyclQueue queue,
+                          SyclBuffer buffer_a, SyclBuffer buffer_b, SyclBuffer buffer_c,
+                          uint32_t M, uint32_t N, uint32_t K);
+
+// Float32 reduction operations
+SyclError sycl_sum_f32(SyclQueue queue,
+                       SyclBuffer input, SyclBuffer output,
+                       size_t length, SyclEvent* event);
 
 // ============================================================================
 // Custom Kernel Compilation (for advanced users via translators)
@@ -152,6 +166,9 @@ SyclError sycl_execute_kernel(SyclQueue queue, SyclKernel kernel,
 // Release kernel
 void sycl_release_kernel(SyclKernel kernel);
 
+// Release event
+void sycl_release_event(SyclEvent event);
+
 // ============================================================================
 // Profiling and Diagnostics
 // ============================================================================
@@ -161,6 +178,41 @@ SyclError sycl_get_kernel_time(SyclEvent event, uint64_t* nanoseconds);
 
 // Get device utilization (0.0 - 1.0)
 SyclError sycl_get_device_utilization(SyclDevice device, float* utilization);
+
+// ============================================================================
+// Kernel Fusion Operations
+// ============================================================================
+
+// Fuse common operations: (A + B) * scale + bias
+SyclError sycl_fused_add_scale_bias_f32(SyclQueue queue,
+                                        SyclBuffer buffer_a, SyclBuffer buffer_b, 
+                                        SyclBuffer buffer_output,
+                                        float scale, float bias,
+                                        size_t length, SyclEvent* event);
+
+// Fuse common operations: ReLU(A * B + C)  
+SyclError sycl_fused_matmul_add_relu_f32(SyclQueue queue,
+                                         SyclBuffer buffer_a, SyclBuffer buffer_b, SyclBuffer buffer_c,
+                                         SyclBuffer buffer_output,
+                                         uint32_t M, uint32_t N, uint32_t K,
+                                         SyclEvent* event);
+
+// Async copy buffer contents
+SyclError sycl_copy_buffer_async(SyclQueue queue, SyclBuffer src, SyclBuffer dst,
+                                 size_t size_bytes, SyclEvent* event);
+
+// Async fill buffer with pattern
+SyclError sycl_fill_buffer_async(SyclQueue queue, SyclBuffer buffer,
+                                 const void* pattern, size_t pattern_size, size_t size_bytes,
+                                 SyclEvent* event);
+
+// ============================================================================
+// Reduction Operations
+// ============================================================================
+
+// Sum reduction for float32 buffer
+SyclError sycl_sum_f32(SyclQueue queue, SyclBuffer input, SyclBuffer output,
+                       size_t length, SyclEvent* event);
 
 #ifdef __cplusplus
 }

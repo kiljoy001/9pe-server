@@ -41,6 +41,18 @@ pub struct ConsensusConfig {
 
     #[serde(default)]
     pub peers: Vec<String>,
+
+    #[serde(default)]
+    pub trusted_nodes: Vec<TrustedNodeConfig>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
+pub struct TrustedNodeConfig {
+    pub node_id: String,
+    pub public_key: String,
+    #[serde(default = "default_trusted_node_algorithm")]
+    pub algorithm: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -89,6 +101,10 @@ fn default_gpu_backend() -> String {
 
 fn default_log_level() -> String {
     "info".to_string()
+}
+
+fn default_trusted_node_algorithm() -> String {
+    "Ed25519".to_string()
 }
 
 impl Default for ServerConfig {
@@ -162,6 +178,11 @@ node_id = "test-node"
 enabled = true
 peers = ["192.168.1.2:9009", "[::1]:9009"]
 
+[[consensus.trusted_nodes]]
+node_id = "peer-1"
+public_key = "01020304"
+algorithm = "Ed25519"
+
 [llama]
 enabled = true
 server_url = "http://localhost:8080"
@@ -179,6 +200,8 @@ level = "info"
         assert_eq!(config.server.node_id, "test-node");
         assert!(config.consensus.enabled);
         assert_eq!(config.consensus.peers.len(), 2);
+        assert_eq!(config.consensus.trusted_nodes.len(), 1);
+        assert_eq!(config.consensus.trusted_nodes[0].node_id, "peer-1");
         assert!(config.llama.enabled);
         assert!(config.gpu.enabled);
     }
@@ -187,6 +210,7 @@ level = "info"
     fn test_default_config() {
         let config = Config::default();
         assert!(!config.consensus.enabled);
+        assert!(config.consensus.trusted_nodes.is_empty());
         assert!(!config.llama.enabled);
         assert!(!config.gpu.enabled);
     }

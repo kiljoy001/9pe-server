@@ -3,7 +3,7 @@
 use anyhow::{Result, Context};
 use std::path::PathBuf;
 use std::sync::Arc;
-use tracing::{info, debug, error};
+use tracing::{info, debug, error, warn};
 
 use crate::network::NetworkConfig;
 use crate::transport::{TransportType, TransportFactory, ConnectionListener};
@@ -27,9 +27,13 @@ pub struct Server {
     translator_registry: Arc<ThreadSafeTranslatorRegistry>,
     settrans_system: Arc<VirtualSettransSystem>,
     synth_fs: Arc<SyntheticFilesystem>,
+    #[allow(dead_code)]
     namespace_manager: Arc<crate::namespace_manager::NamespaceManager>,
+    #[allow(dead_code)]
     auto_mount_daemon: Option<AutoMountDaemon>,
+    #[allow(dead_code)]
     consensus_coordinator: Option<Arc<crate::consensus::ConsensusCoordinator>>,
+    #[allow(dead_code)]
     mesh_network: Option<Arc<crate::mesh::MeshNetwork>>,
 }
 
@@ -108,6 +112,33 @@ impl Server {
             coordinator.initialize().await?;
             info!("Consensus coordinator initialized successfully");
 
+            if !consensus_cfg.trusted_nodes.is_empty() {
+                for trusted in &consensus_cfg.trusted_nodes {
+                    match crate::consensus::PublicKey::from_hex(
+                        trusted.algorithm.clone(),
+                        &trusted.public_key,
+                    ) {
+                        Ok(public_key) => {
+                            coordinator
+                                .trust_node(trusted.node_id.clone(), public_key)
+                                .await;
+                            debug!(
+                                "Registered trusted consensus peer {} (algorithm {})",
+                                trusted.node_id,
+                                trusted.algorithm
+                            );
+                        }
+                        Err(e) => {
+                            warn!(
+                                "Failed to register trusted consensus peer {}: {}",
+                                trusted.node_id,
+                                e
+                            );
+                        }
+                    }
+                }
+            }
+
             Some(coordinator)
         } else {
             info!("Consensus disabled in config");
@@ -148,11 +179,15 @@ impl Server {
         // Initialize namespace manager (system-level translator)
         let namespace_manager = {
             use crate::namespace_manager::NamespaceManager;
-
-            let mut manager = NamespaceManager::new(synth_fs.clone())?;
+            
+            let manager = if let Some(ref mesh) = mesh_network {
+                NamespaceManager::new(synth_fs.clone())?.with_mesh_network(Arc::clone(mesh))
+            } else {
+                NamespaceManager::new(synth_fs.clone())?
+            };
 
             // Add consensus if available
-            if let Some(ref consensus) = consensus_coordinator {
+            if let Some(ref _consensus) = consensus_coordinator {
                 // Get the bounded ghostdag from consensus coordinator
                 // For now, we'll initialize without consensus integration
                 // TODO: Add get_bounded_ghostdag() method to ConsensusCoordinator
@@ -167,6 +202,12 @@ impl Server {
             info!("Namespace manager initialized at /srv/namespace/");
             Arc::new(manager)
         };
+
+        // Set up mesh network with namespace manager if both exist
+        if let Some(ref mesh) = mesh_network {
+            use crate::namespace_manager::MeshMessageHandler;
+            mesh.set_namespace_manager(Arc::clone(&namespace_manager) as Arc<dyn MeshMessageHandler>).await;
+        }
 
         // Initialize virtual settrans system with synthetic filesystem and namespace manager
         let settrans_system = Arc::new(

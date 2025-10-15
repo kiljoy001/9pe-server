@@ -4,9 +4,8 @@
 //! It provides message serialization, deserialization, and handling for all
 //! standard and extended operations.
 
-use std::io::{Read, Write, Result as IoResult};
+use std::io::Result as IoResult;
 use serde::{Deserialize, Serialize};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 pub mod messages;
 pub mod ninepee_messages;
@@ -152,7 +151,7 @@ impl WireFormat {
             ));
         }
 
-        let size = u32::from_le_bytes([buf[0], buf[1], buf[2], buf[3]]);
+        let _size = u32::from_le_bytes([buf[0], buf[1], buf[2], buf[3]]);
         let msg_type = buf[4];
 
         // Decode based on message type

@@ -20,13 +20,18 @@ const MAX_DAG_SIZE: usize = 10_000;
 const DEFAULT_DAG_SIZE: usize = 1_000;
 
 /// Dynamic sizing parameters
+#[allow(dead_code)]
 const SCALE_UP_THRESHOLD: f64 = 0.8;    // Scale up at 80% full
+#[allow(dead_code)]
 const SCALE_DOWN_THRESHOLD: f64 = 0.2;  // Scale down at 20% full
+#[allow(dead_code)]
 const SCALE_FACTOR: f64 = 1.5;          // Scale by 50% each time
+#[allow(dead_code)]
 const THROUGHPUT_WINDOW: usize = 100;   // Sample last 100 operations
 /// Depth threshold for pruning confirmed blocks
 const CONFIRMATION_DEPTH: u64 = 100;
 /// Maximum parents per block
+#[allow(dead_code)]
 const MAX_PARENTS: usize = 8;
 
 /// FSM states for block processing (inspired by gnumach's FSM approach)
@@ -156,6 +161,7 @@ pub struct FileState {
 #[derive(Clone)]
 pub struct BoundedGhostdag {
     /// Node identifier
+    #[allow(dead_code)]
     node_id: String,
 
     /// The bounded DAG structure

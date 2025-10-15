@@ -5,12 +5,12 @@
 //! IMPORTANT: Consensus uses the well-known mesh port (9650) - NOT a configurable port.
 //! This is intentional for a global namespace system.
 
-use std::process::{Command, Child, Stdio};
-use std::time::Duration;
-use std::thread;
-use std::net::TcpStream;
-use tempfile::TempDir;
 use std::fs;
+use std::net::TcpStream;
+use std::process::{Child, Command, Stdio};
+use std::thread;
+use std::time::Duration;
+use tempfile::TempDir;
 
 /// Well-known mesh networking port (used for consensus)
 const MESH_PORT: u16 = 9650;
@@ -55,8 +55,10 @@ level = "info"
         let child = Command::new("./target/release/ninep-server")
             .args(&[
                 "serve",
-                "--port", &port.to_string(),
-                "--root", root_path.to_str().unwrap(),
+                "--port",
+                &port.to_string(),
+                "--root",
+                root_path.to_str().unwrap(),
                 "--no-quic",
             ])
             .env("CONFIG_FILE", config_path.to_str().unwrap())
@@ -99,11 +101,13 @@ fn test_e2e_two_node_consensus() {
 
     // Both nodes should be running and accepting connections
     assert!(
-        TcpStream::connect_timeout(&node1.address().parse().unwrap(), Duration::from_secs(5)).is_ok(),
+        TcpStream::connect_timeout(&node1.address().parse().unwrap(), Duration::from_secs(5))
+            .is_ok(),
         "Node 1 should accept connections"
     );
     assert!(
-        TcpStream::connect_timeout(&node2.address().parse().unwrap(), Duration::from_secs(5)).is_ok(),
+        TcpStream::connect_timeout(&node2.address().parse().unwrap(), Duration::from_secs(5))
+            .is_ok(),
         "Node 2 should accept connections"
     );
 }
@@ -120,8 +124,10 @@ fn test_e2e_three_node_consensus() {
     // All nodes should be running
     for (i, node) in [&node1, &node2, &node3].iter().enumerate() {
         assert!(
-            TcpStream::connect_timeout(&node.address().parse().unwrap(), Duration::from_secs(5)).is_ok(),
-            "Node {} should accept connections", i + 1
+            TcpStream::connect_timeout(&node.address().parse().unwrap(), Duration::from_secs(5))
+                .is_ok(),
+            "Node {} should accept connections",
+            i + 1
         );
     }
 }
@@ -134,7 +140,8 @@ fn test_e2e_single_node_consensus() {
     thread::sleep(Duration::from_secs(2));
 
     assert!(
-        TcpStream::connect_timeout(&node.address().parse().unwrap(), Duration::from_secs(5)).is_ok(),
+        TcpStream::connect_timeout(&node.address().parse().unwrap(), Duration::from_secs(5))
+            .is_ok(),
         "Single node should accept connections"
     );
 }
@@ -155,7 +162,8 @@ fn test_e2e_node_failure_handling() {
 
     // Node1 should still be running
     assert!(
-        TcpStream::connect_timeout(&node1.address().parse().unwrap(), Duration::from_secs(5)).is_ok(),
+        TcpStream::connect_timeout(&node1.address().parse().unwrap(), Duration::from_secs(5))
+            .is_ok(),
         "Node1 should remain functional after node2 failure"
     );
 }
@@ -182,11 +190,13 @@ fn test_e2e_node_rejoin() {
 
     // Both should be running
     assert!(
-        TcpStream::connect_timeout(&node1.address().parse().unwrap(), Duration::from_secs(5)).is_ok(),
+        TcpStream::connect_timeout(&node1.address().parse().unwrap(), Duration::from_secs(5))
+            .is_ok(),
         "Node1 should be running"
     );
     assert!(
-        TcpStream::connect_timeout(&node2.address().parse().unwrap(), Duration::from_secs(5)).is_ok(),
+        TcpStream::connect_timeout(&node2.address().parse().unwrap(), Duration::from_secs(5))
+            .is_ok(),
         "Node2 should rejoin successfully"
     );
 }
@@ -199,11 +209,15 @@ fn test_e2e_mesh_port_is_fixed() {
     thread::sleep(Duration::from_secs(2));
 
     // Mesh networking should be on the well-known port 9650
-    assert_eq!(node.mesh_address(), "127.0.0.1:9650",
-               "Mesh networking MUST use the well-known port 9650 for global namespace system");
+    assert_eq!(
+        node.mesh_address(),
+        "127.0.0.1:9650",
+        "Mesh networking MUST use the well-known port 9650 for global namespace system"
+    );
 
     assert!(
-        TcpStream::connect_timeout(&node.address().parse().unwrap(), Duration::from_secs(5)).is_ok(),
+        TcpStream::connect_timeout(&node.address().parse().unwrap(), Duration::from_secs(5))
+            .is_ok(),
         "Node should be accessible on 9P port"
     );
 }
@@ -222,8 +236,10 @@ fn test_e2e_automatic_discovery() {
     // All nodes should be running
     for (i, node) in [&node1, &node2, &node3, &node4].iter().enumerate() {
         assert!(
-            TcpStream::connect_timeout(&node.address().parse().unwrap(), Duration::from_secs(5)).is_ok(),
-            "Node {} should be running and auto-discovered", i + 1
+            TcpStream::connect_timeout(&node.address().parse().unwrap(), Duration::from_secs(5))
+                .is_ok(),
+            "Node {} should be running and auto-discovered",
+            i + 1
         );
     }
 }

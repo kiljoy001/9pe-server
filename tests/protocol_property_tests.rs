@@ -1,7 +1,7 @@
 //! Property-based tests for 9P protocol messages
 
 use ninep_server::protocol::{
-    messages::*, WireFormat, Qid, Stat, Fid, Tag, permissions, MessageType, Message, MAX_MSG_SIZE
+    messages::*, permissions, Fid, Message, MessageType, Qid, Stat, Tag, WireFormat, MAX_MSG_SIZE,
 };
 use proptest::prelude::*;
 
@@ -17,8 +17,10 @@ fn arbitrary_fid() -> impl Strategy<Value = Fid> {
 
 /// Generate arbitrary qids
 fn arbitrary_qid() -> impl Strategy<Value = Qid> {
-    (any::<u8>(), any::<u32>(), any::<u64>()).prop_map(|(qtype, version, path)| {
-        Qid { qtype, version, path }
+    (any::<u8>(), any::<u32>(), any::<u64>()).prop_map(|(qtype, version, path)| Qid {
+        qtype,
+        version,
+        path,
     })
 }
 

@@ -56,6 +56,7 @@ pub mod server;
 pub mod settrans;
 pub mod stats;
 pub mod synth;
+pub mod gpu;
 pub mod sycl;
 pub mod transport;
 

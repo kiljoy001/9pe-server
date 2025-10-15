@@ -1,10 +1,10 @@
 //! Property-based tests for authentication system
 
-use ninep_server::auth::{AuthService, AuthConfig, Capability, SessionToken, MockClock};
-use proptest::prelude::*;
-use tempfile::tempdir;
-use std::path::PathBuf;
 use chrono::Duration;
+use ninep_server::auth::{AuthConfig, AuthService, Capability, MockClock, SessionToken};
+use proptest::prelude::*;
+use std::path::PathBuf;
+use tempfile::tempdir;
 
 /// Generate arbitrary usernames
 fn arbitrary_username() -> impl Strategy<Value = String> {

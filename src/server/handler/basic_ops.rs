@@ -64,7 +64,7 @@ impl BasicOpsHandler {
 
         // Get root qid
         let metadata = fs::metadata(&self.root)?;
-        let qid = Qid {
+        let _qid = Qid {
             qtype: if metadata.is_dir() { 0x80 } else { 0 },
             version: 0,
             path: 0,
@@ -279,6 +279,7 @@ impl BasicOpsHandler {
                 fid,
                 offset,
                 count: slice.len() as u32,
+                data: slice.to_vec(),
             });
         }
 
@@ -294,6 +295,7 @@ impl BasicOpsHandler {
             fid,
             offset,
             count: bytes_read as u32,
+            data: buffer,
         })
     }
 
@@ -470,7 +472,12 @@ impl BasicOpsHandler {
             muid: "".to_string(),
         };
 
-        Ok(NinePeeMessage::Stat { fid })
+        let stat_bytes = bincode::serialize(&stat)?;
+
+        Ok(NinePeeMessage::Stat {
+            fid,
+            data: stat_bytes,
+        })
     }
 
     /// Handle wstat request
@@ -592,7 +599,7 @@ impl BasicOpsHandler {
     }
 
     /// Apply stat changes to the file
-    async fn apply_stat_changes(&self, file_path: &std::path::Path, current_path: &str, changes: &StatChanges) -> Result<()> {
+    async fn apply_stat_changes(&self, file_path: &std::path::Path, _current_path: &str, changes: &StatChanges) -> Result<()> {
         // Apply mode changes (permissions)
         if let Some(mode) = changes.mode {
             let permissions = Permissions::from_mode(mode & 0o777);

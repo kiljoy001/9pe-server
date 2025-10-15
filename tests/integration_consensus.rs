@@ -3,10 +3,10 @@
 //! These tests ACTUALLY test that the server works, not just that code exists.
 //! If consensus isn't wired up, these tests WILL FAIL.
 
+use std::net::TcpListener;
 use std::path::PathBuf;
 use std::time::Duration;
 use tokio::time::sleep;
-use std::net::TcpListener;
 
 #[tokio::test]
 async fn test_config_file_is_actually_read_by_server() {
@@ -35,21 +35,28 @@ level = "info"
     std::fs::write(config_path, config_content).unwrap();
 
     // Parse the config using the actual server's config module
-    let config = ninep_server::config::Config::from_file(std::path::Path::new(config_path)).unwrap();
+    let config =
+        ninep_server::config::Config::from_file(std::path::Path::new(config_path)).unwrap();
 
     // Verify it was parsed correctly
-    assert_eq!(config.server.node_id, "integration-test-node", "Config not parsed correctly");
+    assert_eq!(
+        config.server.node_id, "integration-test-node",
+        "Config not parsed correctly"
+    );
     assert!(config.consensus.enabled, "Consensus should be enabled");
     assert_eq!(config.consensus.peers.len(), 1, "Should have 1 peer");
-    assert_eq!(config.consensus.peers[0], "127.0.0.1:15641", "Peer address wrong");
+    assert_eq!(
+        config.consensus.peers[0], "127.0.0.1:15641",
+        "Peer address wrong"
+    );
 
     std::fs::remove_file(config_path).ok();
 }
 
 #[tokio::test]
 async fn test_consensus_coordinator_can_be_created_and_initialized() {
-    use ninep_server::consensus::{ConsensusCoordinator, CryptoProvider, Signature, PublicKey};
-    use ninep_server::consensus::crypto::{PrivateKey, SharedSecret, Ed25519Provider};
+    use ninep_server::consensus::crypto::{Ed25519Provider, PrivateKey, SharedSecret};
+    use ninep_server::consensus::{ConsensusCoordinator, CryptoProvider, PublicKey, Signature};
     use std::sync::Arc;
 
     // Use the REAL crypto provider, not a mock
@@ -58,7 +65,11 @@ async fn test_consensus_coordinator_can_be_created_and_initialized() {
 
     // This should succeed
     let result = coordinator.initialize().await;
-    assert!(result.is_ok(), "Consensus coordinator failed to initialize: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Consensus coordinator failed to initialize: {:?}",
+        result.err()
+    );
 }
 
 #[tokio::test]
@@ -88,7 +99,8 @@ level = "info"
     std::fs::write(config_path, config_content).unwrap();
 
     // Parse the config
-    let config = ninep_server::config::Config::from_file(std::path::Path::new(config_path)).unwrap();
+    let config =
+        ninep_server::config::Config::from_file(std::path::Path::new(config_path)).unwrap();
 
     // Verify all sections were parsed
     assert_eq!(config.server.node_id, "config-test-node");
@@ -135,7 +147,10 @@ async fn test_metrics_endpoint_shows_consensus_state() {
     // Verify consensus state is included
 
     // This test is a placeholder until we can actually start/stop servers in tests
-    assert!(true, "Metrics test not implemented - need server lifecycle management in tests");
+    assert!(
+        true,
+        "Metrics test not implemented - need server lifecycle management in tests"
+    );
 }
 
 #[tokio::test]
@@ -168,8 +183,8 @@ async fn test_consensus_layer_is_initialized_when_enabled() {
     // This test verifies that when consensus.enabled = true in config,
     // the server actually creates and starts the ConsensusCoordinator.
 
-    use ninep_server::consensus::ConsensusCoordinator;
     use ninep_server::consensus::crypto::Ed25519Provider;
+    use ninep_server::consensus::ConsensusCoordinator;
     use std::sync::Arc;
 
     // Create config with consensus enabled
@@ -191,17 +206,24 @@ enabled = false
     let config_path = "/tmp/test_consensus_enabled.toml";
     std::fs::write(config_path, config_content).unwrap();
 
-    let config = ninep_server::config::Config::from_file(std::path::Path::new(config_path)).unwrap();
+    let config =
+        ninep_server::config::Config::from_file(std::path::Path::new(config_path)).unwrap();
 
     // Verify consensus is enabled in config
-    assert!(config.consensus.enabled, "Consensus should be enabled in test config");
+    assert!(
+        config.consensus.enabled,
+        "Consensus should be enabled in test config"
+    );
 
     // Verify we can create and initialize a coordinator (this is what the server does)
     let crypto = Arc::new(Ed25519Provider::new().unwrap());
     let coordinator = ConsensusCoordinator::new(config.server.node_id.clone(), crypto);
 
     let result = coordinator.initialize().await;
-    assert!(result.is_ok(), "ConsensusCoordinator should initialize successfully");
+    assert!(
+        result.is_ok(),
+        "ConsensusCoordinator should initialize successfully"
+    );
 
     std::fs::remove_file(config_path).ok();
 }
@@ -220,7 +242,10 @@ async fn test_mesh_networking_port_is_bound() {
     let addr = SocketAddr::from(([127, 0, 0, 1], test_port));
 
     let listener = TcpListener::bind(addr).await;
-    assert!(listener.is_ok(), "Should be able to bind mesh networking port");
+    assert!(
+        listener.is_ok(),
+        "Should be able to bind mesh networking port"
+    );
 
     // Drop the listener to free the port
     drop(listener);
@@ -230,13 +255,13 @@ async fn test_mesh_networking_port_is_bound() {
 async fn test_mesh_networking_starts_successfully() {
     // This test verifies that mesh networking actually starts and listens
 
-    use std::sync::Arc;
     use ninep_server::mesh::MeshNetwork;
+    use std::sync::Arc;
 
     // Create mesh with no bootstrap peers
     let mesh = Arc::new(MeshNetwork::new(
         "test-node".to_string(),
-        19652,  // Use different port to avoid conflicts
+        19652, // Use different port to avoid conflicts
         vec![],
     ));
 
@@ -259,15 +284,11 @@ async fn test_mesh_networking_starts_successfully() {
 async fn test_mesh_peer_connection() {
     // Test that two mesh nodes can connect to each other
 
-    use std::sync::Arc;
     use ninep_server::mesh::MeshNetwork;
+    use std::sync::Arc;
 
     // Start first node
-    let node1 = Arc::new(MeshNetwork::new(
-        "node1".to_string(),
-        19653,
-        vec![],
-    ));
+    let node1 = Arc::new(MeshNetwork::new("node1".to_string(), 19653, vec![]));
     node1.clone().start().await.unwrap();
 
     // Start second node with node1 as bootstrap peer
@@ -285,9 +306,12 @@ async fn test_mesh_peer_connection() {
     let node1_peers = node1.get_peer_count().await;
     let node2_peers = node2.get_peer_count().await;
 
-    assert!(node1_peers >= 1 || node2_peers >= 1,
-            "At least one node should have connected (node1: {}, node2: {})",
-            node1_peers, node2_peers);
+    assert!(
+        node1_peers >= 1 || node2_peers >= 1,
+        "At least one node should have connected (node1: {}, node2: {})",
+        node1_peers,
+        node2_peers
+    );
 }
 
 /// Integration test helper - start a test server

@@ -7,7 +7,7 @@ use crate::synth::{ControlHandler, SyntheticFilesystem};
 use anyhow::Result;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::SystemTime;
 
 /// Statistics tracking for the server
 pub struct ServerStats {

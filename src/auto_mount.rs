@@ -325,17 +325,13 @@ impl AutoMountDaemon {
     async fn get_consensus_peers(consensus: &Arc<ConsensusCoordinator>) -> Result<Vec<(String, u16, TransportType)>> {
         info!("Querying consensus network for active 9P.e servers");
         let consensus_state = consensus.get_consensus_state().await;
-        let mut discovered_servers = Vec::new();
-
         // For now, use the node_id as a source, but this is a placeholder
         // In a real implementation, we'd get actual network nodes from the consensus layer
         info!("Consensus node: {}", consensus_state.node_id);
 
         // Fallback to local discovery since the consensus layer doesn't expose network nodes yet
         warn!("Consensus network discovery not fully implemented, using local discovery");
-        discovered_servers = Self::get_local_servers();
-
-        Ok(discovered_servers)
+        Ok(Self::get_local_servers())
     }
 
     /// Get local servers (fallback discovery)
@@ -347,17 +343,6 @@ impl AutoMountDaemon {
         ]
     }
 
-    /// Parse node address from consensus format
-    fn parse_node_address(node_id: &str) -> Result<(String, u16, TransportType)> {
-        // Simple parsing - in real implementation would be more sophisticated
-        if let Some((addr, port_str)) = node_id.split_once(':') {
-            let port = port_str.parse::<u16>()
-                .context("Invalid port in node address")?;
-            Ok((addr.to_string(), port, TransportType::Tcp))
-        } else {
-            anyhow::bail!("Invalid node address format: {}", node_id)
-        }
-    }
 
     /// Mount a discovered server at its individual mount point
     async fn mount_server(

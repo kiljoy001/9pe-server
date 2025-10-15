@@ -2,12 +2,12 @@
 //!
 //! These tests expose TODOs and placeholders by actually trying to use them
 
-use std::process::{Command, Stdio};
-use std::time::Duration;
-use std::thread;
 use std::fs;
-use tempfile::TempDir;
 use std::net::TcpStream;
+use std::process::{Command, Stdio};
+use std::thread;
+use std::time::Duration;
+use tempfile::TempDir;
 
 /// Helper to start server
 struct TestServer {
@@ -25,8 +25,10 @@ impl TestServer {
         let child = Command::new("./target/release/ninep-server")
             .args(&[
                 "serve",
-                "--port", &port.to_string(),
-                "--root", root_path.to_str().unwrap(),
+                "--port",
+                &port.to_string(),
+                "--root",
+                root_path.to_str().unwrap(),
                 "--no-quic",
             ])
             .stdout(Stdio::null())
@@ -34,7 +36,11 @@ impl TestServer {
             .spawn()?;
 
         thread::sleep(Duration::from_secs(2));
-        Ok(TestServer { child, port, temp_dir })
+        Ok(TestServer {
+            child,
+            port,
+            temp_dir,
+        })
     }
 
     fn address(&self) -> String {
@@ -135,7 +141,10 @@ fn test_compute_invoke_not_implemented() {
     println!("    See src/server/handler/ninepee_extensions.rs:84");
     println!("    Handler is marked as placeholder (line 107)");
 
-    assert!(true, "Documented limitation - invoke_function is a placeholder");
+    assert!(
+        true,
+        "Documented limitation - invoke_function is a placeholder"
+    );
 }
 
 /// TEST: Consensus request handler is a placeholder
@@ -148,7 +157,10 @@ fn test_consensus_request_handler_placeholder() {
     println!("⚠️  KNOWN ISSUE: Consensus request handler is a placeholder");
     println!("    See src/server/handler/ninepee_extensions.rs:124");
 
-    assert!(true, "Documented limitation - consensus handler is placeholder");
+    assert!(
+        true,
+        "Documented limitation - consensus handler is placeholder"
+    );
 }
 
 /// TEST: Mesh connect handler is a placeholder
@@ -208,7 +220,10 @@ fn test_oneapi_level_zero_not_implemented() {
     println!("    - Line 239: TODO: zeKernelSetArgumentValue()");
     println!("    - Line 245: TODO: zeCommandListAppendLaunchKernel()");
 
-    assert!(true, "Documented limitation - OneAPI is all stubs (use SYCL instead)");
+    assert!(
+        true,
+        "Documented limitation - OneAPI is all stubs (use SYCL instead)"
+    );
 }
 
 /// TEST: Consensus work validation is not implemented
@@ -234,7 +249,10 @@ fn test_consensus_metrics_are_placeholders() {
     println!("    - average_block_time_ms: 10000 // TODO: Calculate from actual data");
     println!("    - network_hashrate: 0.0 // TODO: Calculate from work proofs");
 
-    assert!(true, "Documented limitation - metrics are hardcoded placeholders");
+    assert!(
+        true,
+        "Documented limitation - metrics are hardcoded placeholders"
+    );
 }
 
 /// TEST: Network throughput metrics are not tracked

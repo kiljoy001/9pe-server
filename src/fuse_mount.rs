@@ -93,6 +93,7 @@ impl NinePFS {
     }
 
     /// Get next available inode number
+    #[allow(dead_code)]
     async fn allocate_ino(&self) -> u64 {
         let mut next_ino = self.next_ino.write().await;
         let ino = *next_ino;
@@ -188,12 +189,12 @@ impl Filesystem for NinePFS {
         if ino == 1 {
             // Root directory
             if offset == 0 {
-                reply.add(1, 0, FileType::Directory, ".");
-                reply.add(1, 1, FileType::Directory, "..");
+                let _ = reply.add(1, 0, FileType::Directory, ".");
+                let _ = reply.add(1, 1, FileType::Directory, "..");
                 // Show some example files that would come from the 9P server
-                reply.add(2, 2, FileType::RegularFile, "README.txt");
-                reply.add(3, 3, FileType::RegularFile, "data.json");
-                reply.add(4, 4, FileType::Directory, "documents");
+                let _ = reply.add(2, 2, FileType::RegularFile, "README.txt");
+                let _ = reply.add(3, 3, FileType::RegularFile, "data.json");
+                let _ = reply.add(4, 4, FileType::Directory, "documents");
             }
         }
 
