@@ -4,5 +4,5 @@ pub mod registry;
 pub mod runtime;
 pub mod synthetic;
 
-pub use info::GpuInfo;
-pub use runtime::GpuRuntime;
+pub use info::{discover_gpus, GpuInfo};
+pub use runtime::{get_device_state, register_device_state, DeviceState, GpuRuntime};

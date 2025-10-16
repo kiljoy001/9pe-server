@@ -1,22 +1,22 @@
 //! Message handler module - split into focused submodules
 
 mod basic_ops;
-mod ninepee_extensions;
 mod connection_state;
+mod ninepee_extensions;
 
+use anyhow::Result;
 use std::path::PathBuf;
 use std::sync::Arc;
-use anyhow::Result;
 use tracing::{debug, info};
 
-use crate::wasm::ThreadSafeTranslatorRegistry;
-use crate::synth::SyntheticFilesystem;
-use crate::settrans::VirtualSettransSystem;
 use crate::consensus::BoundedGhostdag;
 use crate::protocol::NinePeeMessage;
+use crate::settrans::VirtualSettransSystem;
+use crate::synth::SyntheticFilesystem;
+use crate::wasm::ThreadSafeTranslatorRegistry;
 
-use self::connection_state::ConnectionState;
 use self::basic_ops::BasicOpsHandler;
+use self::connection_state::ConnectionState;
 use self::ninepee_extensions::NinePeeExtensionsHandler;
 
 // Re-export for testing
@@ -60,10 +60,7 @@ impl MessageHandler {
         let consensus_dag = Arc::new(BoundedGhostdag::new(node_id));
         let connection_state = ConnectionState::new();
 
-        let mut basic_ops = BasicOpsHandler::new(
-            root_path.clone(),
-            connection_state.clone(),
-        );
+        let mut basic_ops = BasicOpsHandler::new(root_path.clone(), connection_state.clone());
         basic_ops.set_consensus_dag(consensus_dag.clone());
 
         let ninepee_extensions = NinePeeExtensionsHandler::new(
@@ -85,55 +82,76 @@ impl MessageHandler {
 
     /// Deserialize a NinePeeMessage from bytes
     pub async fn deserialize_ninepee_message(&self, data: Vec<u8>) -> Result<NinePeeMessage> {
-        bincode::deserialize(&data).map_err(|e| anyhow::anyhow!("Failed to deserialize message: {}", e))
+        bincode::deserialize(&data)
+            .map_err(|e| anyhow::anyhow!("Failed to deserialize message: {}", e))
     }
 
     /// Serialize a NinePeeMessage to bytes
     pub async fn serialize_ninepee_message(&self, message: &NinePeeMessage) -> Result<Vec<u8>> {
-        bincode::serialize(message).map_err(|e| anyhow::anyhow!("Failed to serialize message: {}", e))
+        bincode::serialize(message)
+            .map_err(|e| anyhow::anyhow!("Failed to serialize message: {}", e))
     }
 
     /// Handle an incoming 9P message
     pub async fn handle_message(&mut self, message: NinePeeMessage) -> Result<NinePeeMessage> {
         match message {
             // Basic 9P operations
-            NinePeeMessage::Version { msize, version } =>
-                self.handle_version(msize, version).await,
-            NinePeeMessage::Attach { fid, afid, uname, aname } =>
-                self.basic_ops.handle_attach(fid, afid, uname, aname).await,
-            NinePeeMessage::Walk { fid, newfid, wnames } =>
-                self.basic_ops.handle_walk(fid, newfid, wnames).await,
-            NinePeeMessage::Open { fid, mode } =>
-                self.basic_ops.handle_open(fid, mode).await,
-            NinePeeMessage::Create { fid, name, perm, mode } =>
-                self.basic_ops.handle_create(fid, name, perm, mode).await,
-            NinePeeMessage::Read { fid, offset, count, .. } =>
-                self.basic_ops.handle_read(fid, offset, count).await,
-            NinePeeMessage::Write { fid, offset, data } =>
-                self.basic_ops.handle_write(fid, offset, data).await,
-            NinePeeMessage::Clunk { fid } =>
-                self.basic_ops.handle_clunk(fid).await,
-            NinePeeMessage::Remove { fid } =>
-                self.basic_ops.handle_remove(fid).await,
-            NinePeeMessage::Stat { fid, .. } =>
-                self.basic_ops.handle_stat(fid).await,
-            NinePeeMessage::Wstat { fid, stat } =>
-                self.basic_ops.handle_wstat(fid, stat).await,
+            NinePeeMessage::Version { msize, version } => self.handle_version(msize, version).await,
+            NinePeeMessage::Attach {
+                fid,
+                afid,
+                uname,
+                aname,
+            } => self.basic_ops.handle_attach(fid, afid, uname, aname).await,
+            NinePeeMessage::Walk {
+                fid,
+                newfid,
+                wnames,
+            } => self.basic_ops.handle_walk(fid, newfid, wnames).await,
+            NinePeeMessage::Open { fid, mode } => self.basic_ops.handle_open(fid, mode).await,
+            NinePeeMessage::Create {
+                fid,
+                name,
+                perm,
+                mode,
+            } => self.basic_ops.handle_create(fid, name, perm, mode).await,
+            NinePeeMessage::Read {
+                fid, offset, count, ..
+            } => self.basic_ops.handle_read(fid, offset, count).await,
+            NinePeeMessage::Write { fid, offset, data } => {
+                self.basic_ops.handle_write(fid, offset, data).await
+            }
+            NinePeeMessage::Clunk { fid } => self.basic_ops.handle_clunk(fid).await,
+            NinePeeMessage::Remove { fid } => self.basic_ops.handle_remove(fid).await,
+            NinePeeMessage::Stat { fid, .. } => self.basic_ops.handle_stat(fid).await,
+            NinePeeMessage::Wstat { fid, stat } => self.basic_ops.handle_wstat(fid, stat).await,
 
             // 9P.e extensions - use existing variants that map to our functionality
-            NinePeeMessage::TranslatorSpawn { translator_id: _, code: _, config: _ } =>
-                Ok(NinePeeMessage::Error {
-                    ename: "Translator spawn not implemented".to_string(),
-                    errno: 38, // ENOSYS
-                }),
-            NinePeeMessage::TranslatorMessage { translator_id: _, data } =>
-                // Map to WASM invoke with dummy path
-                self.ninepee_extensions.handle_wasm_invoke("".to_string(), "invoke".to_string(), data).await,
-            NinePeeMessage::ConsensusPropose { block_hash: _, parent_hashes: _ } =>
-                Ok(NinePeeMessage::Error {
-                    ename: "Consensus not implemented".to_string(),
-                    errno: 38, // ENOSYS
-                }),
+            NinePeeMessage::TranslatorSpawn {
+                translator_id: _,
+                code: _,
+                config: _,
+            } => Ok(NinePeeMessage::Error {
+                ename: "Translator spawn not implemented".to_string(),
+                errno: 38, // ENOSYS
+            }),
+            NinePeeMessage::TranslatorMessage {
+                translator_id: _,
+                data,
+            } =>
+            // Map to WASM invoke with dummy path
+            {
+                self.ninepee_extensions
+                    .handle_wasm_invoke("".to_string(), "invoke".to_string(), data)
+                    .await
+            }
+            NinePeeMessage::ConsensusPropose {
+                block_hash: _,
+                parent_hashes: _,
+            } => Ok(NinePeeMessage::Error {
+                ename: "Consensus not implemented".to_string(),
+                errno: 38, // ENOSYS
+            }),
 
             // Unimplemented or deprecated
             _ => Ok(NinePeeMessage::Error {
@@ -158,7 +176,10 @@ impl MessageHandler {
             });
         }
 
-        info!("Protocol negotiated: version={}, msize={}", version, negotiated_msize);
+        info!(
+            "Protocol negotiated: version={}, msize={}",
+            version, negotiated_msize
+        );
 
         Ok(NinePeeMessage::Version {
             msize: negotiated_msize,

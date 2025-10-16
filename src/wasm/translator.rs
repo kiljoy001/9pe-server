@@ -2,12 +2,12 @@
 //!
 //! Users can extend the filesystem by dropping WASM modules into /srv/translators/
 
+use anyhow::{Context, Result};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use anyhow::{Result, Context};
-use wasmtime::{Engine, Module, Store, Instance, Memory, Linker};
+use wasmtime::{Engine, Instance, Linker, Memory, Module, Store};
 use wasmtime_wasi::{WasiCtx, WasiCtxBuilder};
 
 /// WASM translator instance
@@ -35,8 +35,7 @@ impl WasmTranslator {
     /// Load a WASM translator from bytecode
     pub async fn load(name: String, wasm_bytes: Vec<u8>, mount_point: PathBuf) -> Result<Self> {
         let engine = Engine::default();
-        let module = Module::new(&engine, &wasm_bytes)
-            .context("Failed to compile WASM module")?;
+        let module = Module::new(&engine, &wasm_bytes).context("Failed to compile WASM module")?;
 
         Ok(Self {
             name,
@@ -57,9 +56,7 @@ impl WasmTranslator {
         self.add_ninep_functions(&mut linker)?;
 
         // Create WASI context
-        let wasi = WasiCtxBuilder::new()
-            .inherit_stdio()
-            .build();
+        let wasi = WasiCtxBuilder::new().inherit_stdio().build();
 
         let mut store = Store::new(&self.engine, wasi);
         let instance = linker.instantiate(&mut store, &self.module)?;
@@ -75,7 +72,10 @@ impl WasmTranslator {
             memory,
         };
 
-        self.instances.write().await.insert(conn_id, translator_instance);
+        self.instances
+            .write()
+            .await
+            .insert(conn_id, translator_instance);
         Ok(())
     }
 
@@ -84,26 +84,40 @@ impl WasmTranslator {
         // These functions allow WASM to interact with 9P protocol
 
         // Read operation
-        linker.func_wrap("9p", "read",
+        linker.func_wrap(
+            "9p",
+            "read",
             |_caller: wasmtime::Caller<'_, T>, _fid: i32, _offset: i64, _count: i32| -> i32 {
                 // Implementation would forward to actual 9P handler
                 // For now, return success
                 0
-            })?;
+            },
+        )?;
 
         // Write operation
-        linker.func_wrap("9p", "write",
-            |_caller: wasmtime::Caller<'_, T>, _fid: i32, _offset: i64, _data_ptr: i32, _count: i32| -> i32 {
+        linker.func_wrap(
+            "9p",
+            "write",
+            |_caller: wasmtime::Caller<'_, T>,
+             _fid: i32,
+             _offset: i64,
+             _data_ptr: i32,
+             _count: i32|
+             -> i32 {
                 // Implementation would forward to actual 9P handler
                 0
-            })?;
+            },
+        )?;
 
         // Stat operation
-        linker.func_wrap("9p", "stat",
+        linker.func_wrap(
+            "9p",
+            "stat",
             |_caller: wasmtime::Caller<'_, T>, _fid: i32, _stat_ptr: i32| -> i32 {
                 // Implementation would forward to actual 9P handler
                 0
-            })?;
+            },
+        )?;
 
         Ok(())
     }
@@ -111,27 +125,36 @@ impl WasmTranslator {
     /// Handle a 9P message through WASM
     pub async fn handle_message(&self, conn_id: u64, msg: &[u8]) -> Result<Vec<u8>> {
         let mut instances = self.instances.write().await;
-        let instance = instances.get_mut(&conn_id)
+        let instance = instances
+            .get_mut(&conn_id)
             .context("No instance for connection")?;
 
         // Call WASM entry point
-        let handle_func = instance.instance
+        let handle_func = instance
+            .instance
             .get_typed_func::<(i32, i32), i32>(&mut instance.store, "handle_9p_message")?;
 
         // Copy message to WASM memory
         let msg_ptr = self.copy_to_wasm(&mut instance.store, &instance.memory, msg)?;
 
         // Call handler
-        let result_ptr = handle_func.call(&mut instance.store, (msg_ptr as i32, msg.len() as i32))?;
+        let result_ptr =
+            handle_func.call(&mut instance.store, (msg_ptr as i32, msg.len() as i32))?;
 
         // Read response from WASM memory
-        let response = self.read_from_wasm(&mut instance.store, &instance.memory, result_ptr as usize)?;
+        let response =
+            self.read_from_wasm(&mut instance.store, &instance.memory, result_ptr as usize)?;
 
         Ok(response)
     }
 
     /// Copy data into WASM memory
-    fn copy_to_wasm(&self, store: &mut Store<WasiCtx>, memory: &Memory, data: &[u8]) -> Result<usize> {
+    fn copy_to_wasm(
+        &self,
+        store: &mut Store<WasiCtx>,
+        memory: &Memory,
+        data: &[u8],
+    ) -> Result<usize> {
         // Simple allocation strategy - use a fixed offset for now
         // In a real implementation, we'd have proper memory management
         let ptr = 1024; // Start at 1KB offset
@@ -142,7 +165,12 @@ impl WasmTranslator {
     }
 
     /// Read data from WASM memory
-    fn read_from_wasm(&self, store: &mut Store<WasiCtx>, memory: &Memory, ptr: usize) -> Result<Vec<u8>> {
+    fn read_from_wasm(
+        &self,
+        store: &mut Store<WasiCtx>,
+        memory: &Memory,
+        ptr: usize,
+    ) -> Result<Vec<u8>> {
         // First read the length (assume first 4 bytes at ptr)
         let mut len_bytes = [0u8; 4];
         memory.read(&*store, ptr, &mut len_bytes)?;
@@ -207,7 +235,8 @@ impl TranslatorRegistry {
         use tokio::fs;
 
         // Read WASM bytecode
-        let wasm_bytes = fs::read(&wasm_path).await
+        let wasm_bytes = fs::read(&wasm_path)
+            .await
             .context("Failed to read WASM file")?;
 
         // Read metadata (adjacent .json file)
@@ -217,7 +246,8 @@ impl TranslatorRegistry {
             serde_json::from_slice::<TranslatorMetadata>(&meta_bytes)?
         } else {
             // Default metadata
-            let name = wasm_path.file_stem()
+            let name = wasm_path
+                .file_stem()
                 .and_then(|s| s.to_str())
                 .unwrap_or("unknown")
                 .to_string();
@@ -234,20 +264,29 @@ impl TranslatorRegistry {
             metadata.name.clone(),
             wasm_bytes,
             PathBuf::from(&metadata.mount_point),
-        ).await?;
+        )
+        .await?;
 
         // Register it
-        self.translators.write().await.insert(
-            PathBuf::from(metadata.mount_point),
-            Arc::new(translator),
-        );
+        self.translators
+            .write()
+            .await
+            .insert(PathBuf::from(metadata.mount_point), Arc::new(translator));
 
-        tracing::info!("Loaded translator '{}' at {}", metadata.name, wasm_path.display());
+        tracing::info!(
+            "Loaded translator '{}' at {}",
+            metadata.name,
+            wasm_path.display()
+        );
         Ok(())
     }
 
     /// Install a new translator (copy to install directory)
-    pub async fn install_translator(&self, wasm_bytes: Vec<u8>, metadata: TranslatorMetadata) -> Result<()> {
+    pub async fn install_translator(
+        &self,
+        wasm_bytes: Vec<u8>,
+        metadata: TranslatorMetadata,
+    ) -> Result<()> {
         use tokio::fs;
 
         let filename = format!("{}.wasm", metadata.name);
@@ -269,11 +308,20 @@ impl TranslatorRegistry {
     pub async fn enable_translator(&self, name: &str) -> Result<()> {
         use tokio::fs;
 
-        let available = self.install_dir.join("available").join(format!("{}.wasm", name));
-        let enabled = self.install_dir.join("enabled").join(format!("{}.wasm", name));
+        let available = self
+            .install_dir
+            .join("available")
+            .join(format!("{}.wasm", name));
+        let enabled = self
+            .install_dir
+            .join("enabled")
+            .join(format!("{}.wasm", name));
 
         if !available.exists() {
-            return Err(anyhow::anyhow!("Translator '{}' not found in available", name));
+            return Err(anyhow::anyhow!(
+                "Translator '{}' not found in available",
+                name
+            ));
         }
 
         // Create symlink

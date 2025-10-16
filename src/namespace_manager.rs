@@ -6,27 +6,27 @@
 //!
 //! Exposed at: /srv/namespace/
 
-use anyhow::{anyhow, Result, Context};
-use bincode;
-use serde::{Deserialize, Serialize};
-use serde_json;
-use serde_with::{serde_as, Bytes};
-use std::collections::HashMap;
-use std::convert::TryInto;
-use std::sync::Arc;
-use tokio::runtime::Handle;
-use tokio::sync::RwLock;
-use tokio::task;
-use std::future::Future;
-use chrono::{DateTime, Utc};
-use ed25519_dalek::{SigningKey, VerifyingKey, Signature, Signer, Verifier};
-use tracing::{info, debug};
-use async_trait::async_trait;
 use crate::{
     consensus::{BlockState, BoundedGhostdag, NamespaceOp},
     mesh::MeshNetwork,
     synth::{ControlHandler, SyntheticFilesystem},
 };
+use anyhow::{anyhow, Context, Result};
+use async_trait::async_trait;
+use bincode;
+use chrono::{DateTime, Utc};
+use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
+use serde::{Deserialize, Serialize};
+use serde_json;
+use serde_with::{serde_as, Bytes};
+use std::collections::HashMap;
+use std::convert::TryInto;
+use std::future::Future;
+use std::sync::Arc;
+use tokio::runtime::Handle;
+use tokio::sync::RwLock;
+use tokio::task;
+use tracing::{debug, info};
 
 /// Trait for handling mesh messages in namespace manager
 #[async_trait::async_trait]
@@ -39,7 +39,7 @@ pub trait MeshMessageHandler: Send + Sync {
         _requested_role: String,
         _message: String,
     ) -> Result<()>;
-    
+
     async fn handle_namespace_access_response(
         &self,
         from_peer: String,
@@ -59,8 +59,8 @@ where
 }
 
 fn decode_hex_array<const N: usize>(input: &str, label: &str) -> Result<[u8; N]> {
-    let bytes = hex::decode(input)
-        .map_err(|e| anyhow!("Invalid {} (hex decode failed): {}", label, e))?;
+    let bytes =
+        hex::decode(input).map_err(|e| anyhow!("Invalid {} (hex decode failed): {}", label, e))?;
     let arr: [u8; N] = bytes
         .try_into()
         .map_err(|_| anyhow!("{} must be {} bytes", label, N))?;
@@ -98,19 +98,19 @@ pub struct NamespaceClaim {
 pub struct AccessRequest {
     /// Requester's public key
     pub requester_pubkey: String,
-    
+
     /// Requested role ("participant", "contributor", "admin")
     pub requested_role: String,
-    
+
     /// Request message/reason
     pub message: String,
-    
+
     /// Timestamp of request
     pub requested_at: DateTime<Utc>,
-    
+
     /// Current status ("pending", "approved", "rejected")
     pub status: String,
-    
+
     /// Approver (if approved)
     pub approved_by: Option<String>,
 }
@@ -145,16 +145,16 @@ pub struct NamespaceMetadata {
 pub struct NamespaceManager {
     /// All registered namespace claims (path → claim)
     claims: Arc<RwLock<HashMap<String, NamespaceClaim>>>,
-    
+
     /// Synthetic filesystem for /srv/namespace/
     synth_fs: Arc<SyntheticFilesystem>,
-    
+
     /// Consensus DAG for global agreement
     consensus: Option<Arc<BoundedGhostdag>>,
-    
+
     /// This server's signing key (for signing system namespaces)
     system_keypair: SigningKey,
-    
+
     /// Mesh network for distributed communication (optional)
     mesh_network: Option<Arc<MeshNetwork>>,
 }
@@ -164,10 +164,12 @@ impl NamespaceManager {
     pub fn new(synth_fs: Arc<SyntheticFilesystem>) -> Result<Self> {
         // Generate system signing key (in production, load from secure storage)
         let system_keypair = SigningKey::from_bytes(&rand::random());
-        
-        info!("Namespace manager system public key: {}",
-              hex::encode(system_keypair.verifying_key().as_bytes()));
-        
+
+        info!(
+            "Namespace manager system public key: {}",
+            hex::encode(system_keypair.verifying_key().as_bytes())
+        );
+
         Ok(Self {
             claims: Arc::new(RwLock::new(HashMap::new())),
             synth_fs,
@@ -176,7 +178,7 @@ impl NamespaceManager {
             mesh_network: None,
         })
     }
-    
+
     /// Set mesh network for distributed communication
     pub fn with_mesh_network(mut self, mesh: Arc<MeshNetwork>) -> Self {
         self.mesh_network = Some(mesh);
@@ -188,7 +190,9 @@ impl NamespaceManager {
         info!("Initializing namespace manager at /srv/namespace/");
 
         // Create /srv/namespace/ directory structure
-        self.synth_fs.create_directory(std::path::Path::new("/srv/namespace")).await?;
+        self.synth_fs
+            .create_directory(std::path::Path::new("/srv/namespace"))
+            .await?;
 
         // Create control files
         self.create_control_files().await?;
@@ -214,20 +218,18 @@ impl NamespaceManager {
         let list_handler = Arc::new(ListNamespacesHandler {
             claims: self.claims.clone(),
         });
-        self.synth_fs.create_control_file(
-            &base.join("list"),
-            list_handler,
-        ).await?;
+        self.synth_fs
+            .create_control_file(&base.join("list"), list_handler)
+            .await?;
 
         // /srv/namespace/verify - Verify namespace ownership
         let verify_handler = Arc::new(VerifyNamespaceHandler {
             claims: self.claims.clone(),
             last_response: Arc::new(RwLock::new(None)),
         });
-        self.synth_fs.create_control_file(
-            &base.join("verify"),
-            verify_handler,
-        ).await?;
+        self.synth_fs
+            .create_control_file(&base.join("verify"), verify_handler)
+            .await?;
 
         // /srv/namespace/delete - Delete namespace
         let delete_handler = self.create_delete_handler();
@@ -236,20 +238,21 @@ impl NamespaceManager {
             .await?;
 
         // /srv/namespace/system_pubkey - System public key
-        self.synth_fs.create_file(
-            &base.join("system_pubkey"),
-            hex::encode(self.system_keypair.verifying_key().as_bytes()).into_bytes(),
-            false, // read-only
-        ).await?;
+        self.synth_fs
+            .create_file(
+                &base.join("system_pubkey"),
+                hex::encode(self.system_keypair.verifying_key().as_bytes()).into_bytes(),
+                false, // read-only
+            )
+            .await?;
 
         // /srv/namespace/list_public - List public namespaces
         let list_public_handler = Arc::new(ListPublicNamespacesHandler {
             claims: self.claims.clone(),
         });
-        self.synth_fs.create_control_file(
-            &base.join("list_public"),
-            list_public_handler,
-        ).await?;
+        self.synth_fs
+            .create_control_file(&base.join("list_public"), list_public_handler)
+            .await?;
 
         Ok(())
     }
@@ -278,7 +281,8 @@ impl NamespaceManager {
             Some((1, 1)), // 1-of-1 for system namespaces (server only)
             None,
             &self.system_keypair,
-        ).await?;
+        )
+        .await?;
 
         // Register /srv/namespace itself
         self.register_namespace(
@@ -288,7 +292,8 @@ impl NamespaceManager {
             Some((1, 1)), // 1-of-1 for system namespaces (server only)
             None,
             &self.system_keypair,
-        ).await?;
+        )
+        .await?;
 
         // Register /srv/settrans for translator management
         self.register_namespace(
@@ -298,12 +303,19 @@ impl NamespaceManager {
             Some((1, 1)), // 1-of-1 for system namespaces (server only)
             None,
             &self.system_keypair,
-        ).await?;
+        )
+        .await?;
 
         // Create user namespaces directory structure
-        self.synth_fs.create_directory(std::path::Path::new("/srv/namespaces")).await?;
-        self.synth_fs.create_directory(std::path::Path::new("/srv/namespaces/users")).await?;
-        self.synth_fs.create_directory(std::path::Path::new("/srv/namespaces/public")).await?;
+        self.synth_fs
+            .create_directory(std::path::Path::new("/srv/namespaces"))
+            .await?;
+        self.synth_fs
+            .create_directory(std::path::Path::new("/srv/namespaces/users"))
+            .await?;
+        self.synth_fs
+            .create_directory(std::path::Path::new("/srv/namespaces/public"))
+            .await?;
 
         Ok(())
     }
@@ -334,23 +346,26 @@ impl NamespaceManager {
         // Create claim with participant tracking
         let created_at = Utc::now();
         let owner_pubkey_hex = hex::encode(owner_keypair.verifying_key().as_bytes());
-        
+
         let metadata = NamespaceMetadata {
             description: description.to_string(),
             namespace_type: namespace_type.to_string(),
             participant_requirements,
             participants: vec![owner_pubkey_hex.clone()], // Owner is first participant
-            access_requests: Vec::new(), // No pending requests initially
+            access_requests: Vec::new(),                  // No pending requests initially
             last_activity: created_at,
             custom: HashMap::new(),
         };
 
         // Create signature over claim data
-        let sign_data = format!("{}{}{}{}",
+        let sign_data = format!(
+            "{}{}{}{}",
             path,
             owner_pubkey_hex,
             created_at.timestamp(),
-            participant_requirements.map(|(n, m)| format!("{}:{}", n, m)).unwrap_or_default()
+            participant_requirements
+                .map(|(n, m)| format!("{}:{}", n, m))
+                .unwrap_or_default()
         );
         let signature = owner_keypair.sign(sign_data.as_bytes());
 
@@ -413,8 +428,7 @@ impl NamespaceManager {
 
             info!(
                 "Namespace {} registered with consensus block {}",
-                claim.path,
-                block_id
+                claim.path, block_id
             );
         }
 
@@ -480,13 +494,17 @@ impl NamespaceManager {
         let mut verified_timestamp = None;
         for ts in candidate_timestamps {
             let sign_data = format!("{}{}{}{}", path, request.pubkey, ts, requirements_str);
-            if verifying_key.verify(sign_data.as_bytes(), &signature).is_ok() {
+            if verifying_key
+                .verify(sign_data.as_bytes(), &signature)
+                .is_ok()
+            {
                 verified_timestamp = Some(ts);
                 break;
             }
         }
 
-        let created_at_ts = verified_timestamp.ok_or_else(|| anyhow!("Signature verification failed"))?;
+        let created_at_ts =
+            verified_timestamp.ok_or_else(|| anyhow!("Signature verification failed"))?;
 
         let created_at = DateTime::<Utc>::from_timestamp(created_at_ts, 0)
             .ok_or_else(|| anyhow!("Invalid created_at timestamp"))?;
@@ -532,15 +550,12 @@ impl NamespaceManager {
     }
 
     async fn handle_delete_payload(&self, payload: &[u8]) -> Result<()> {
-        let request: DeleteNamespaceRequest = serde_json::from_slice(payload)
-            .context("Failed to parse delete namespace request")?;
+        let request: DeleteNamespaceRequest =
+            serde_json::from_slice(payload).context("Failed to parse delete namespace request")?;
         self.delete_namespace_from_request(request).await
     }
 
-    async fn delete_namespace_from_request(
-        &self,
-        request: DeleteNamespaceRequest,
-    ) -> Result<()> {
+    async fn delete_namespace_from_request(&self, request: DeleteNamespaceRequest) -> Result<()> {
         let path = request.path.trim();
         if path.is_empty() {
             anyhow::bail!("Namespace path is required");
@@ -623,7 +638,9 @@ impl NamespaceManager {
 
     /// Get namespace claim
     pub async fn get_claim(&self, path: &str) -> Result<NamespaceClaim> {
-        self.claims.read().await
+        self.claims
+            .read()
+            .await
             .get(path)
             .cloned()
             .ok_or_else(|| anyhow!("Namespace {} not registered", path))
@@ -639,7 +656,8 @@ impl NamespaceManager {
             return Err(anyhow!("Not authorized to delete namespace {}", path));
         }
 
-        self.delete_claim(path, &owner_keypair.verifying_key().to_bytes()).await
+        self.delete_claim(path, &owner_keypair.verifying_key().to_bytes())
+            .await
     }
 
     /// List all registered namespaces
@@ -649,7 +667,10 @@ impl NamespaceManager {
 
     /// List user-owned namespaces
     pub async fn list_user_namespaces(&self) -> Vec<NamespaceClaim> {
-        self.claims.read().await.values()
+        self.claims
+            .read()
+            .await
+            .values()
             .filter(|claim| claim.metadata.namespace_type == "user")
             .cloned()
             .collect()
@@ -657,7 +678,10 @@ impl NamespaceManager {
 
     /// List public namespaces
     pub async fn list_public_namespaces(&self) -> Vec<NamespaceClaim> {
-        self.claims.read().await.values()
+        self.claims
+            .read()
+            .await
+            .values()
             .filter(|claim| claim.metadata.namespace_type == "public")
             .cloned()
             .collect()
@@ -672,14 +696,26 @@ impl NamespaceManager {
         message: &str,
     ) -> Result<()> {
         let mut claims = self.claims.write().await;
-        let claim = claims.get_mut(namespace_path).ok_or_else(|| anyhow!("Namespace not found"))?;
+        let claim = claims
+            .get_mut(namespace_path)
+            .ok_or_else(|| anyhow!("Namespace not found"))?;
 
         // For public namespaces, automatically approve simple participation
         if claim.metadata.namespace_type == "public" && requested_role == "participant" {
-            if !claim.metadata.participants.contains(&requester_pubkey_hex.to_string()) {
-                claim.metadata.participants.push(requester_pubkey_hex.to_string());
+            if !claim
+                .metadata
+                .participants
+                .contains(&requester_pubkey_hex.to_string())
+            {
+                claim
+                    .metadata
+                    .participants
+                    .push(requester_pubkey_hex.to_string());
                 claim.metadata.last_activity = Utc::now();
-                info!("Auto-approved participant access to public namespace {}", namespace_path);
+                info!(
+                    "Auto-approved participant access to public namespace {}",
+                    namespace_path
+                );
                 return Ok(());
             }
         }
@@ -695,7 +731,10 @@ impl NamespaceManager {
         };
 
         claim.metadata.access_requests.push(request);
-        info!("Submitted access request for {} to namespace {}", requester_pubkey_hex, namespace_path);
+        info!(
+            "Submitted access request for {} to namespace {}",
+            requester_pubkey_hex, namespace_path
+        );
         Ok(())
     }
 
@@ -707,18 +746,25 @@ impl NamespaceManager {
         approver_keypair: &SigningKey,
     ) -> Result<()> {
         let mut claims = self.claims.write().await;
-        let claim = claims.get_mut(namespace_path).ok_or_else(|| anyhow!("Namespace not found"))?;
+        let claim = claims
+            .get_mut(namespace_path)
+            .ok_or_else(|| anyhow!("Namespace not found"))?;
 
         // Verify approver authorization (owner or admin)
         let is_owner = claim.owner_pubkey == approver_keypair.verifying_key().to_bytes();
-        let is_admin = claim.metadata.participants.contains(&hex::encode(approver_keypair.verifying_key().as_bytes()));
-        
+        let is_admin = claim
+            .metadata
+            .participants
+            .contains(&hex::encode(approver_keypair.verifying_key().as_bytes()));
+
         if !is_owner && !is_admin {
             return Err(anyhow!("Not authorized to approve access requests"));
         }
 
         // Check M-of-N requirements for approval
-        if let Some((required_signatures, total_participants)) = claim.metadata.participant_requirements {
+        if let Some((required_signatures, total_participants)) =
+            claim.metadata.participant_requirements
+        {
             // For public namespaces (1,0) = open participation, no additional checks needed
             if required_signatures == 1 && total_participants == 0 {
                 // Open participation, proceed normally
@@ -726,36 +772,53 @@ impl NamespaceManager {
                 // For M-of-N requirements, check if we have enough signatures
                 // In a real implementation, this would collect actual signatures from participants
                 // For now, we'll just verify that the approver is authorized
-                
+
                 // Check if the operation requires multiple signatures based on the requirements
                 if required_signatures > 1 && total_participants > 1 {
                     // This is a multi-signature operation, but for simplicity in this implementation
                     // we're allowing the owner or an admin to approve directly
                     // In a full implementation, this would require collecting signatures from N participants
-                    info!("Multi-signature operation required: {}/{} signatures needed", 
-                          required_signatures, total_participants);
+                    info!(
+                        "Multi-signature operation required: {}/{} signatures needed",
+                        required_signatures, total_participants
+                    );
                 }
             }
         }
 
         // Find and approve the request
-        let request = claim.metadata.access_requests.iter_mut()
-            .find(|req| req.requester_pubkey == requester_pubkey_hex && req.status == "pending");
-        
+        let request =
+            claim.metadata.access_requests.iter_mut().find(|req| {
+                req.requester_pubkey == requester_pubkey_hex && req.status == "pending"
+            });
+
         if let Some(request) = request {
             request.status = "approved".to_string();
             request.approved_by = Some(hex::encode(approver_keypair.verifying_key().as_bytes()));
-            
+
             // Add requester as participant
-            if !claim.metadata.participants.contains(&requester_pubkey_hex.to_string()) {
-                claim.metadata.participants.push(requester_pubkey_hex.to_string());
+            if !claim
+                .metadata
+                .participants
+                .contains(&requester_pubkey_hex.to_string())
+            {
+                claim
+                    .metadata
+                    .participants
+                    .push(requester_pubkey_hex.to_string());
             }
-            
+
             claim.metadata.last_activity = Utc::now();
-            info!("Approved access request for {} to namespace {}", requester_pubkey_hex, namespace_path);
+            info!(
+                "Approved access request for {} to namespace {}",
+                requester_pubkey_hex, namespace_path
+            );
             Ok(())
         } else {
-            Err(anyhow!("No pending access request found for {}", requester_pubkey_hex))
+            Err(anyhow!(
+                "No pending access request found for {}",
+                requester_pubkey_hex
+            ))
         }
     }
 
@@ -767,40 +830,58 @@ impl NamespaceManager {
         rejector_keypair: &SigningKey,
     ) -> Result<()> {
         let mut claims = self.claims.write().await;
-        let claim = claims.get_mut(namespace_path).ok_or_else(|| anyhow!("Namespace not found"))?;
+        let claim = claims
+            .get_mut(namespace_path)
+            .ok_or_else(|| anyhow!("Namespace not found"))?;
 
         // Verify rejector authorization (owner or admin)
         let is_owner = claim.owner_pubkey == rejector_keypair.verifying_key().to_bytes();
-        let is_admin = claim.metadata.participants.contains(&hex::encode(rejector_keypair.verifying_key().as_bytes()));
-        
+        let is_admin = claim
+            .metadata
+            .participants
+            .contains(&hex::encode(rejector_keypair.verifying_key().as_bytes()));
+
         if !is_owner && !is_admin {
             return Err(anyhow!("Not authorized to reject access requests"));
         }
 
         // Find and reject the request
-        let request = claim.metadata.access_requests.iter_mut()
-            .find(|req| req.requester_pubkey == requester_pubkey_hex && req.status == "pending");
-        
+        let request =
+            claim.metadata.access_requests.iter_mut().find(|req| {
+                req.requester_pubkey == requester_pubkey_hex && req.status == "pending"
+            });
+
         if let Some(request) = request {
             request.status = "rejected".to_string();
             request.approved_by = Some(hex::encode(rejector_keypair.verifying_key().as_bytes()));
-            info!("Rejected access request for {} to namespace {}", requester_pubkey_hex, namespace_path);
+            info!(
+                "Rejected access request for {} to namespace {}",
+                requester_pubkey_hex, namespace_path
+            );
             Ok(())
         } else {
-            Err(anyhow!("No pending access request found for {}", requester_pubkey_hex))
+            Err(anyhow!(
+                "No pending access request found for {}",
+                requester_pubkey_hex
+            ))
         }
     }
 
     /// List pending access requests for a namespace (owner/admin only)
     pub async fn list_pending_requests(&self, namespace_path: &str) -> Result<Vec<AccessRequest>> {
         let claims = self.claims.read().await;
-        let claim = claims.get(namespace_path).ok_or_else(|| anyhow!("Namespace not found"))?;
-        
-        let pending = claim.metadata.access_requests.iter()
+        let claim = claims
+            .get(namespace_path)
+            .ok_or_else(|| anyhow!("Namespace not found"))?;
+
+        let pending = claim
+            .metadata
+            .access_requests
+            .iter()
             .filter(|req| req.status == "pending")
             .cloned()
             .collect();
-        
+
         Ok(pending)
     }
 
@@ -812,7 +893,9 @@ impl NamespaceManager {
         owner_keypair: &SigningKey,
     ) -> Result<()> {
         let mut claims = self.claims.write().await;
-        let claim = claims.get_mut(path).ok_or_else(|| anyhow!("Namespace not found"))?;
+        let claim = claims
+            .get_mut(path)
+            .ok_or_else(|| anyhow!("Namespace not found"))?;
 
         // Verify owner authorization - check that the provided keypair matches the owner
         if claim.owner_pubkey != owner_keypair.verifying_key().to_bytes() {
@@ -820,22 +903,33 @@ impl NamespaceManager {
         }
 
         // Check M-of-N requirements for participant addition
-        if let Some((required_signatures, total_participants)) = claim.metadata.participant_requirements {
+        if let Some((required_signatures, total_participants)) =
+            claim.metadata.participant_requirements
+        {
             // For public namespaces (1,0) = open participation, no additional checks needed
             if required_signatures == 1 && total_participants == 0 {
                 // Open participation, proceed normally
             } else {
                 // Log M-of-N requirements for the operation
-                info!("Adding participant with M-of-N requirements: {}/{} signatures needed", 
-                      required_signatures, total_participants);
+                info!(
+                    "Adding participant with M-of-N requirements: {}/{} signatures needed",
+                    required_signatures, total_participants
+                );
             }
         }
 
         // Add participant
-        if !claim.metadata.participants.contains(&participant_pubkey_hex.to_string()) {
-            claim.metadata.participants.push(participant_pubkey_hex.to_string());
+        if !claim
+            .metadata
+            .participants
+            .contains(&participant_pubkey_hex.to_string())
+        {
+            claim
+                .metadata
+                .participants
+                .push(participant_pubkey_hex.to_string());
             claim.metadata.last_activity = Utc::now();
-            
+
             // Update total participants in requirements if needed
             if let Some((n, ref mut m)) = claim.metadata.participant_requirements {
                 if n > 0 && *m == 0 {
@@ -847,7 +941,10 @@ impl NamespaceManager {
             }
         }
 
-        info!("Added participant {} to namespace {}", participant_pubkey_hex, path);
+        info!(
+            "Added participant {} to namespace {}",
+            participant_pubkey_hex, path
+        );
         Ok(())
     }
 
@@ -859,7 +956,9 @@ impl NamespaceManager {
         owner_keypair: &SigningKey,
     ) -> Result<()> {
         let mut claims = self.claims.write().await;
-        let claim = claims.get_mut(path).ok_or_else(|| anyhow!("Namespace not found"))?;
+        let claim = claims
+            .get_mut(path)
+            .ok_or_else(|| anyhow!("Namespace not found"))?;
 
         // Verify owner authorization - check that the provided keypair matches the owner
         if claim.owner_pubkey != owner_keypair.verifying_key().to_bytes() {
@@ -867,19 +966,26 @@ impl NamespaceManager {
         }
 
         // Check M-of-N requirements for participant removal
-        if let Some((required_signatures, total_participants)) = claim.metadata.participant_requirements {
+        if let Some((required_signatures, total_participants)) =
+            claim.metadata.participant_requirements
+        {
             // For public namespaces (1,0) = open participation, no additional checks needed
             if required_signatures == 1 && total_participants == 0 {
                 // Open participation, proceed normally
             } else {
                 // Log M-of-N requirements for the operation
-                info!("Removing participant with M-of-N requirements: {}/{} signatures needed", 
-                      required_signatures, total_participants);
+                info!(
+                    "Removing participant with M-of-N requirements: {}/{} signatures needed",
+                    required_signatures, total_participants
+                );
             }
         }
 
         // Remove participant
-        claim.metadata.participants.retain(|p| p != participant_pubkey_hex);
+        claim
+            .metadata
+            .participants
+            .retain(|p| p != participant_pubkey_hex);
         claim.metadata.last_activity = Utc::now();
 
         // Update total participants in requirements if needed
@@ -892,42 +998,61 @@ impl NamespaceManager {
             }
         }
 
-        info!("Removed participant {} from namespace {}", participant_pubkey_hex, path);
+        info!(
+            "Removed participant {} from namespace {}",
+            participant_pubkey_hex, path
+        );
         Ok(())
     }
 
     /// Update namespace liveness (participant heartbeat) with M-of-N validation
     pub async fn update_liveness(&self, path: &str, participant_pubkey_hex: &str) -> Result<()> {
         let mut claims = self.claims.write().await;
-        let claim = claims.get_mut(path).ok_or_else(|| anyhow!("Namespace not found"))?;
+        let claim = claims
+            .get_mut(path)
+            .ok_or_else(|| anyhow!("Namespace not found"))?;
 
         // Check if participant is authorized
-        if !claim.metadata.participants.contains(&participant_pubkey_hex.to_string()) {
-            return Err(anyhow!("Participant {} not authorized for namespace {}", participant_pubkey_hex, path));
+        if !claim
+            .metadata
+            .participants
+            .contains(&participant_pubkey_hex.to_string())
+        {
+            return Err(anyhow!(
+                "Participant {} not authorized for namespace {}",
+                participant_pubkey_hex,
+                path
+            ));
         }
 
         // Check M-of-N requirements for liveness update
-        if let Some((required_signatures, total_participants)) = claim.metadata.participant_requirements {
+        if let Some((required_signatures, total_participants)) =
+            claim.metadata.participant_requirements
+        {
             // For public namespaces (1,0) = open participation, no additional checks needed
             if required_signatures == 1 && total_participants == 0 {
                 // Open participation, proceed normally
             } else {
                 // Log M-of-N requirements for the operation
-                info!("Liveness update with M-of-N requirements: {}/{} signatures needed", 
-                      required_signatures, total_participants);
+                info!(
+                    "Liveness update with M-of-N requirements: {}/{} signatures needed",
+                    required_signatures, total_participants
+                );
             }
         }
 
         // Update last activity
         claim.metadata.last_activity = Utc::now();
-        
+
         Ok(())
     }
 
     /// Check if namespace should be expired based on liveness
     pub async fn check_expiration(&self, path: &str) -> Result<bool> {
         let claims = self.claims.read().await;
-        let claim = claims.get(path).ok_or_else(|| anyhow!("Namespace not found"))?;
+        let claim = claims
+            .get(path)
+            .ok_or_else(|| anyhow!("Namespace not found"))?;
 
         // Check explicit expiration
         if let Some(expires_at) = claim.expires_at {
@@ -948,7 +1073,7 @@ impl NamespaceManager {
     /// Garbage collect expired namespaces
     pub async fn garbage_collect(&self) -> Result<usize> {
         let mut expired_namespaces = Vec::new();
-        
+
         // Find expired namespaces
         {
             let claims = self.claims.read().await;
@@ -1221,18 +1346,24 @@ impl MeshMessageHandler for NamespaceManager {
         _requested_role: String,
         _message: String,
     ) -> Result<()> {
-        info!("Handling namespace access request from {} for namespace {}", from_peer, namespace_path);
-        
+        info!(
+            "Handling namespace access request from {} for namespace {}",
+            from_peer, namespace_path
+        );
+
         // For now, we'll just log the request
         // In a real implementation, this would check if we own the namespace
         // and either auto-approve or queue for manual approval
-        
+
         // Dummy implementation - always approve for now
-        debug!("Would process access request for namespace {} from peer {}", namespace_path, from_peer);
-        
+        debug!(
+            "Would process access request for namespace {} from peer {}",
+            namespace_path, from_peer
+        );
+
         Ok(())
     }
-    
+
     async fn handle_namespace_access_response(
         &self,
         from_peer: String,
@@ -1241,13 +1372,19 @@ impl MeshMessageHandler for NamespaceManager {
         approved: bool,
         _message: String,
     ) -> Result<()> {
-        info!("Handling namespace access response from {} for namespace {}: {}", from_peer, namespace_path, approved);
-        
+        info!(
+            "Handling namespace access response from {} for namespace {}: {}",
+            from_peer, namespace_path, approved
+        );
+
         // For now, we'll just log the response
         // In a real implementation, this would update our local state
-        
-        debug!("Would process access response for namespace {} from peer {}: {}", namespace_path, from_peer, approved);
-        
+
+        debug!(
+            "Would process access response for namespace {} from peer {}: {}",
+            namespace_path, from_peer, approved
+        );
+
         Ok(())
     }
 }
@@ -1258,11 +1395,11 @@ pub async fn register_namespace_controls(
     mesh_network: Option<Arc<MeshNetwork>>,
 ) -> Result<Arc<NamespaceManager>> {
     let mut namespace_mgr = NamespaceManager::new(synth_fs.clone())?;
-    
+
     if let Some(mesh) = mesh_network {
         namespace_mgr = namespace_mgr.with_mesh_network(mesh);
     }
-    
+
     namespace_mgr.initialize().await?;
     Ok(Arc::new(namespace_mgr))
 }

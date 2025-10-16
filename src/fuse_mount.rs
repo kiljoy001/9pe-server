@@ -9,16 +9,15 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{Duration, UNIX_EPOCH};
 
-use anyhow::{Result, Context};
+use anyhow::{Context, Result};
 use fuser::{
     FileAttr, FileType, Filesystem, MountOption, ReplyAttr, ReplyData, ReplyDirectory, ReplyEntry,
     Request,
 };
-use tokio::sync::{RwLock, Mutex};
+use tokio::sync::{Mutex, RwLock};
 use tracing::{debug, error, info, warn};
 
 use crate::protocol::NinePClient;
-
 
 const TTL: Duration = Duration::from_secs(1);
 
@@ -73,11 +72,17 @@ impl NinePFS {
                 let mut path_cache = self.path_cache.write().await;
                 path_cache.insert(1, PathBuf::from("/"));
 
-                info!("✅ Successfully connected to 9P server at {}", self.server_addr);
+                info!(
+                    "✅ Successfully connected to 9P server at {}",
+                    self.server_addr
+                );
                 Ok(())
-            },
+            }
             Err(e) => {
-                warn!("⚠️  Could not connect to 9P server at {}: {}", self.server_addr, e);
+                warn!(
+                    "⚠️  Could not connect to 9P server at {}: {}",
+                    self.server_addr, e
+                );
                 warn!("📁 FUSE mount will show placeholder files only");
 
                 // Still initialize caches for offline mode
@@ -260,16 +265,19 @@ fn create_file_attr(ino: u64, kind: FileType, size: u64, mode: u16) -> FileAttr 
 }
 
 /// Mount a 9P server using FUSE
-pub async fn mount_9p_fuse(
-    server_addr: String,
-    mount_point: PathBuf,
-) -> Result<()> {
-    info!("Mounting 9P server {} at {:?} using FUSE", server_addr, mount_point);
+pub async fn mount_9p_fuse(server_addr: String, mount_point: PathBuf) -> Result<()> {
+    info!(
+        "Mounting 9P server {} at {:?} using FUSE",
+        server_addr, mount_point
+    );
 
     // Check for and clean up any existing broken mount
     if mount_point.exists() {
         if is_mount_point(&mount_point).await? {
-            warn!("Mount point {:?} already mounted, attempting cleanup", mount_point);
+            warn!(
+                "Mount point {:?} already mounted, attempting cleanup",
+                mount_point
+            );
             if let Err(e) = unmount_fuse(&mount_point).await {
                 warn!("Failed to unmount existing mount: {}", e);
             }
@@ -282,17 +290,13 @@ pub async fn mount_9p_fuse(
     }
 
     // Create fresh mount point
-    std::fs::create_dir_all(&mount_point)
-        .context("Failed to create mount point")?;
+    std::fs::create_dir_all(&mount_point).context("Failed to create mount point")?;
 
     // Create filesystem
     let fs = NinePFS::new(server_addr);
 
     // Mount options - read-only for safety
-    let options = vec![
-        MountOption::RO,
-        MountOption::FSName("9pe-fuse".to_string()),
-    ];
+    let options = vec![MountOption::RO, MountOption::FSName("9pe-fuse".to_string())];
 
     // Mount the filesystem
     info!("Starting FUSE mount...");
@@ -302,7 +306,8 @@ pub async fn mount_9p_fuse(
         if let Err(e) = fuser::mount2(fs, &mount_point, &options) {
             error!("FUSE mount failed: {}", e);
         }
-    }).await?;
+    })
+    .await?;
 
     Ok(())
 }
@@ -382,10 +387,10 @@ pub async fn unmount_fuse(mount_point: &PathBuf) -> Result<()> {
             info!("Successfully lazy unmounted {:?}", mount_point);
             Ok(())
         }
-        _ => {
-            Err(anyhow::anyhow!("All unmount attempts failed. Last error: {}",
-                last_error.unwrap_or_else(|| "Unknown error".to_string())))
-        }
+        _ => Err(anyhow::anyhow!(
+            "All unmount attempts failed. Last error: {}",
+            last_error.unwrap_or_else(|| "Unknown error".to_string())
+        )),
     }
 }
 
@@ -403,16 +408,15 @@ pub async fn cleanup_broken_mounts() -> Result<()> {
     let mut entries = tokio::fs::read_dir(&nine_pe_dir).await?;
     while let Some(entry) = entries.next_entry().await? {
         let path = entry.path();
-        if path.is_dir()
-            && is_mount_point(&path).await? {
-                // Check if mount is responsive
-                if !is_mount_responsive(&path).await {
-                    warn!("Found unresponsive mount at {:?}, cleaning up", path);
-                    if let Err(e) = unmount_fuse(&path).await {
-                        warn!("Failed to cleanup broken mount {:?}: {}", path, e);
-                    }
+        if path.is_dir() && is_mount_point(&path).await? {
+            // Check if mount is responsive
+            if !is_mount_responsive(&path).await {
+                warn!("Found unresponsive mount at {:?}, cleaning up", path);
+                if let Err(e) = unmount_fuse(&path).await {
+                    warn!("Failed to cleanup broken mount {:?}: {}", path, e);
                 }
             }
+        }
     }
 
     Ok(())
@@ -421,10 +425,7 @@ pub async fn cleanup_broken_mounts() -> Result<()> {
 /// Check if a mount point is responsive
 async fn is_mount_responsive(path: &PathBuf) -> bool {
     // Try to list directory contents with a timeout
-    match tokio::time::timeout(
-        std::time::Duration::from_secs(5),
-        tokio::fs::read_dir(path)
-    ).await {
+    match tokio::time::timeout(std::time::Duration::from_secs(5), tokio::fs::read_dir(path)).await {
         Ok(Ok(_)) => true,
         _ => false,
     }

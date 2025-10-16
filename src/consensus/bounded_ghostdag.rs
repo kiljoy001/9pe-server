@@ -4,13 +4,13 @@
 //! this provides a memory-efficient consensus mechanism for distributed
 //! 9P.e namespace operations.
 
-use anyhow::{Result, Context as AnyhowContext};
-use serde::{Serialize, Deserialize};
-use std::collections::{HashMap, HashSet, VecDeque, BTreeMap};
+use super::dynamic_scaling::{DynamicScaler, ScalingParams};
+use anyhow::{Context as AnyhowContext, Result};
+use serde::{Deserialize, Serialize};
+use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::info;
-use super::dynamic_scaling::{DynamicScaler, ScalingParams};
 
 /// Minimum blocks to keep (floor)
 const MIN_DAG_SIZE: usize = 100;
@@ -21,13 +21,13 @@ const DEFAULT_DAG_SIZE: usize = 1_000;
 
 /// Dynamic sizing parameters
 #[allow(dead_code)]
-const SCALE_UP_THRESHOLD: f64 = 0.8;    // Scale up at 80% full
+const SCALE_UP_THRESHOLD: f64 = 0.8; // Scale up at 80% full
 #[allow(dead_code)]
-const SCALE_DOWN_THRESHOLD: f64 = 0.2;  // Scale down at 20% full
+const SCALE_DOWN_THRESHOLD: f64 = 0.2; // Scale down at 20% full
 #[allow(dead_code)]
-const SCALE_FACTOR: f64 = 1.5;          // Scale by 50% each time
+const SCALE_FACTOR: f64 = 1.5; // Scale by 50% each time
 #[allow(dead_code)]
-const THROUGHPUT_WINDOW: usize = 100;   // Sample last 100 operations
+const THROUGHPUT_WINDOW: usize = 100; // Sample last 100 operations
 /// Depth threshold for pruning confirmed blocks
 const CONFIRMATION_DEPTH: u64 = 100;
 /// Maximum parents per block
@@ -55,13 +55,25 @@ pub enum BlockState {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum NamespaceOp {
     /// Create a new file or directory
-    Create { path: String, mode: u32, is_dir: bool },
+    Create {
+        path: String,
+        mode: u32,
+        is_dir: bool,
+    },
     /// Write data to a file
-    Write { path: String, offset: u64, hash: [u8; 32] },
+    Write {
+        path: String,
+        offset: u64,
+        hash: [u8; 32],
+    },
     /// Delete a file or directory
     Delete { path: String },
     /// Set translator on a path
-    SetTrans { path: String, translator: String, args: Vec<String> },
+    SetTrans {
+        path: String,
+        translator: String,
+        args: Vec<String>,
+    },
     /// Change permissions
     Chmod { path: String, mode: u32 },
     /// Rename/move operation
@@ -90,9 +102,12 @@ impl NamespaceOp {
     pub fn affected_paths(&self) -> HashSet<String> {
         let mut paths = HashSet::new();
         match self {
-            Self::Create { path, .. } | Self::Delete { path } |
-            Self::Write { path, .. } | Self::SetTrans { path, .. } |
-            Self::Chmod { path, .. } | Self::RegisterNamespace { path, .. } => {
+            Self::Create { path, .. }
+            | Self::Delete { path }
+            | Self::Write { path, .. }
+            | Self::SetTrans { path, .. }
+            | Self::Chmod { path, .. }
+            | Self::RegisterNamespace { path, .. } => {
                 paths.insert(path.clone());
             }
             Self::Rename { from, to } => {
@@ -262,7 +277,10 @@ impl BoundedGhostdag {
 
         // Add to DAG
         let block_id = block.id.clone();
-        self.dag.write().await.insert(block_id.clone(), block.clone());
+        self.dag
+            .write()
+            .await
+            .insert(block_id.clone(), block.clone());
 
         // Update tips
         self.update_tips(&block).await;
@@ -298,7 +316,7 @@ impl BoundedGhostdag {
 
         // Check for operation conflicts within the block
         for i in 0..block.operations.len() {
-            for j in i+1..block.operations.len() {
+            for j in i + 1..block.operations.len() {
                 if block.operations[i].conflicts_with(&block.operations[j]) {
                     anyhow::bail!("Conflicting operations within block");
                 }
@@ -345,7 +363,11 @@ impl BoundedGhostdag {
     }
 
     /// Calculate subtree size for GHOST score
-    async fn calculate_subtree_size(&self, block_id: &str, dag: &HashMap<BlockId, Block>) -> Result<u64> {
+    async fn calculate_subtree_size(
+        &self,
+        block_id: &str,
+        dag: &HashMap<BlockId, Block>,
+    ) -> Result<u64> {
         let mut visited = HashSet::new();
         let mut queue = VecDeque::new();
         queue.push_back(block_id.to_string());
@@ -377,7 +399,8 @@ impl BoundedGhostdag {
         }
 
         // Find genesis block(s)
-        let genesis_blocks: Vec<_> = dag.values()
+        let genesis_blocks: Vec<_> = dag
+            .values()
             .filter(|b| b.parents.is_empty())
             .map(|b| b.id.clone())
             .collect();
@@ -405,7 +428,7 @@ impl BoundedGhostdag {
         &self,
         parent: &str,
         dag: &HashMap<BlockId, Block>,
-        scores: &HashMap<BlockId, u64>
+        scores: &HashMap<BlockId, u64>,
     ) -> Option<BlockId> {
         let mut heaviest = None;
         let mut max_score = 0;
@@ -487,7 +510,8 @@ impl BoundedGhostdag {
 
         // Get the last block to checkpoint
         let last_block_id = &blocks[blocks.len() - 1];
-        let last_block = dag.get(last_block_id)
+        let last_block = dag
+            .get(last_block_id)
             .context("Block to checkpoint not found")?;
 
         // Build namespace state up to this point
@@ -520,12 +544,15 @@ impl BoundedGhostdag {
     fn apply_operation_to_state(&self, state: &mut BTreeMap<String, FileState>, op: &NamespaceOp) {
         match op {
             NamespaceOp::Create { path, mode, .. } => {
-                state.insert(path.clone(), FileState {
-                    mode: *mode,
-                    size: 0,
-                    content_hash: [0; 32],
-                    translator: None,
-                });
+                state.insert(
+                    path.clone(),
+                    FileState {
+                        mode: *mode,
+                        size: 0,
+                        content_hash: [0; 32],
+                        translator: None,
+                    },
+                );
             }
             NamespaceOp::Write { path, .. } => {
                 if let Some(file) = state.get_mut(path) {
@@ -535,7 +562,9 @@ impl BoundedGhostdag {
             NamespaceOp::Delete { path } => {
                 state.remove(path);
             }
-            NamespaceOp::SetTrans { path, translator, .. } => {
+            NamespaceOp::SetTrans {
+                path, translator, ..
+            } => {
                 if let Some(file) = state.get_mut(path) {
                     file.translator = Some(translator.clone());
                 }
@@ -600,7 +629,10 @@ impl BoundedGhostdag {
         // Calculate throughput
         let timestamps = self.block_timestamps.read().await;
         let throughput = if timestamps.len() >= 2 {
-            let duration = timestamps.back().unwrap().duration_since(*timestamps.front().unwrap());
+            let duration = timestamps
+                .back()
+                .unwrap()
+                .duration_since(*timestamps.front().unwrap());
             if duration.as_secs() > 0 {
                 timestamps.len() as f64 / duration.as_secs_f64()
             } else {
@@ -620,7 +652,9 @@ impl BoundedGhostdag {
         let fork_depth = tips.len() as u64;
 
         // Record metrics in scaler
-        self.scaler.record_metrics(throughput, fill_rate, fork_depth).await;
+        self.scaler
+            .record_metrics(throughput, fill_rate, fork_depth)
+            .await;
 
         // Update throughput tracker
         *self.last_throughput.write().await = throughput;
@@ -629,10 +663,16 @@ impl BoundedGhostdag {
     /// Apply dynamic scaling based on metrics
     async fn apply_dynamic_scaling(&self) {
         // Get scaling decision
-        let decision = self.scaler.calculate_scale_decision(&self.scaling_params).await;
+        let decision = self
+            .scaler
+            .calculate_scale_decision(&self.scaling_params)
+            .await;
 
         // Apply decision and update max_size
-        let new_size = self.scaler.apply_scale(decision, &self.scaling_params).await;
+        let new_size = self
+            .scaler
+            .apply_scale(decision, &self.scaling_params)
+            .await;
         let current_size = *self.max_size.read().await;
         if new_size != current_size {
             info!("DAG size adjusted: {} → {} blocks", current_size, new_size);
@@ -663,13 +703,11 @@ mod tests {
         let genesis = Block {
             id: "genesis".to_string(),
             parents: vec![],
-            operations: vec![
-                NamespaceOp::Create {
-                    path: "/test".to_string(),
-                    mode: 0o644,
-                    is_dir: false,
-                }
-            ],
+            operations: vec![NamespaceOp::Create {
+                path: "/test".to_string(),
+                mode: 0o644,
+                is_dir: false,
+            }],
             timestamp: 0,
             creator: "node1".to_string(),
             signature: vec![],

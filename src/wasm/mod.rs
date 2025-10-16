@@ -5,14 +5,14 @@
 //!
 //! NOTE: For GPU compute, use SYCL (src/sycl/) instead of the old OpenCL/OneAPI stubs.
 
-pub mod translator;
 pub mod composition;
-pub mod threadsafe;
-pub mod opencl_host;
 pub mod consensus_host;
+pub mod threadsafe;
+pub mod translator;
 
-pub use translator::{WasmTranslator, TranslatorRegistry, TranslatorMetadata};
-pub use composition::{WasmComposer, WasmFileHandlers, WasiState};
+pub use composition::{WasiState, WasmComposer, WasmFileHandlers};
+pub use consensus_host::{
+    add_consensus_functions, get_consensus_diagnostics, update_consensus_state,
+};
 pub use threadsafe::{ThreadSafeTranslator, ThreadSafeTranslatorRegistry};
-pub use opencl_host::{add_opencl_functions, initialize_opencl, get_opencl_info};
-pub use consensus_host::{add_consensus_functions, update_consensus_state, get_consensus_diagnostics};
+pub use translator::{TranslatorMetadata, TranslatorRegistry, WasmTranslator};

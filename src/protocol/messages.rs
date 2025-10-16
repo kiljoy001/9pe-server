@@ -2,8 +2,8 @@
 //!
 //! Defines all 9P2000 and 9P.e extension messages with serialization support.
 
-use super::{MessageType, Tag, Fid, Qid, Stat, Message};
-use std::io::{Result as IoResult, Error, ErrorKind};
+use super::{Fid, Message, MessageType, Qid, Stat, Tag};
+use std::io::{Error, ErrorKind, Result as IoResult};
 
 // Helper functions for wire encoding
 fn write_u8(buf: &mut Vec<u8>, val: u8) -> IoResult<()> {
@@ -63,7 +63,10 @@ fn read_u32(buf: &[u8], offset: &mut usize) -> IoResult<u32> {
         return Err(Error::new(ErrorKind::UnexpectedEof, "Buffer underflow"));
     }
     let val = u32::from_le_bytes([
-        buf[*offset], buf[*offset + 1], buf[*offset + 2], buf[*offset + 3]
+        buf[*offset],
+        buf[*offset + 1],
+        buf[*offset + 2],
+        buf[*offset + 3],
     ]);
     *offset += 4;
     Ok(val)
@@ -118,8 +121,12 @@ impl Tversion {
 }
 
 impl Message for Tversion {
-    fn msg_type(&self) -> MessageType { MessageType::Tversion }
-    fn tag(&self) -> Tag { self.tag }
+    fn msg_type(&self) -> MessageType {
+        MessageType::Tversion
+    }
+    fn tag(&self) -> Tag {
+        self.tag
+    }
 
     fn encode(&self, buf: &mut Vec<u8>) -> IoResult<()> {
         write_u16(buf, self.tag)?;
@@ -148,8 +155,12 @@ impl Rversion {
 }
 
 impl Message for Rversion {
-    fn msg_type(&self) -> MessageType { MessageType::Rversion }
-    fn tag(&self) -> Tag { self.tag }
+    fn msg_type(&self) -> MessageType {
+        MessageType::Rversion
+    }
+    fn tag(&self) -> Tag {
+        self.tag
+    }
 
     fn encode(&self, buf: &mut Vec<u8>) -> IoResult<()> {
         write_u16(buf, self.tag)?;
@@ -184,8 +195,12 @@ impl Tattach {
 }
 
 impl Message for Tattach {
-    fn msg_type(&self) -> MessageType { MessageType::Tattach }
-    fn tag(&self) -> Tag { self.tag }
+    fn msg_type(&self) -> MessageType {
+        MessageType::Tattach
+    }
+    fn tag(&self) -> Tag {
+        self.tag
+    }
 
     fn encode(&self, buf: &mut Vec<u8>) -> IoResult<()> {
         write_u16(buf, self.tag)?;
@@ -214,8 +229,12 @@ impl Rattach {
 }
 
 impl Message for Rattach {
-    fn msg_type(&self) -> MessageType { MessageType::Rattach }
-    fn tag(&self) -> Tag { self.tag }
+    fn msg_type(&self) -> MessageType {
+        MessageType::Rattach
+    }
+    fn tag(&self) -> Tag {
+        self.tag
+    }
 
     fn encode(&self, buf: &mut Vec<u8>) -> IoResult<()> {
         write_u16(buf, self.tag)?;
@@ -247,13 +266,22 @@ impl Twalk {
             wnames.push(read_string(buf, &mut offset)?);
         }
 
-        Ok(Self { tag, fid, newfid, wnames })
+        Ok(Self {
+            tag,
+            fid,
+            newfid,
+            wnames,
+        })
     }
 }
 
 impl Message for Twalk {
-    fn msg_type(&self) -> MessageType { MessageType::Twalk }
-    fn tag(&self) -> Tag { self.tag }
+    fn msg_type(&self) -> MessageType {
+        MessageType::Twalk
+    }
+    fn tag(&self) -> Tag {
+        self.tag
+    }
 
     fn encode(&self, buf: &mut Vec<u8>) -> IoResult<()> {
         write_u16(buf, self.tag)?;
@@ -289,8 +317,12 @@ impl Rwalk {
 }
 
 impl Message for Rwalk {
-    fn msg_type(&self) -> MessageType { MessageType::Rwalk }
-    fn tag(&self) -> Tag { self.tag }
+    fn msg_type(&self) -> MessageType {
+        MessageType::Rwalk
+    }
+    fn tag(&self) -> Tag {
+        self.tag
+    }
 
     fn encode(&self, buf: &mut Vec<u8>) -> IoResult<()> {
         write_u16(buf, self.tag)?;
@@ -323,8 +355,12 @@ impl Topen {
 }
 
 impl Message for Topen {
-    fn msg_type(&self) -> MessageType { MessageType::Topen }
-    fn tag(&self) -> Tag { self.tag }
+    fn msg_type(&self) -> MessageType {
+        MessageType::Topen
+    }
+    fn tag(&self) -> Tag {
+        self.tag
+    }
 
     fn encode(&self, buf: &mut Vec<u8>) -> IoResult<()> {
         write_u16(buf, self.tag)?;
@@ -353,8 +389,12 @@ impl Ropen {
 }
 
 impl Message for Ropen {
-    fn msg_type(&self) -> MessageType { MessageType::Ropen }
-    fn tag(&self) -> Tag { self.tag }
+    fn msg_type(&self) -> MessageType {
+        MessageType::Ropen
+    }
+    fn tag(&self) -> Tag {
+        self.tag
+    }
 
     fn encode(&self, buf: &mut Vec<u8>) -> IoResult<()> {
         write_u16(buf, self.tag)?;
@@ -387,8 +427,12 @@ impl Tread {
 }
 
 impl Message for Tread {
-    fn msg_type(&self) -> MessageType { MessageType::Tread }
-    fn tag(&self) -> Tag { self.tag }
+    fn msg_type(&self) -> MessageType {
+        MessageType::Tread
+    }
+    fn tag(&self) -> Tag {
+        self.tag
+    }
 
     fn encode(&self, buf: &mut Vec<u8>) -> IoResult<()> {
         write_u16(buf, self.tag)?;
@@ -422,8 +466,12 @@ impl Rread {
 }
 
 impl Message for Rread {
-    fn msg_type(&self) -> MessageType { MessageType::Rread }
-    fn tag(&self) -> Tag { self.tag }
+    fn msg_type(&self) -> MessageType {
+        MessageType::Rread
+    }
+    fn tag(&self) -> Tag {
+        self.tag
+    }
 
     fn encode(&self, buf: &mut Vec<u8>) -> IoResult<()> {
         write_u16(buf, self.tag)?;
@@ -457,13 +505,22 @@ impl Twrite {
 
         let data = buf[offset..offset + count].to_vec();
 
-        Ok(Self { tag, fid, offset: file_offset, data })
+        Ok(Self {
+            tag,
+            fid,
+            offset: file_offset,
+            data,
+        })
     }
 }
 
 impl Message for Twrite {
-    fn msg_type(&self) -> MessageType { MessageType::Twrite }
-    fn tag(&self) -> Tag { self.tag }
+    fn msg_type(&self) -> MessageType {
+        MessageType::Twrite
+    }
+    fn tag(&self) -> Tag {
+        self.tag
+    }
 
     fn encode(&self, buf: &mut Vec<u8>) -> IoResult<()> {
         write_u16(buf, self.tag)?;
@@ -492,8 +549,12 @@ impl Rwrite {
 }
 
 impl Message for Rwrite {
-    fn msg_type(&self) -> MessageType { MessageType::Rwrite }
-    fn tag(&self) -> Tag { self.tag }
+    fn msg_type(&self) -> MessageType {
+        MessageType::Rwrite
+    }
+    fn tag(&self) -> Tag {
+        self.tag
+    }
 
     fn encode(&self, buf: &mut Vec<u8>) -> IoResult<()> {
         write_u16(buf, self.tag)?;
@@ -521,8 +582,12 @@ impl Tclunk {
 }
 
 impl Message for Tclunk {
-    fn msg_type(&self) -> MessageType { MessageType::Tclunk }
-    fn tag(&self) -> Tag { self.tag }
+    fn msg_type(&self) -> MessageType {
+        MessageType::Tclunk
+    }
+    fn tag(&self) -> Tag {
+        self.tag
+    }
 
     fn encode(&self, buf: &mut Vec<u8>) -> IoResult<()> {
         write_u16(buf, self.tag)?;
@@ -546,8 +611,12 @@ impl Rclunk {
 }
 
 impl Message for Rclunk {
-    fn msg_type(&self) -> MessageType { MessageType::Rclunk }
-    fn tag(&self) -> Tag { self.tag }
+    fn msg_type(&self) -> MessageType {
+        MessageType::Rclunk
+    }
+    fn tag(&self) -> Tag {
+        self.tag
+    }
 
     fn encode(&self, buf: &mut Vec<u8>) -> IoResult<()> {
         write_u16(buf, self.tag)?;
@@ -574,8 +643,12 @@ impl Tstat {
 }
 
 impl Message for Tstat {
-    fn msg_type(&self) -> MessageType { MessageType::Tstat }
-    fn tag(&self) -> Tag { self.tag }
+    fn msg_type(&self) -> MessageType {
+        MessageType::Tstat
+    }
+    fn tag(&self) -> Tag {
+        self.tag
+    }
 
     fn encode(&self, buf: &mut Vec<u8>) -> IoResult<()> {
         write_u16(buf, self.tag)?;
@@ -617,8 +690,12 @@ impl Rstat {
 }
 
 impl Message for Rstat {
-    fn msg_type(&self) -> MessageType { MessageType::Rstat }
-    fn tag(&self) -> Tag { self.tag }
+    fn msg_type(&self) -> MessageType {
+        MessageType::Rstat
+    }
+    fn tag(&self) -> Tag {
+        self.tag
+    }
 
     fn encode(&self, buf: &mut Vec<u8>) -> IoResult<()> {
         write_u16(buf, self.tag)?;
@@ -668,8 +745,12 @@ impl Tauth {
 }
 
 impl Message for Tauth {
-    fn msg_type(&self) -> MessageType { MessageType::Tauth }
-    fn tag(&self) -> Tag { self.tag }
+    fn msg_type(&self) -> MessageType {
+        MessageType::Tauth
+    }
+    fn tag(&self) -> Tag {
+        self.tag
+    }
 
     fn encode(&self, buf: &mut Vec<u8>) -> IoResult<()> {
         write_u16(buf, self.tag)?;
@@ -698,8 +779,12 @@ impl Rauth {
 }
 
 impl Message for Rauth {
-    fn msg_type(&self) -> MessageType { MessageType::Rauth }
-    fn tag(&self) -> Tag { self.tag }
+    fn msg_type(&self) -> MessageType {
+        MessageType::Rauth
+    }
+    fn tag(&self) -> Tag {
+        self.tag
+    }
 
     fn encode(&self, buf: &mut Vec<u8>) -> IoResult<()> {
         write_u16(buf, self.tag)?;

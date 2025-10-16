@@ -1,10 +1,10 @@
 //! GHOSTDAG consensus implementation
+use super::crypto::{CryptoProvider, Signature, TrustedKeyStore, WorkProof};
 use anyhow::Result;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use super::crypto::{CryptoProvider, Signature, WorkProof, TrustedKeyStore};
 
 /// Unique identifier for blocks in the DAG
 pub type BlockId = String;
@@ -117,10 +117,7 @@ impl GhostdagConsensus {
     }
 
     /// Create a new work block
-    pub async fn create_work_block(
-        &self,
-        work_results: Vec<WorkResult>,
-    ) -> Result<WorkBlock> {
+    pub async fn create_work_block(&self, work_results: Vec<WorkResult>) -> Result<WorkBlock> {
         let block_id = format!("block_{}", uuid::Uuid::new_v4());
         let timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)?
@@ -167,10 +164,14 @@ impl GhostdagConsensus {
         let creator_key = {
             let store = self.trusted_keys.read().await;
             store.get_key(&block.creator)
-        }.ok_or_else(|| anyhow::anyhow!("Untrusted block creator {}", block.creator))?;
+        }
+        .ok_or_else(|| anyhow::anyhow!("Untrusted block creator {}", block.creator))?;
 
         let payload = block_signature_payload(&block.id, block.timestamp, &block.parents);
-        let signature_valid = self.crypto.verify(&payload, &block.signature, &creator_key).await?;
+        let signature_valid = self
+            .crypto
+            .verify(&payload, &block.signature, &creator_key)
+            .await?;
         if !signature_valid {
             anyhow::bail!("Invalid block signature for {}", block.id);
         }
@@ -185,13 +186,17 @@ impl GhostdagConsensus {
             let executor_key = {
                 let store = self.trusted_keys.read().await;
                 store.get_key(&result.executor_node)
-            }.ok_or_else(|| anyhow::anyhow!("Untrusted executor {}", result.executor_node))?;
+            }
+            .ok_or_else(|| anyhow::anyhow!("Untrusted executor {}", result.executor_node))?;
 
-            let proof_valid = result.computation_proof.verify(
-                &pending_submission.input_data,
-                &executor_key,
-                self.crypto.as_ref(),
-            ).await?;
+            let proof_valid = result
+                .computation_proof
+                .verify(
+                    &pending_submission.input_data,
+                    &executor_key,
+                    self.crypto.as_ref(),
+                )
+                .await?;
 
             if !proof_valid {
                 anyhow::bail!("Invalid computation proof for work {}", result.work_id);
@@ -427,7 +432,7 @@ impl NetworkStats {
             active_nodes: 1, // TODO: Get from network layer
             consensus_confidence: state.confidence_score(),
             average_block_time_ms: 10000, // TODO: Calculate from actual data
-            network_hashrate: 0.0, // TODO: Calculate from work proofs
+            network_hashrate: 0.0,        // TODO: Calculate from work proofs
             fork_rate: state.tips.len() as f64 / state.dag_height as f64,
         }
     }

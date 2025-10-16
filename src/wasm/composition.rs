@@ -3,12 +3,12 @@
 //! Users write translator compositions in any WASM-compatible language
 //! The server executes them safely in sandboxed WASM runtime
 
-use std::sync::Arc;
-use std::collections::HashMap;
 use anyhow::Result;
+use std::collections::HashMap;
+use std::sync::Arc;
+use tokio::sync::RwLock;
 use wasmtime::*;
 use wasmtime_wasi::{WasiCtx, WasiCtxBuilder};
-use tokio::sync::RwLock;
 
 /// WASM Composer - executes user-provided WASM modules for composition
 pub struct WasmComposer {
@@ -32,7 +32,7 @@ impl WasmComposer {
         config.wasm_reference_types(true);
 
         // Safety limits
-        config.max_wasm_stack(1024 * 1024);  // 1MB stack
+        config.max_wasm_stack(1024 * 1024); // 1MB stack
         config.memory_guaranteed_dense_image_size(16 * 1024 * 1024); // 16MB
 
         let engine = Engine::new(&config)?;
@@ -54,16 +54,15 @@ impl WasmComposer {
     /// Create a composition instance from a module
     pub async fn instantiate(&self, name: String, module_name: String) -> Result<()> {
         let modules = self.modules.read().await;
-        let module = modules.get(&module_name)
+        let module = modules
+            .get(&module_name)
             .ok_or_else(|| anyhow::anyhow!("Module not found: {}", module_name))?;
 
         // Create store with WASI
         let mut store = Store::new(&self.engine, WasiState::new());
 
         // Create WASI context
-        let wasi_ctx = WasiCtxBuilder::new()
-            .inherit_stdio()
-            .build();
+        let wasi_ctx = WasiCtxBuilder::new().inherit_stdio().build();
         store.data_mut().wasi = Some(wasi_ctx);
 
         // Link WASI
@@ -79,10 +78,7 @@ impl WasmComposer {
         // Instantiate
         let instance = linker.instantiate(&mut store, module)?;
 
-        let wasm_instance = WasmInstance {
-            store,
-            instance,
-        };
+        let wasm_instance = WasmInstance { store, instance };
 
         self.instances.write().await.insert(name, wasm_instance);
         Ok(())
@@ -96,7 +92,8 @@ impl WasmComposer {
             "compose_pipeline",
             |mut caller: Caller<'_, WasiState>, ptr: i32, len: i32| -> i32 {
                 // Read translator names from WASM memory
-                let mem = caller.get_export("memory")
+                let mem = caller
+                    .get_export("memory")
                     .and_then(|e| e.into_memory())
                     .unwrap();
 
@@ -108,7 +105,7 @@ impl WasmComposer {
                 let handle = caller.data_mut().next_handle();
                 caller.data_mut().compositions.insert(handle, translators);
                 handle
-            }
+            },
         )?;
 
         // compose_stack(translators_ptr, translators_len) -> handle
@@ -116,7 +113,8 @@ impl WasmComposer {
             "translator",
             "compose_stack",
             |mut caller: Caller<'_, WasiState>, ptr: i32, len: i32| -> i32 {
-                let mem = caller.get_export("memory")
+                let mem = caller
+                    .get_export("memory")
                     .and_then(|e| e.into_memory())
                     .unwrap();
 
@@ -127,16 +125,23 @@ impl WasmComposer {
                 let handle = caller.data_mut().next_handle();
                 caller.data_mut().stacks.insert(handle, translators);
                 handle
-            }
+            },
         )?;
 
         // apply_translator(handle, data_ptr, data_len, out_ptr, out_len) -> result_len
         linker.func_wrap(
             "translator",
             "apply_translator",
-            |mut caller: Caller<'_, WasiState>, _handle: i32, in_ptr: i32, in_len: i32, out_ptr: i32, out_cap: i32| -> i32 {
+            |mut caller: Caller<'_, WasiState>,
+             _handle: i32,
+             in_ptr: i32,
+             in_len: i32,
+             out_ptr: i32,
+             out_cap: i32|
+             -> i32 {
                 // Get input data
-                let mem = caller.get_export("memory")
+                let mem = caller
+                    .get_export("memory")
                     .and_then(|e| e.into_memory())
                     .unwrap();
 
@@ -153,15 +158,21 @@ impl WasmComposer {
                     .copy_from_slice(&output[..out_len]);
 
                 out_len as i32
-            }
+            },
         )?;
 
         // read_file(path_ptr, path_len, out_ptr, out_cap) -> result_len
         linker.func_wrap(
             "translator",
             "read_file",
-            |mut caller: Caller<'_, WasiState>, path_ptr: i32, path_len: i32, out_ptr: i32, out_cap: i32| -> i32 {
-                let mem = caller.get_export("memory")
+            |mut caller: Caller<'_, WasiState>,
+             path_ptr: i32,
+             path_len: i32,
+             out_ptr: i32,
+             out_cap: i32|
+             -> i32 {
+                let mem = caller
+                    .get_export("memory")
                     .and_then(|e| e.into_memory())
                     .unwrap();
 
@@ -179,15 +190,21 @@ impl WasmComposer {
                     .copy_from_slice(&content[..out_len]);
 
                 out_len as i32
-            }
+            },
         )?;
 
         // write_file(path_ptr, path_len, data_ptr, data_len) -> success
         linker.func_wrap(
             "translator",
             "write_file",
-            |mut caller: Caller<'_, WasiState>, path_ptr: i32, path_len: i32, data_ptr: i32, data_len: i32| -> i32 {
-                let mem = caller.get_export("memory")
+            |mut caller: Caller<'_, WasiState>,
+             path_ptr: i32,
+             path_len: i32,
+             data_ptr: i32,
+             data_len: i32|
+             -> i32 {
+                let mem = caller
+                    .get_export("memory")
                     .and_then(|e| e.into_memory())
                     .unwrap();
 
@@ -202,7 +219,7 @@ impl WasmComposer {
                     Ok(_) => 1,
                     Err(_) => 0,
                 }
-            }
+            },
         )?;
 
         Ok(())
@@ -216,34 +233,61 @@ impl WasmComposer {
         input: &[u8],
     ) -> Result<Vec<u8>> {
         let mut instances = self.instances.write().await;
-        let instance = instances.get_mut(instance_name)
+        let instance = instances
+            .get_mut(instance_name)
             .ok_or_else(|| anyhow::anyhow!("Instance not found: {}", instance_name))?;
 
         // Get function
-        let func = instance.instance.get_func(&mut instance.store, function)
+        let func = instance
+            .instance
+            .get_func(&mut instance.store, function)
             .ok_or_else(|| anyhow::anyhow!("Function not found: {}", function))?;
 
         // Allocate input in WASM memory
-        let memory = instance.instance.get_memory(&mut instance.store, "memory")
+        let memory = instance
+            .instance
+            .get_memory(&mut instance.store, "memory")
             .ok_or_else(|| anyhow::anyhow!("Memory export not found"))?;
 
-        let alloc = instance.instance.get_func(&mut instance.store, "alloc")
+        let alloc = instance
+            .instance
+            .get_func(&mut instance.store, "alloc")
             .ok_or_else(|| anyhow::anyhow!("alloc function not found"))?;
 
         // Allocate space for input
         let mut results = [Val::I32(0)];
-        alloc.call(&mut instance.store, &[Val::I32(input.len() as i32)], &mut results)?;
-        let input_ptr = if let Val::I32(ptr) = results[0] { ptr } else { 0 };
+        alloc.call(
+            &mut instance.store,
+            &[Val::I32(input.len() as i32)],
+            &mut results,
+        )?;
+        let input_ptr = if let Val::I32(ptr) = results[0] {
+            ptr
+        } else {
+            0
+        };
 
         // Write input to memory
         memory.write(&mut instance.store, input_ptr as usize, input)?;
 
         // Call function
         let mut output_results = [Val::I32(0), Val::I32(0)];
-        func.call(&mut instance.store, &[Val::I32(input_ptr), Val::I32(input.len() as i32)], &mut output_results)?;
+        func.call(
+            &mut instance.store,
+            &[Val::I32(input_ptr), Val::I32(input.len() as i32)],
+            &mut output_results,
+        )?;
 
-        let output_ptr = if let Val::I32(ptr) = output_results[0] { ptr } else { 0 };
-        let output_len = if let Val::I32(len) = output_results[1] { len } else { 0 };
+        let output_ptr = if let Val::I32(ptr) = output_results[0] {
+            ptr
+        } else {
+            0
+        };
+        let output_len = if let Val::I32(len) = output_results[1] {
+            len
+        } else {
+            0
+        };
 
         // Read output from memory
         let mut output = vec![0u8; output_len as usize];
@@ -278,9 +322,9 @@ pub struct WasiState {
 /// Handlers that WASM exports for synthetic file operations
 #[derive(Clone)]
 pub struct WasmFileHandlers {
-    pub on_read: String,   // Function name for read handler
-    pub on_write: String,  // Function name for write handler
-    pub on_stat: String,   // Function name for stat handler
+    pub on_read: String,  // Function name for read handler
+    pub on_write: String, // Function name for write handler
+    pub on_stat: String,  // Function name for stat handler
 }
 
 impl WasiState {

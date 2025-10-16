@@ -4,18 +4,18 @@
 //! It provides message serialization, deserialization, and handling for all
 //! standard and extended operations.
 
-use std::io::Result as IoResult;
 use serde::{Deserialize, Serialize};
+use std::io::Result as IoResult;
 
-pub mod messages;
-pub mod ninepee_messages;
 pub mod client;
 pub mod handler;
+pub mod messages;
+pub mod ninepee_messages;
 
-pub use messages::*;
-pub use ninepee_messages::NinePeeMessage;
 pub use client::NinePClient;
 pub use handler::ProtocolHandler;
+pub use messages::*;
+pub use ninepee_messages::NinePeeMessage;
 
 /// 9P Protocol Version
 pub const VERSION_9P2000: &str = "9P2000";
@@ -82,18 +82,18 @@ pub struct Qid {
 /// File information (9P stat structure)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Stat {
-    pub size: u16,       // Total size of this structure
-    pub typ: u16,        // Server type
-    pub dev: u32,        // Server subtype
-    pub qid: Qid,        // File ID
-    pub mode: u32,       // Permissions and flags
-    pub atime: u32,      // Access time
-    pub mtime: u32,      // Modification time
-    pub length: u64,     // File length
-    pub name: String,    // File name
-    pub uid: String,     // Owner name
-    pub gid: String,     // Group name
-    pub muid: String,    // Last modifier
+    pub size: u16,    // Total size of this structure
+    pub typ: u16,     // Server type
+    pub dev: u32,     // Server subtype
+    pub qid: Qid,     // File ID
+    pub mode: u32,    // Permissions and flags
+    pub atime: u32,   // Access time
+    pub mtime: u32,   // Modification time
+    pub length: u64,  // File length
+    pub name: String, // File name
+    pub uid: String,  // Owner name
+    pub gid: String,  // Group name
+    pub muid: String, // Last modifier
 }
 
 /// File identifier (handle for open files)
@@ -104,17 +104,17 @@ pub type Tag = u16;
 
 /// 9P Permission modes
 pub mod permissions {
-    pub const DMDIR: u32 = 0x80000000;     // Directory
-    pub const DMAPPEND: u32 = 0x40000000;  // Append only
-    pub const DMEXCL: u32 = 0x20000000;    // Exclusive use
-    pub const DMMOUNT: u32 = 0x10000000;   // Mounted channel
-    pub const DMAUTH: u32 = 0x08000000;    // Authentication file
-    pub const DMTMP: u32 = 0x04000000;     // Temporary (not backed up)
+    pub const DMDIR: u32 = 0x80000000; // Directory
+    pub const DMAPPEND: u32 = 0x40000000; // Append only
+    pub const DMEXCL: u32 = 0x20000000; // Exclusive use
+    pub const DMMOUNT: u32 = 0x10000000; // Mounted channel
+    pub const DMAUTH: u32 = 0x08000000; // Authentication file
+    pub const DMTMP: u32 = 0x04000000; // Temporary (not backed up)
 
-    pub const OREAD: u8 = 0;    // Open for read
-    pub const OWRITE: u8 = 1;   // Open for write
-    pub const ORDWR: u8 = 2;    // Open for read/write
-    pub const OEXEC: u8 = 3;    // Open for execute
+    pub const OREAD: u8 = 0; // Open for read
+    pub const OWRITE: u8 = 1; // Open for write
+    pub const ORDWR: u8 = 2; // Open for read/write
+    pub const OEXEC: u8 = 3; // Open for execute
     pub const OTRUNC: u8 = 0x10; // Truncate on open
 }
 
@@ -147,7 +147,7 @@ impl WireFormat {
         if buf.len() < 5 {
             return Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
-                "Message too short"
+                "Message too short",
             ));
         }
 
@@ -177,7 +177,7 @@ impl WireFormat {
             _ => {
                 return Err(std::io::Error::new(
                     std::io::ErrorKind::InvalidData,
-                    format!("Unknown message type: {}", msg_type)
+                    format!("Unknown message type: {}", msg_type),
                 ))
             }
         };

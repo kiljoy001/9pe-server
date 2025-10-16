@@ -93,38 +93,38 @@ pub enum NinePeeMessage {
         ename: String,
         errno: u32,
     },
-    
+
     // GPU Compute Extensions
     /// Submit a compute job via 9P.e extension
     ComputeSubmit {
-        job_type: String,      // "sycl", "wasm", "opencl"
-        kernel_name: String,   // Name of the kernel/function to execute
-        data: Vec<u8>,         // Input data for the computation
+        job_type: String, // "sycl", "wasm" (legacy translators may still advertise "opencl")
+        kernel_name: String, // Name of the kernel/function to execute
+        data: Vec<u8>,    // Input data for the computation
         device_hint: Option<u32>, // Preferred GPU device (if any)
     },
-    
+
     /// Query compute job status
     ComputeStatus {
-        job_id: String,        // UUID of the job
+        job_id: String, // UUID of the job
     },
-    
+
     /// Allocate VRAM on a GPU device
     VRAMAllocate {
-        device: u32,           // GPU device index
-        bytes: u64,            // Number of bytes to allocate
+        device: u32, // GPU device index
+        bytes: u64,  // Number of bytes to allocate
     },
-    
+
     /// Query GPU device information
     GPUInfo {
-        device: u32,           // GPU device index
+        device: u32, // GPU device index
     },
-    
+
     /// GPU compute result/response
     ComputeResponse {
-        job_id: String,        // UUID of the job
-        success: bool,         // Whether computation succeeded
-        result: Vec<u8>,       // Output data (if successful)
-        error_msg: String,     // Error message (if failed)
+        job_id: String,    // UUID of the job
+        success: bool,     // Whether computation succeeded
+        result: Vec<u8>,   // Output data (if successful)
+        error_msg: String, // Error message (if failed)
     },
 
     // Namespace Access Extensions
@@ -133,15 +133,15 @@ pub enum NinePeeMessage {
         namespace_path: String,     // Target namespace path
         requester_pubkey: [u8; 32], // Requester's public key
         requested_role: String,     // "participant", "contributor", "admin"
-        message: String,           // Optional request message/reason
+        message: String,            // Optional request message/reason
     },
 
     /// Response to namespace access request
     NamespaceAccessResponse {
         namespace_path: String,     // Target namespace path
         requester_pubkey: [u8; 32], // Requester's public key
-        approved: bool,            // Whether request was approved
-        message: String,           // Response message
+        approved: bool,             // Whether request was approved
+        message: String,            // Response message
     },
 
     // Placeholder for future extensions

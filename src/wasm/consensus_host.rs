@@ -5,10 +5,10 @@
 //! work distribution information without being able to influence consensus.
 
 use anyhow::Result;
-use std::sync::{Arc, Mutex};
-use wasmtime::{Caller, Linker};
-use tracing::{debug, error, info};
 use once_cell::sync::Lazy;
+use std::sync::{Arc, Mutex};
+use tracing::{debug, error, info};
+use wasmtime::{Caller, Linker};
 
 use crate::consensus::ConsensusState;
 
@@ -33,9 +33,8 @@ impl NetworkStats {
 }
 
 /// Global consensus state shared across WASM instances
-static CONSENSUS_STATE: Lazy<Arc<Mutex<Option<ConsensusState>>>> = Lazy::new(|| {
-    Arc::new(Mutex::new(None))
-});
+static CONSENSUS_STATE: Lazy<Arc<Mutex<Option<ConsensusState>>>> =
+    Lazy::new(|| Arc::new(Mutex::new(None)));
 
 /// Add consensus host functions to the WASM linker
 pub fn add_consensus_functions<T>(linker: &mut Linker<T>) -> Result<()>
@@ -44,22 +43,58 @@ where
 {
     // Consensus state queries
     linker.func_wrap("consensus", "get_dag_height", consensus_get_dag_height)?;
-    linker.func_wrap("consensus", "get_confirmed_block_count", consensus_get_confirmed_block_count)?;
-    linker.func_wrap("consensus", "get_pending_work_count", consensus_get_pending_work_count)?;
-    linker.func_wrap("consensus", "get_confidence_score", consensus_get_confidence_score)?;
+    linker.func_wrap(
+        "consensus",
+        "get_confirmed_block_count",
+        consensus_get_confirmed_block_count,
+    )?;
+    linker.func_wrap(
+        "consensus",
+        "get_pending_work_count",
+        consensus_get_pending_work_count,
+    )?;
+    linker.func_wrap(
+        "consensus",
+        "get_confidence_score",
+        consensus_get_confidence_score,
+    )?;
 
     // Block queries
-    linker.func_wrap("consensus", "is_block_confirmed", consensus_is_block_confirmed)?;
-    linker.func_wrap("consensus", "get_block_ghost_score", consensus_get_block_ghost_score)?;
-    linker.func_wrap("consensus", "get_main_chain_tip", consensus_get_main_chain_tip)?;
+    linker.func_wrap(
+        "consensus",
+        "is_block_confirmed",
+        consensus_is_block_confirmed,
+    )?;
+    linker.func_wrap(
+        "consensus",
+        "get_block_ghost_score",
+        consensus_get_block_ghost_score,
+    )?;
+    linker.func_wrap(
+        "consensus",
+        "get_main_chain_tip",
+        consensus_get_main_chain_tip,
+    )?;
 
     // Network state
     linker.func_wrap("consensus", "get_active_nodes", consensus_get_active_nodes)?;
-    linker.func_wrap("consensus", "get_network_stats", consensus_get_network_stats)?;
+    linker.func_wrap(
+        "consensus",
+        "get_network_stats",
+        consensus_get_network_stats,
+    )?;
 
     // Work distribution queries
-    linker.func_wrap("consensus", "query_work_capacity", consensus_query_work_capacity)?;
-    linker.func_wrap("consensus", "estimate_work_completion", consensus_estimate_work_completion)?;
+    linker.func_wrap(
+        "consensus",
+        "query_work_capacity",
+        consensus_query_work_capacity,
+    )?;
+    linker.func_wrap(
+        "consensus",
+        "estimate_work_completion",
+        consensus_estimate_work_completion,
+    )?;
 
     Ok(())
 }
@@ -150,10 +185,17 @@ fn consensus_get_confidence_score<T>(_caller: Caller<'_, T>) -> i32 {
 }
 
 /// Check if a block is confirmed
-fn consensus_is_block_confirmed<T>(_caller: Caller<'_, T>, block_id_ptr: i32, block_id_len: i32) -> i32 {
+fn consensus_is_block_confirmed<T>(
+    _caller: Caller<'_, T>,
+    block_id_ptr: i32,
+    block_id_len: i32,
+) -> i32 {
     // In a real implementation, we'd read the block ID from WASM memory
     // For now, return mock result
-    debug!("Check block confirmation for block (ptr: {}, len: {})", block_id_ptr, block_id_len);
+    debug!(
+        "Check block confirmation for block (ptr: {}, len: {})",
+        block_id_ptr, block_id_len
+    );
 
     match CONSENSUS_STATE.lock() {
         Ok(state) => {
@@ -172,8 +214,15 @@ fn consensus_is_block_confirmed<T>(_caller: Caller<'_, T>, block_id_ptr: i32, bl
 }
 
 /// Get GHOST score for a block
-fn consensus_get_block_ghost_score<T>(_caller: Caller<'_, T>, block_id_ptr: i32, block_id_len: i32) -> i64 {
-    debug!("Get GHOST score for block (ptr: {}, len: {})", block_id_ptr, block_id_len);
+fn consensus_get_block_ghost_score<T>(
+    _caller: Caller<'_, T>,
+    block_id_ptr: i32,
+    block_id_len: i32,
+) -> i64 {
+    debug!(
+        "Get GHOST score for block (ptr: {}, len: {})",
+        block_id_ptr, block_id_len
+    );
 
     match CONSENSUS_STATE.lock() {
         Ok(state) => {
@@ -284,20 +333,22 @@ fn consensus_estimate_work_completion<T>(
     _caller: Caller<'_, T>,
     work_type: i32,
     work_size: i64,
-    priority: i32
+    priority: i32,
 ) -> i64 {
-    debug!("Estimate completion for work type: {}, size: {}, priority: {}",
-           work_type, work_size, priority);
+    debug!(
+        "Estimate completion for work type: {}, size: {}, priority: {}",
+        work_type, work_size, priority
+    );
 
     match CONSENSUS_STATE.lock() {
         Ok(state) => {
             if let Some(ref consensus) = *state {
                 // Mock estimation based on network state
                 let base_time = match work_type {
-                    0 => work_size * 10,  // Compute: 10ms per unit
-                    1 => work_size * 5,   // Storage: 5ms per unit
-                    2 => work_size * 20,  // Network: 20ms per unit
-                    _ => work_size * 15,  // Custom: 15ms per unit
+                    0 => work_size * 10, // Compute: 10ms per unit
+                    1 => work_size * 5,  // Storage: 5ms per unit
+                    2 => work_size * 20, // Network: 20ms per unit
+                    _ => work_size * 15, // Custom: 15ms per unit
                 };
 
                 // Adjust for priority (higher priority = faster)

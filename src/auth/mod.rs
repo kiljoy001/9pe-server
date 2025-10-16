@@ -8,22 +8,22 @@
 
 mod clock;
 
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
-use tokio::sync::RwLock;
-use anyhow::{Result, Context, bail};
-use serde::{Deserialize, Serialize};
+use anyhow::{bail, Context, Result};
 use argon2::{
     password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
     Argon2,
 };
+use chrono::{DateTime, Duration, Utc};
 use rand::rngs::OsRng;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use tokio::sync::RwLock;
 use tracing::{info, warn};
 use uuid::Uuid;
-use chrono::{DateTime, Utc, Duration};
 
-pub use clock::{Clock, RealClock, MockClock};
+pub use clock::{Clock, MockClock, RealClock};
 
 /// Authentication service for managing users and sessions
 pub struct AuthService<C: Clock = RealClock> {
@@ -66,9 +66,9 @@ impl Default for AuthConfig {
     fn default() -> Self {
         Self {
             db_path: PathBuf::from("/etc/9pe/users.db"),
-            session_timeout: 3600,  // 1 hour
+            session_timeout: 3600, // 1 hour
             max_failed_attempts: 5,
-            lockout_duration: 300,   // 5 minutes
+            lockout_duration: 300, // 5 minutes
             allow_anonymous: false,
         }
     }
@@ -214,7 +214,10 @@ impl<C: Clock> AuthService<C> {
 
             // Create default admin user
             let admin_password = Self::generate_password();
-            info!("Creating default admin user with password: {}", admin_password);
+            info!(
+                "Creating default admin user with password: {}",
+                admin_password
+            );
 
             let salt = SaltString::generate(&mut OsRng);
             let password_hash = hasher
@@ -222,18 +225,21 @@ impl<C: Clock> AuthService<C> {
                 .map_err(|e| anyhow::anyhow!("Failed to hash password: {}", e))?
                 .to_string();
 
-            db.users.insert("admin".to_string(), User {
-                username: "admin".to_string(),
-                password_hash,
-                uid: 0,
-                gid: 0,
-                capabilities: vec![Capability::Admin],
-                created_at: clock.now(),
-                last_login: None,
-                failed_attempts: 0,
-                locked_until: None,
-                enabled: true,
-            });
+            db.users.insert(
+                "admin".to_string(),
+                User {
+                    username: "admin".to_string(),
+                    password_hash,
+                    uid: 0,
+                    gid: 0,
+                    capabilities: vec![Capability::Admin],
+                    created_at: clock.now(),
+                    last_login: None,
+                    failed_attempts: 0,
+                    locked_until: None,
+                    enabled: true,
+                },
+            );
 
             // Save the database
             Self::save_database(&config.db_path, &db).await?;
@@ -260,7 +266,9 @@ impl<C: Clock> AuthService<C> {
         let mut users = self.users.write().await;
 
         // Check if user exists
-        let user = users.users.get_mut(username)
+        let user = users
+            .users
+            .get_mut(username)
             .ok_or_else(|| anyhow::anyhow!("Invalid username or password"))?;
 
         // Check if account is locked
@@ -283,16 +291,22 @@ impl<C: Clock> AuthService<C> {
         let parsed_hash = PasswordHash::new(&user.password_hash)
             .map_err(|e| anyhow::anyhow!("Invalid password hash: {}", e))?;
 
-        if self.hasher.verify_password(password.as_bytes(), &parsed_hash).is_err() {
+        if self
+            .hasher
+            .verify_password(password.as_bytes(), &parsed_hash)
+            .is_err()
+        {
             // Increment failed attempts
             user.failed_attempts += 1;
 
             // Lock account if too many failed attempts
             if user.failed_attempts >= self.config.max_failed_attempts {
-                user.locked_until = Some(
-                    self.clock.now() + Duration::seconds(self.config.lockout_duration as i64)
+                user.locked_until =
+                    Some(self.clock.now() + Duration::seconds(self.config.lockout_duration as i64));
+                warn!(
+                    "Account {} locked due to too many failed attempts",
+                    username
                 );
-                warn!("Account {} locked due to too many failed attempts", username);
             }
 
             // Save database
@@ -334,7 +348,8 @@ impl<C: Clock> AuthService<C> {
     pub async fn validate_session(&self, token: &SessionToken) -> Result<Session> {
         let sessions = self.sessions.read().await;
 
-        let session = sessions.get(token)
+        let session = sessions
+            .get(token)
             .ok_or_else(|| anyhow::anyhow!("Invalid session"))?;
 
         // Check if session expired
@@ -370,24 +385,28 @@ impl<C: Clock> AuthService<C> {
 
         // Hash password
         let salt = SaltString::generate(&mut OsRng);
-        let password_hash = self.hasher
+        let password_hash = self
+            .hasher
             .hash_password(password.as_bytes(), &salt)
             .map_err(|e| anyhow::anyhow!("Failed to hash password: {}", e))?
             .to_string();
 
         // Create user
-        users.users.insert(username.to_string(), User {
-            username: username.to_string(),
-            password_hash,
-            uid,
-            gid,
-            capabilities,
-            created_at: Utc::now(),
-            last_login: None,
-            failed_attempts: 0,
-            locked_until: None,
-            enabled: true,
-        });
+        users.users.insert(
+            username.to_string(),
+            User {
+                username: username.to_string(),
+                password_hash,
+                uid,
+                gid,
+                capabilities,
+                created_at: Utc::now(),
+                last_login: None,
+                failed_attempts: 0,
+                locked_until: None,
+                enabled: true,
+            },
+        );
 
         // Save database
         Self::save_database(&self.config.db_path, &users).await?;
@@ -405,7 +424,9 @@ impl<C: Clock> AuthService<C> {
             bail!("Cannot delete admin user");
         }
 
-        users.users.remove(username)
+        users
+            .users
+            .remove(username)
             .ok_or_else(|| anyhow::anyhow!("User {} not found", username))?;
 
         // Save database
@@ -429,20 +450,27 @@ impl<C: Clock> AuthService<C> {
     ) -> Result<()> {
         let mut users = self.users.write().await;
 
-        let user = users.users.get_mut(username)
+        let user = users
+            .users
+            .get_mut(username)
             .ok_or_else(|| anyhow::anyhow!("User not found"))?;
 
         // Verify old password
         let parsed_hash = PasswordHash::new(&user.password_hash)
             .map_err(|e| anyhow::anyhow!("Invalid password hash: {}", e))?;
 
-        if self.hasher.verify_password(old_password.as_bytes(), &parsed_hash).is_err() {
+        if self
+            .hasher
+            .verify_password(old_password.as_bytes(), &parsed_hash)
+            .is_err()
+        {
             bail!("Invalid old password");
         }
 
         // Hash new password
         let salt = SaltString::generate(&mut OsRng);
-        let password_hash = self.hasher
+        let password_hash = self
+            .hasher
             .hash_password(new_password.as_bytes(), &salt)
             .map_err(|e| anyhow::anyhow!("Failed to hash password: {}", e))?
             .to_string();
@@ -485,11 +513,12 @@ impl<C: Clock> AuthService<C> {
 
     /// Load user database from file
     async fn load_database(path: &Path) -> Result<UserDatabase> {
-        let data = tokio::fs::read(path).await
+        let data = tokio::fs::read(path)
+            .await
             .context("Failed to read user database")?;
 
-        let db: UserDatabase = bincode::deserialize(&data)
-            .context("Failed to deserialize user database")?;
+        let db: UserDatabase =
+            bincode::deserialize(&data).context("Failed to deserialize user database")?;
 
         Ok(db)
     }
@@ -498,14 +527,15 @@ impl<C: Clock> AuthService<C> {
     async fn save_database(path: &Path, db: &UserDatabase) -> Result<()> {
         // Create directory if it doesn't exist
         if let Some(parent) = path.parent() {
-            tokio::fs::create_dir_all(parent).await
+            tokio::fs::create_dir_all(parent)
+                .await
                 .context("Failed to create database directory")?;
         }
 
-        let data = bincode::serialize(db)
-            .context("Failed to serialize user database")?;
+        let data = bincode::serialize(db).context("Failed to serialize user database")?;
 
-        tokio::fs::write(path, data).await
+        tokio::fs::write(path, data)
+            .await
             .context("Failed to write user database")?;
 
         Ok(())
@@ -552,19 +582,33 @@ mod tests {
             1000,
             1000,
             vec![Capability::Read, Capability::Write],
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
 
         // Authenticate
-        let token = auth.authenticate("testuser", "testpass123", None).await.unwrap();
+        let token = auth
+            .authenticate("testuser", "testpass123", None)
+            .await
+            .unwrap();
 
         // Validate session
         let session = auth.validate_session(&token).await.unwrap();
         assert_eq!(session.username, "testuser");
 
         // Check capabilities
-        assert!(auth.has_capability(&token, &Capability::Read).await.unwrap());
-        assert!(auth.has_capability(&token, &Capability::Write).await.unwrap());
-        assert!(!auth.has_capability(&token, &Capability::Admin).await.unwrap());
+        assert!(auth
+            .has_capability(&token, &Capability::Read)
+            .await
+            .unwrap());
+        assert!(auth
+            .has_capability(&token, &Capability::Write)
+            .await
+            .unwrap());
+        assert!(!auth
+            .has_capability(&token, &Capability::Admin)
+            .await
+            .unwrap());
 
         // Logout
         auth.logout(&token).await.unwrap();

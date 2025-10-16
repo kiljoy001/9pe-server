@@ -3,6 +3,7 @@
 //! Automatic peer discovery using mDNS + QUIC mesh protocol
 
 use anyhow::{anyhow, Context, Result};
+use mdns_sd::ServiceDaemon;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::net::SocketAddr;
@@ -10,7 +11,6 @@ use std::sync::Arc;
 use tokio::sync::{Mutex, RwLock};
 use tokio::time::Duration;
 use tracing::{debug, error, info, warn};
-use mdns_sd::ServiceDaemon;
 
 // QUIC imports
 use quinn::{Connection as QuinnConnection, Endpoint, RecvStream, SendStream, ServerConfig};
@@ -46,15 +46,20 @@ impl MeshNetwork {
     }
 
     /// Set namespace manager for handling namespace messages
-    pub async fn set_namespace_manager(&self, namespace_manager: Arc<dyn crate::namespace_manager::MeshMessageHandler>) {
+    pub async fn set_namespace_manager(
+        &self,
+        namespace_manager: Arc<dyn crate::namespace_manager::MeshMessageHandler>,
+    ) {
         let mut ns_mgr = self.namespace_manager.lock().await;
         *ns_mgr = Some(namespace_manager);
     }
 
     /// Start the mesh network with DHT and mDNS discovery using QUIC
     pub async fn start(self: Arc<Self>) -> Result<()> {
-        info!("Starting QUIC mesh network on port {} with DHT and mDNS discovery",
-              self.local_port);
+        info!(
+            "Starting QUIC mesh network on port {} with DHT and mDNS discovery",
+            self.local_port
+        );
 
         // Ensure we have a QUIC endpoint available
         let endpoint_clone = {
@@ -73,7 +78,10 @@ impl MeshNetwork {
         // Start listener for incoming connections
         let listener_self = Arc::clone(&self);
         tokio::spawn(async move {
-            if let Err(e) = listener_self.run_listener_with_endpoint(endpoint_clone).await {
+            if let Err(e) = listener_self
+                .run_listener_with_endpoint(endpoint_clone)
+                .await
+            {
                 error!("Mesh listener error: {}", e);
             }
         });
@@ -109,8 +117,9 @@ impl MeshNetwork {
     async fn create_quic_endpoint(&self, addr: SocketAddr) -> Result<Endpoint> {
         // Generate self-signed certificate
         let cert = self.generate_certificate()?;
-        
-        let cert_der = cert.serialize_der()
+
+        let cert_der = cert
+            .serialize_der()
             .map_err(|e| anyhow::anyhow!("Failed to serialize certificate: {}", e))?;
         let private_key_der = cert.serialize_private_key_der();
 
@@ -128,7 +137,7 @@ impl MeshNetwork {
         // Create QUIC endpoint
         let mut server_config = ServerConfig::with_crypto(Arc::new(rustls_config));
         server_config.transport = Arc::new(quinn::TransportConfig::default());
-        
+
         let endpoint = Endpoint::server(server_config, addr)
             .map_err(|e| anyhow::anyhow!("Failed to create QUIC endpoint: {}", e))?;
 
@@ -139,7 +148,9 @@ impl MeshNetwork {
     fn generate_certificate(&self) -> Result<rcgen::Certificate> {
         let mut params = rcgen::CertificateParams::new(vec![self.node_id.clone()]);
         params.distinguished_name = rcgen::DistinguishedName::new();
-        params.distinguished_name.push(rcgen::DnType::CommonName, &self.node_id);
+        params
+            .distinguished_name
+            .push(rcgen::DnType::CommonName, &self.node_id);
 
         let cert = rcgen::Certificate::from_params(params)
             .map_err(|e| anyhow::anyhow!("Failed to generate certificate: {}", e))?;
@@ -163,7 +174,7 @@ impl MeshNetwork {
 
                     let peer_addr = connecting.remote_address();
                     debug!("Incoming QUIC mesh connection from {}", peer_addr);
-                    
+
                     let self_clone = Arc::clone(&self);
                     tokio::spawn(async move {
                         if let Err(e) = self_clone.handle_incoming_connection(connecting).await {
@@ -183,9 +194,11 @@ impl MeshNetwork {
 
     async fn handle_incoming_connection(&self, connecting: QuinnConnection) -> Result<()> {
         let peer_addr = connecting.remote_address();
-        
+
         // Accept bi-directional stream for mesh communication
-        let (_send_stream, recv_stream) = connecting.accept_bi().await
+        let (_send_stream, recv_stream) = connecting
+            .accept_bi()
+            .await
             .context("Failed to accept QUIC stream")?;
 
         // Read handshake message
@@ -193,21 +206,27 @@ impl MeshNetwork {
 
         match message {
             MeshMessage::Handshake { node_id, version } => {
-                info!("Peer {} connected from {} (version {})", node_id, peer_addr, version);
+                info!(
+                    "Peer {} connected from {} (version {})",
+                    node_id, peer_addr, version
+                );
 
                 // Send handshake response
                 let response = MeshMessage::HandshakeAck {
                     node_id: self.node_id.clone(),
                     version: 1,
                 };
-                
+
                 // Create new stream for sending response
-                let (response_send, _) = connecting.open_bi().await
+                let (response_send, _) = connecting
+                    .open_bi()
+                    .await
                     .context("Failed to open QUIC stream for response")?;
-                
+
                 self.send_message_quic(response_send, &response).await?;
 
-                self.register_peer_connection(node_id.clone(), peer_addr, connecting).await;
+                self.register_peer_connection(node_id.clone(), peer_addr, connecting)
+                    .await;
 
                 info!("Peer {} connected successfully via QUIC", node_id);
             }
@@ -266,13 +285,16 @@ impl MeshNetwork {
     #[allow(dead_code)]
     async fn handle_message(&self, from_peer: &str, message: MeshMessage) -> Result<()> {
         match message {
-            MeshMessage::NamespaceAccessRequest { 
-                namespace_path, 
-                requester_pubkey, 
-                requested_role, 
-                message 
+            MeshMessage::NamespaceAccessRequest {
+                namespace_path,
+                requester_pubkey,
+                requested_role,
+                message,
             } => {
-                debug!("Received namespace access request from {} for namespace {}", from_peer, namespace_path);
+                debug!(
+                    "Received namespace access request from {} for namespace {}",
+                    from_peer, namespace_path
+                );
                 // Forward to namespace manager if available
                 let ns_manager = self.namespace_manager.lock().await;
                 if let Some(ref ns_manager) = *ns_manager {
@@ -280,25 +302,31 @@ impl MeshNetwork {
                     let from_peer_clone = from_peer.to_string();
                     let _ = ns_manager; // Release the lock before spawning async task
                     tokio::spawn(async move {
-                        if let Err(e) = ns_manager_clone.handle_namespace_access_request(
-                            from_peer_clone,
-                            namespace_path,
-                            requester_pubkey,
-                            requested_role,
-                            message,
-                        ).await {
+                        if let Err(e) = ns_manager_clone
+                            .handle_namespace_access_request(
+                                from_peer_clone,
+                                namespace_path,
+                                requester_pubkey,
+                                requested_role,
+                                message,
+                            )
+                            .await
+                        {
                             warn!("Failed to handle namespace access request: {}", e);
                         }
                     });
                 }
             }
-            MeshMessage::NamespaceAccessResponse { 
-                namespace_path, 
-                requester_pubkey, 
-                approved, 
-                message 
+            MeshMessage::NamespaceAccessResponse {
+                namespace_path,
+                requester_pubkey,
+                approved,
+                message,
             } => {
-                debug!("Received namespace access response from {} for namespace {}: {}", from_peer, namespace_path, approved);
+                debug!(
+                    "Received namespace access response from {} for namespace {}: {}",
+                    from_peer, namespace_path, approved
+                );
                 // Forward to namespace manager if available
                 let ns_manager = self.namespace_manager.lock().await;
                 if let Some(ref ns_manager) = *ns_manager {
@@ -306,13 +334,16 @@ impl MeshNetwork {
                     let from_peer_clone = from_peer.to_string();
                     let _ = ns_manager; // Release the lock before spawning async task
                     tokio::spawn(async move {
-                        if let Err(e) = ns_manager_clone.handle_namespace_access_response(
-                            from_peer_clone,
-                            namespace_path,
-                            requester_pubkey,
-                            approved,
-                            message,
-                        ).await {
+                        if let Err(e) = ns_manager_clone
+                            .handle_namespace_access_response(
+                                from_peer_clone,
+                                namespace_path,
+                                requester_pubkey,
+                                approved,
+                                message,
+                            )
+                            .await
+                        {
                             warn!("Failed to handle namespace access response: {}", e);
                         }
                     });
@@ -361,13 +392,19 @@ impl MeshNetwork {
     /// Send a message to a specific peer
     pub async fn send_message_to_peer(&self, peer_id: &str, message: MeshMessage) -> Result<()> {
         let peers = self.peers.read().await;
-        let peer = peers.get(peer_id).ok_or_else(|| anyhow::anyhow!("Peer {} not found", peer_id))?;
-        
-        let quic_conn = peer.quic_connection.as_ref()
+        let peer = peers
+            .get(peer_id)
+            .ok_or_else(|| anyhow::anyhow!("Peer {} not found", peer_id))?;
+
+        let quic_conn = peer
+            .quic_connection
+            .as_ref()
             .ok_or_else(|| anyhow::anyhow!("No QUIC connection to peer {}", peer_id))?;
 
         // Open a new bidirectional stream
-        let (send_stream, _recv_stream) = quic_conn.open_bi().await
+        let (send_stream, _recv_stream) = quic_conn
+            .open_bi()
+            .await
             .context("Failed to open QUIC stream")?;
 
         // Send the message
@@ -431,11 +468,7 @@ impl MeshNetwork {
             .collect()
     }
 
-    pub async fn connect_to_peer(
-        &self,
-        address: &str,
-        peer_id_hint: Option<String>,
-    ) -> Result<()> {
+    pub async fn connect_to_peer(&self, address: &str, peer_id_hint: Option<String>) -> Result<()> {
         let addr: SocketAddr = address
             .trim()
             .parse()
@@ -483,8 +516,7 @@ impl MeshNetwork {
     }
 
     pub async fn get_dht_routing_table(&self) -> Vec<([u8; 32], String)> {
-        self
-            .dht
+        self.dht
             .read()
             .await
             .get_all_peers()
@@ -528,7 +560,8 @@ impl MeshNetwork {
                         connection.close(0u32.into(), b"peer-id-mismatch");
                         return Err(anyhow!(
                             "Peer ID mismatch: expected {}, received {}",
-                            expected, node_id
+                            expected,
+                            node_id
                         ));
                     }
                 }
@@ -657,8 +690,8 @@ pub struct MeshStatus {
 
 /// Kademlia DHT for distributed peer discovery
 struct KademliaTable {
-    local_id: [u8; 32],  // SHA-256 of node_id
-    buckets: Vec<Vec<KademliaPeer>>,  // 256 k-buckets
+    local_id: [u8; 32],              // SHA-256 of node_id
+    buckets: Vec<Vec<KademliaPeer>>, // 256 k-buckets
 }
 
 #[derive(Clone, Debug)]

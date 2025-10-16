@@ -1,13 +1,13 @@
 //! 9P.e extension operations handler
 
-use std::sync::Arc;
-use anyhow::Result;
-use tracing::{debug, info, warn};
 use crate::protocol::NinePeeMessage;
+use anyhow::Result;
+use std::sync::Arc;
+use tracing::{debug, info, warn};
 
-use crate::wasm::ThreadSafeTranslatorRegistry;
-use crate::synth::SyntheticFilesystem;
 use crate::settrans::VirtualSettransSystem;
+use crate::synth::SyntheticFilesystem;
+use crate::wasm::ThreadSafeTranslatorRegistry;
 
 use super::connection_state::ConnectionState;
 
@@ -53,14 +53,20 @@ impl NinePeeExtensionsHandler {
         translator_name: String,
         args: Vec<String>,
     ) -> Result<NinePeeMessage> {
-        debug!("Settrans: path={}, translator={}, args={:?}", path, translator_name, args);
+        debug!(
+            "Settrans: path={}, translator={}, args={:?}",
+            path, translator_name, args
+        );
 
         // Register virtual translator
         // TODO: Implement set_translator when method is available
         // self.settrans_system.set_translator(&path, &translator_name, args.clone()).await?;
         warn!("set_translator not implemented in VirtualSettransSystem");
 
-        info!("Virtual translator {} set on path {}", translator_name, path);
+        info!(
+            "Virtual translator {} set on path {}",
+            translator_name, path
+        );
 
         // Return success via a synthetic file creation response
         // Since SettransResponse doesn't exist in the enum, use SyntheticCreate
@@ -87,7 +93,13 @@ impl NinePeeExtensionsHandler {
             Some(_translator) => {
                 // TODO: Implement invoke_function when method is available
                 // match translator.invoke_function(&function, args.clone()).await {
-                match async { Err::<Vec<u8>, anyhow::Error>(anyhow::anyhow!("invoke_function not implemented")) }.await {
+                match async {
+                    Err::<Vec<u8>, anyhow::Error>(anyhow::anyhow!(
+                        "invoke_function not implemented"
+                    ))
+                }
+                .await
+                {
                     Ok(result) => Ok(NinePeeMessage::TranslatorMessage {
                         translator_id: 0, // Dummy ID for response
                         data: result,
@@ -104,7 +116,7 @@ impl NinePeeExtensionsHandler {
             None => Ok(NinePeeMessage::Error {
                 ename: format!("No translator found for path {}", path),
                 errno: 2, // ENOENT
-            })
+            }),
         }
     }
 
@@ -128,10 +140,7 @@ impl NinePeeExtensionsHandler {
 
     /// Handle consensus request (placeholder)
     #[allow(dead_code)]
-    pub async fn handle_consensus_request(
-        &self,
-        block: Vec<u8>,
-    ) -> Result<NinePeeMessage> {
+    pub async fn handle_consensus_request(&self, block: Vec<u8>) -> Result<NinePeeMessage> {
         debug!("ConsensusRequest: block_size={}", block.len());
 
         // Placeholder - consensus not implemented
@@ -157,7 +166,10 @@ impl NinePeeExtensionsHandler {
 
         // Return info message since MeshConnected doesn't exist
         Ok(NinePeeMessage::Error {
-            ename: format!("Mesh networking not implemented: {} -> {}", node_id, address),
+            ename: format!(
+                "Mesh networking not implemented: {} -> {}",
+                node_id, address
+            ),
             errno: 38, // ENOSYS
         })
     }
@@ -187,7 +199,11 @@ impl NinePeeExtensionsHandler {
         task_id: String,
         result: Vec<u8>,
     ) -> Result<NinePeeMessage> {
-        debug!("WorkResult: task_id={}, result_size={}", task_id, result.len());
+        debug!(
+            "WorkResult: task_id={}, result_size={}",
+            task_id,
+            result.len()
+        );
 
         // Placeholder - work distribution not implemented
         warn!("Work distribution not implemented");

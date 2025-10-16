@@ -18,7 +18,7 @@ peers = []  # Empty - auto-discovery via DHT
 
 [gpu]
 enabled = true
-backend = "opencl"  # Intel Arc uses OpenCL
+backend = "sycl"  # Default SYCL backend (AdaptiveCpp)
 device_id = 0
 
 [llama]

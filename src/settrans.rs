@@ -8,10 +8,10 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use tokio::sync::{RwLock, mpsc};
-use tracing::{info, error};
+use tokio::sync::{mpsc, RwLock};
+use tracing::{error, info};
 
-use crate::synth::{SyntheticFilesystem, ControlHandler};
+use crate::synth::{ControlHandler, SyntheticFilesystem};
 use crate::wasm::ThreadSafeTranslatorRegistry;
 
 /// Translator state and metadata
@@ -97,10 +97,14 @@ impl VirtualSettransSystem {
             }
         }
 
-        synth_fs.create_control_file(
-            &base_dir.join("enable"),
-            Arc::new(EnableHandler { cmd_tx: cmd_tx.clone() })
-        ).await?;
+        synth_fs
+            .create_control_file(
+                &base_dir.join("enable"),
+                Arc::new(EnableHandler {
+                    cmd_tx: cmd_tx.clone(),
+                }),
+            )
+            .await?;
 
         // Disable control file handler
         struct DisableHandler {
@@ -117,10 +121,14 @@ impl VirtualSettransSystem {
             }
         }
 
-        synth_fs.create_control_file(
-            &base_dir.join("disable"),
-            Arc::new(DisableHandler { cmd_tx: cmd_tx.clone() })
-        ).await?;
+        synth_fs
+            .create_control_file(
+                &base_dir.join("disable"),
+                Arc::new(DisableHandler {
+                    cmd_tx: cmd_tx.clone(),
+                }),
+            )
+            .await?;
 
         // Status control file handler
         struct StatusHandler {
@@ -144,10 +152,14 @@ impl VirtualSettransSystem {
             }
         }
 
-        synth_fs.create_control_file(
-            &base_dir.join("status"),
-            Arc::new(StatusHandler { translators: Arc::clone(&translators) })
-        ).await?;
+        synth_fs
+            .create_control_file(
+                &base_dir.join("status"),
+                Arc::new(StatusHandler {
+                    translators: Arc::clone(&translators),
+                }),
+            )
+            .await?;
 
         // Start command processor
         let translators_clone = Arc::clone(&translators);
@@ -170,8 +182,9 @@ impl VirtualSettransSystem {
                             data,
                             &translators_clone,
                             &synth_fs_clone,
-                            &base_dir_clone
-                        ).await;
+                            &base_dir_clone,
+                        )
+                        .await;
                     }
                     _ => {}
                 }
@@ -190,24 +203,27 @@ impl VirtualSettransSystem {
     /// Create virtual directory structure
     async fn create_virtual_structure(
         base_dir: &Path,
-        synth_fs: &Arc<SyntheticFilesystem>
+        synth_fs: &Arc<SyntheticFilesystem>,
     ) -> Result<()> {
         // Create base directory
         synth_fs.create_directory(base_dir).await?;
 
         // Create subdirectories
         let directories = [
-            "install",      // Drop WASM files here
-            "available",    // List installed translators
-            "enabled",      // Currently active translators
-            "disabled",     // Disabled translators
+            "install",   // Drop WASM files here
+            "available", // List installed translators
+            "enabled",   // Currently active translators
+            "disabled",  // Disabled translators
         ];
 
         for dir in &directories {
             synth_fs.create_directory(&base_dir.join(dir)).await?;
         }
 
-        info!("Virtual settrans structure created at {:?} (synthetic filesystem only)", base_dir);
+        info!(
+            "Virtual settrans structure created at {:?} (synthetic filesystem only)",
+            base_dir
+        );
         Ok(())
     }
 
@@ -220,11 +236,14 @@ impl VirtualSettransSystem {
         let mut trans = translators.write().await;
         if let Some(info) = trans.get_mut(name) {
             // Load translator into registry
-            match registry.load_translator(
-                info.name.clone(),
-                PathBuf::from(&info.mount_point),
-                info.wasm_data.clone(),
-            ).await {
+            match registry
+                .load_translator(
+                    info.name.clone(),
+                    PathBuf::from(&info.mount_point),
+                    info.wasm_data.clone(),
+                )
+                .await
+            {
                 Ok(_) => {
                     info.status = TranslatorStatus::Enabled;
                     info!("Enabled translator: {}", name);
@@ -281,11 +300,14 @@ impl VirtualSettransSystem {
         };
 
         // Create virtual file in /available
-        synth_fs.create_file(
-            &base_dir.join("available").join(name),
-            name.as_bytes().to_vec(),
-            false
-        ).await.ok();
+        synth_fs
+            .create_file(
+                &base_dir.join("available").join(name),
+                name.as_bytes().to_vec(),
+                false,
+            )
+            .await
+            .ok();
 
         // Store translator info
         translators.write().await.insert(name.to_string(), info);
@@ -299,19 +321,24 @@ impl VirtualSettransSystem {
 
     /// Install a WASM translator
     pub async fn install_translator(&self, name: String, wasm_data: Vec<u8>) -> Result<()> {
-        self.command_tx.send(SettransCommand::Install { name, data: wasm_data })?;
+        self.command_tx.send(SettransCommand::Install {
+            name,
+            data: wasm_data,
+        })?;
         Ok(())
     }
 
     /// Enable a translator
     pub async fn enable_translator(&self, name: &str) -> Result<()> {
-        self.command_tx.send(SettransCommand::Enable(name.to_string()))?;
+        self.command_tx
+            .send(SettransCommand::Enable(name.to_string()))?;
         Ok(())
     }
 
     /// Disable a translator
     pub async fn disable_translator(&self, name: &str) -> Result<()> {
-        self.command_tx.send(SettransCommand::Disable(name.to_string()))?;
+        self.command_tx
+            .send(SettransCommand::Disable(name.to_string()))?;
         Ok(())
     }
 }
@@ -385,7 +412,10 @@ mod tests {
             SettransCommand::Enable("test".to_string()),
             SettransCommand::Disable("test".to_string()),
             SettransCommand::Uninstall("test".to_string()),
-            SettransCommand::Install { name: "test".to_string(), data: vec![1, 2, 3] },
+            SettransCommand::Install {
+                name: "test".to_string(),
+                data: vec![1, 2, 3],
+            },
             SettransCommand::Refresh,
             SettransCommand::Status,
         ];

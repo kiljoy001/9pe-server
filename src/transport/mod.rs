@@ -70,9 +70,7 @@ impl TransportFactory {
             TransportType::Quic { server_name } => {
                 Ok(Box::new(quic::QuicTransport::new(server_name)?))
             }
-            TransportType::Tcp => {
-                Ok(Box::new(tcp::TcpTransport::new()))
-            }
+            TransportType::Tcp => Ok(Box::new(tcp::TcpTransport::new())),
         }
     }
 }

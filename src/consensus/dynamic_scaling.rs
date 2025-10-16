@@ -58,10 +58,17 @@ impl DynamicScaler {
     pub fn new(params: ScalingParams) -> Self {
         Self {
             current_size: Arc::new(RwLock::new(params.initial_size)),
-            throughput_history: Arc::new(RwLock::new(VecDeque::with_capacity(params.history_window))),
+            throughput_history: Arc::new(RwLock::new(VecDeque::with_capacity(
+                params.history_window,
+            ))),
             fill_history: Arc::new(RwLock::new(VecDeque::with_capacity(params.history_window))),
-            fork_depth_history: Arc::new(RwLock::new(VecDeque::with_capacity(params.history_window))),
-            last_scale_time: Arc::new(RwLock::new(std::time::Instant::now() - std::time::Duration::from_secs(params.cooldown_secs + 1))),
+            fork_depth_history: Arc::new(RwLock::new(VecDeque::with_capacity(
+                params.history_window,
+            ))),
+            last_scale_time: Arc::new(RwLock::new(
+                std::time::Instant::now()
+                    - std::time::Duration::from_secs(params.cooldown_secs + 1),
+            )),
             cooldown_secs: params.cooldown_secs,
         }
     }
@@ -118,7 +125,6 @@ impl DynamicScaler {
         // Weights: fill=0.5, throughput=0.3, fork=0.2
         let pressure_score = 0.5 * avg_fill + 0.3 * throughput_norm + 0.2 * fork_norm;
 
-
         // Determine scaling direction
         if pressure_score > params.scale_up_threshold {
             ScaleDecision::ScaleUp
@@ -152,9 +158,7 @@ impl DynamicScaler {
                 }
                 *size
             }
-            ScaleDecision::Hold => {
-                *self.current_size.read().await
-            }
+            ScaleDecision::Hold => *self.current_size.read().await,
         }
     }
 

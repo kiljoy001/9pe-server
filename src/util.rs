@@ -26,7 +26,7 @@ pub fn get_srv_directory() -> PathBuf {
     if is_system_mode() {
         base.join("srv")
     } else {
-        base.join("srv")  // ~/srv
+        base.join("srv") // ~/srv
     }
 }
 
@@ -36,7 +36,7 @@ pub fn get_n_directory() -> PathBuf {
     if is_system_mode() {
         base.join("n")
     } else {
-        base.join("n")  // ~/n
+        base.join("n") // ~/n
     }
 }
 
@@ -70,7 +70,10 @@ mod tests {
     fn test_base_directory_exists() {
         let base = get_base_directory();
         // Base directory should be a valid path
-        assert!(!base.as_os_str().is_empty(), "Base directory should not be empty");
+        assert!(
+            !base.as_os_str().is_empty(),
+            "Base directory should not be empty"
+        );
 
         // Should be either root or have a home component
         let base_str = base.to_string_lossy();
@@ -84,27 +87,41 @@ mod tests {
     fn test_srv_directory_structure() {
         let srv = get_srv_directory();
         // Should end with "srv"
-        assert_eq!(srv.file_name().unwrap(), "srv", "srv directory should be named 'srv'");
+        assert_eq!(
+            srv.file_name().unwrap(),
+            "srv",
+            "srv directory should be named 'srv'"
+        );
     }
 
     #[test]
     fn test_n_directory_structure() {
         let n_dir = get_n_directory();
         // Should end with "n"
-        assert_eq!(n_dir.file_name().unwrap(), "n", "n directory should be named 'n'");
+        assert_eq!(
+            n_dir.file_name().unwrap(),
+            "n",
+            "n directory should be named 'n'"
+        );
     }
 
     #[test]
     fn test_settrans_directory_structure() {
         let settrans = get_settrans_directory();
         // Should end with "settrans"
-        assert_eq!(settrans.file_name().unwrap(), "settrans",
-            "settrans directory should be named 'settrans'");
+        assert_eq!(
+            settrans.file_name().unwrap(),
+            "settrans",
+            "settrans directory should be named 'settrans'"
+        );
 
         // Parent should be srv directory
         let parent = settrans.parent().unwrap();
-        assert_eq!(parent.file_name().unwrap(), "srv",
-            "settrans parent should be srv");
+        assert_eq!(
+            parent.file_name().unwrap(),
+            "srv",
+            "settrans parent should be srv"
+        );
     }
 
     #[test]

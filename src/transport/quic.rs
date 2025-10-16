@@ -3,9 +3,9 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use std::net::SocketAddr;
-use tracing::{info, debug};
+use tracing::{debug, info};
 
-use super::{Transport, Connection, ConnectionListener};
+use super::{Connection, ConnectionListener, Transport};
 
 /// QUIC transport implementation
 pub struct QuicTransport {
@@ -25,7 +25,6 @@ impl QuicTransport {
 
 #[async_trait]
 impl Transport for QuicTransport {
-
     async fn listen(&self, addr: SocketAddr) -> Result<Box<dyn ConnectionListener>> {
         info!("QUIC listening on {} (IPv6 dual-stack)", addr);
 
@@ -51,9 +50,7 @@ impl Transport for QuicTransport {
         // - Connect to server
         // - Validate certificate
 
-        Ok(Box::new(QuicConnection {
-            peer_addr: addr,
-        }))
+        Ok(Box::new(QuicConnection { peer_addr: addr }))
     }
 
     fn name(&self) -> &str {

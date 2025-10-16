@@ -4,7 +4,7 @@ Treat every contribution as a filesystem interaction and follow these convention
 
 ## Project Structure & Module Organization
 - `src/` contains core Rust modules (`lib.rs`, `runtime/`, `srv/`) backing the 9P endpoints.
-- `translators/` (e.g., `sqlite-wasm/`, `oneapi-wasm/`, `opencl-gpu/`) turns file calls into WASM or GPU work units.
+- System translators (e.g., the built-in SYCL stack exposed at `/system/sycl`) and optional user WASM modules (`sqlite-wasm/`, `oneapi-wasm/`) turn file calls into accelerator work units.
 - `tests/` hosts integration specs; align fixtures and helpers with the feature under test.
 - `examples/` and `docs/` capture namespace patterns; review before adding new virtual files.
 - `src-tauri/` plus `tauri-app/` provide the optional GUI; keep their dependencies isolated from the server crate.

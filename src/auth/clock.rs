@@ -75,9 +75,7 @@ impl Clock for MockClock {
     fn now(&self) -> DateTime<Utc> {
         // Note: This blocks briefly but is acceptable for testing
         tokio::task::block_in_place(|| {
-            tokio::runtime::Handle::current().block_on(async {
-                *self.current_time.read().await
-            })
+            tokio::runtime::Handle::current().block_on(async { *self.current_time.read().await })
         })
     }
 

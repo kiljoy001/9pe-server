@@ -4,9 +4,9 @@ use anyhow::Result;
 use async_trait::async_trait;
 use std::net::SocketAddr;
 use tokio::net::{TcpListener, TcpStream};
-use tracing::{info, debug};
+use tracing::{debug, info};
 
-use super::{Transport, Connection, ConnectionListener};
+use super::{Connection, ConnectionListener, Transport};
 
 /// TCP transport implementation
 pub struct TcpTransport;
@@ -26,7 +26,6 @@ impl TcpTransport {
 
 #[async_trait]
 impl Transport for TcpTransport {
-
     async fn listen(&self, addr: SocketAddr) -> Result<Box<dyn ConnectionListener>> {
         info!("TCP listening on {} (legacy mode)", addr);
         let listener = TcpListener::bind(addr).await?;

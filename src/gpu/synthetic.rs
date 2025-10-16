@@ -1,17 +1,22 @@
 // Synthetic GPU registration
-use crate::synth::{ControlHandler, SyntheticFilesystem};
 use crate::gpu::GpuInfo;
 use crate::gpu::GpuRuntime;
+use crate::synth::{ControlHandler, SyntheticFilesystem};
 use anyhow::Result;
 use std::path::PathBuf;
 use std::sync::Arc;
 
 /// Register synthetic GPU files under /srv/compute
-pub async fn register_gpu_controls(synth: &Arc<SyntheticFilesystem>, devices: &[GpuInfo], runtimes: &[std::sync::Arc<GpuRuntime>]) -> Result<()> {
+pub async fn register_gpu_controls(
+    synth: &Arc<SyntheticFilesystem>,
+    devices: &[GpuInfo],
+    runtimes: &[std::sync::Arc<GpuRuntime>],
+) -> Result<()> {
     let base = PathBuf::from("/srv/compute");
     synth.create_directory(&base).await?;
 
     for (idx, gpu) in devices.iter().enumerate() {
+        let device_id = format!("gpu{}", gpu.local_index);
         let gpu_dir = base.join(format!("gpu{}", gpu.local_index));
         synth.create_directory(&gpu_dir).await?;
 
@@ -25,14 +30,18 @@ pub async fn register_gpu_controls(synth: &Arc<SyntheticFilesystem>, devices: &[
         })
         .to_string()
         .into_bytes();
-        synth.create_control_file(&gpu_dir.join("info"), Arc::new(StaticHandler { data: info_json }))
+        synth
+            .create_control_file(
+                &gpu_dir.join("info"),
+                Arc::new(StaticHandler { data: info_json }),
+            )
             .await?;
 
         // Get the corresponding runtime for this GPU
-        let runtime = runtimes.get(idx).cloned().unwrap_or_else(|| {
-            // Fallback to a default runtime if none provided
-            Arc::new(GpuRuntime::new(gpu.total_vram_bytes))
-        });
+        let runtime = runtimes
+            .get(idx)
+            .cloned()
+            .unwrap_or_else(|| Arc::new(GpuRuntime::new(&device_id, gpu.total_vram_bytes)));
 
         // vram_free – dynamic reading of free VRAM (bytes)
         struct VramFreeHandler {
@@ -40,18 +49,20 @@ pub async fn register_gpu_controls(synth: &Arc<SyntheticFilesystem>, devices: &[
         }
         impl ControlHandler for VramFreeHandler {
             fn read(&self) -> Result<Vec<u8>> {
-                let free = self.runtime.free_vram.load(std::sync::atomic::Ordering::SeqCst);
-                Ok(free.to_string().into_bytes())
+                Ok(self.runtime.free_vram().to_string().into_bytes())
             }
             fn write(&self, _data: &[u8]) -> Result<()> {
                 Err(anyhow::anyhow!("Read‑only file"))
             }
         }
-        synth.create_control_file(
-            &gpu_dir.join("vram_free"),
-            Arc::new(VramFreeHandler { runtime: runtime.clone() })
-        )
-        .await?;
+        synth
+            .create_control_file(
+                &gpu_dir.join("vram_free"),
+                Arc::new(VramFreeHandler {
+                    runtime: runtime.clone(),
+                }),
+            )
+            .await?;
 
         // Allocation control file – allocate VRAM blocks
         struct VramAllocateHandler {
@@ -59,7 +70,6 @@ pub async fn register_gpu_controls(synth: &Arc<SyntheticFilesystem>, devices: &[
         }
         impl ControlHandler for VramAllocateHandler {
             fn read(&self) -> Result<Vec<u8>> {
-                // No content on read
                 Ok(Vec::new())
             }
             fn write(&self, data: &[u8]) -> Result<()> {
@@ -76,22 +86,70 @@ pub async fn register_gpu_controls(synth: &Arc<SyntheticFilesystem>, devices: &[
                 }
             }
         }
-        synth.create_control_file(
-            &gpu_dir.join("vram_allocate"),
-            Arc::new(VramAllocateHandler { runtime: runtime.clone() })
-        )
-        .await?;
-        
+        synth
+            .create_control_file(
+                &gpu_dir.join("vram_allocate"),
+                Arc::new(VramAllocateHandler {
+                    runtime: runtime.clone(),
+                }),
+            )
+            .await?;
+
+        // Release control file – return VRAM to the pool
+        struct VramReleaseHandler {
+            runtime: std::sync::Arc<GpuRuntime>,
+        }
+        impl ControlHandler for VramReleaseHandler {
+            fn read(&self) -> Result<Vec<u8>> {
+                Ok(Vec::new())
+            }
+            fn write(&self, data: &[u8]) -> Result<()> {
+                let size: u64 = std::str::from_utf8(data)
+                    .map_err(|e| anyhow::anyhow!("Invalid UTF-8: {}", e))?
+                    .trim()
+                    .parse()
+                    .map_err(|e| anyhow::anyhow!("Invalid number: {}", e))?;
+
+                let total = self.runtime.total_vram();
+                let free = self.runtime.free_vram();
+                let used = total.saturating_sub(free);
+                if size > used {
+                    return Err(anyhow::anyhow!(
+                        "Cannot release {} bytes; only {} bytes currently allocated",
+                        size,
+                        used
+                    ));
+                }
+
+                if self.runtime.release(size) {
+                    Ok(())
+                } else {
+                    Err(anyhow::anyhow!(
+                        "VRAM release clamped; allocation tracking out of sync"
+                    ))
+                }
+            }
+        }
+        synth
+            .create_control_file(
+                &gpu_dir.join("vram_release"),
+                Arc::new(VramReleaseHandler {
+                    runtime: runtime.clone(),
+                }),
+            )
+            .await?;
+
         // Status control file - overall VRAM status
         struct VramStatusHandler {
             runtime: std::sync::Arc<GpuRuntime>,
         }
         impl ControlHandler for VramStatusHandler {
             fn read(&self) -> Result<Vec<u8>> {
-                let free = self.runtime.free_vram.load(std::sync::atomic::Ordering::SeqCst);
-                let total = self.runtime.total_vram;
+                let free = self.runtime.free_vram();
+                let total = self.runtime.total_vram();
                 let used = total - free;
-                let status = format!("Total: {} MB\nUsed: {} MB\nFree: {} MB\nUtilization: {:.1}%",
+                let status = format!(
+                    "Total: {} MB\nUsed: {} MB\nFree: {} MB\nUtilization: {:.1}%",
                     total / (1024 * 1024),
                     used / (1024 * 1024),
                     free / (1024 * 1024),
@@ -103,11 +161,14 @@ pub async fn register_gpu_controls(synth: &Arc<SyntheticFilesystem>, devices: &[
                 Err(anyhow::anyhow!("Read‑only file"))
             }
         }
-        synth.create_control_file(
-            &gpu_dir.join("vram_status"),
-            Arc::new(VramStatusHandler { runtime: runtime.clone() })
-        )
-        .await?;
+        synth
+            .create_control_file(
+                &gpu_dir.join("vram_status"),
+                Arc::new(VramStatusHandler {
+                    runtime: runtime.clone(),
+                }),
+            )
+            .await?;
     }
     Ok(())
 }

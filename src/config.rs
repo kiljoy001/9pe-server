@@ -1,12 +1,11 @@
 //! Configuration file parsing for 9P.e server
 
-use anyhow::{Result, Context};
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
 /// Main configuration structure
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Config {
     #[serde(default)]
     pub server: ServerConfig,
@@ -33,8 +32,7 @@ pub struct ServerConfig {
     pub node_id: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ConsensusConfig {
     #[serde(default)]
     pub enabled: bool,
@@ -46,8 +44,7 @@ pub struct ConsensusConfig {
     pub trusted_nodes: Vec<TrustedNodeConfig>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct TrustedNodeConfig {
     pub node_id: String,
     pub public_key: String,
@@ -96,7 +93,7 @@ fn default_llama_url() -> String {
 }
 
 fn default_gpu_backend() -> String {
-    "opencl".to_string()
+    "sycl".to_string()
 }
 
 fn default_log_level() -> String {
@@ -115,7 +112,6 @@ impl Default for ServerConfig {
         }
     }
 }
-
 
 impl Default for LlamaConfig {
     fn default() -> Self {
@@ -143,7 +139,6 @@ impl Default for LoggingConfig {
         }
     }
 }
-
 
 impl Config {
     /// Load configuration from TOML file
@@ -189,7 +184,7 @@ server_url = "http://localhost:8080"
 
 [gpu]
 enabled = true
-backend = "opencl"
+backend = "sycl"
 device_id = 0
 
 [logging]

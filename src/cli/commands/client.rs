@@ -1,12 +1,12 @@
 //! Client command implementation
 
+use anyhow::{Context, Result};
 use clap::{Args, Subcommand};
-use anyhow::{Result, Context};
+use std::fs;
 use std::path::PathBuf;
 use tracing::{info, warn};
-use std::fs;
 
-use crate::fuse_mount::{mount_9p_fuse, cleanup_broken_mounts};
+use crate::fuse_mount::{cleanup_broken_mounts, mount_9p_fuse};
 
 /// Connect to a 9P.e server as a client
 #[derive(Args, Debug)]
@@ -61,9 +61,7 @@ impl ClientCommand {
                 // Client connection logic here
                 Ok(())
             }
-            ClientAction::Mount(args) => {
-                Self::mount_server(args).await
-            }
+            ClientAction::Mount(args) => Self::mount_server(args).await,
             ClientAction::Cleanup => {
                 info!("🧹 Cleaning up broken FUSE mounts...");
                 cleanup_broken_mounts().await?;
@@ -99,7 +97,8 @@ impl ClientCommand {
         info!("🗻 Mounting {}:{} at {:?}", host, port, mount_point);
 
         // Mount using FUSE
-        mount_9p_fuse(server_addr, mount_point.clone()).await
+        mount_9p_fuse(server_addr, mount_point.clone())
+            .await
             .with_context(|| "Failed to mount 9P server using FUSE".to_string())?;
 
         info!("✅ Server mounted successfully");
@@ -127,7 +126,10 @@ impl ClientCommand {
         // Create /n if it doesn't exist
         if !n_dir.exists() {
             if let Err(e) = fs::create_dir_all(&n_dir) {
-                info!("⚠️  Cannot create /n ({}), will use fallback mount points", e);
+                info!(
+                    "⚠️  Cannot create /n ({}), will use fallback mount points",
+                    e
+                );
             } else {
                 info!("📁 Created /n directory");
             }

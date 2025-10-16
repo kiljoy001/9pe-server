@@ -43,11 +43,12 @@
 
 pub mod auth;
 pub mod auto_mount;
-pub mod config;
 pub mod cli;
+pub mod config;
 pub mod consensus;
 pub mod error;
 pub mod fuse_mount;
+pub mod gpu;
 pub mod mesh;
 pub mod namespace_manager;
 pub mod network;
@@ -55,24 +56,23 @@ pub mod protocol;
 pub mod server;
 pub mod settrans;
 pub mod stats;
-pub mod synth;
-pub mod gpu;
 pub mod sycl;
+pub mod synth;
 pub mod transport;
 
 // 9P.e Extension Control Modules (Everything is a File!)
-pub mod mesh_control;
-pub mod consensus_control;
 pub mod compute_control;
+pub mod consensus_control;
+pub mod mesh_control;
 pub mod util;
 pub mod wasm;
 
 // Re-export commonly used types for convenience
+pub use error::{Result, ServerError};
+pub use fuse_mount::{cleanup_broken_mounts, mount_9p_fuse, unmount_fuse};
+pub use network::{BindAddress, NetworkConfig};
 pub use server::{Server, ServerConfig};
-pub use network::{NetworkConfig, BindAddress};
-pub use transport::{TransportType, Transport, Connection, ConnectionListener};
-pub use error::{ServerError, Result};
-pub use fuse_mount::{mount_9p_fuse, unmount_fuse, cleanup_broken_mounts};
+pub use transport::{Connection, ConnectionListener, Transport, TransportType};
 
 // Re-export CLI for binary usage
 pub use cli::Cli;

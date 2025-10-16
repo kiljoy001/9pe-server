@@ -1,15 +1,15 @@
 //! Basic 9P operations handler
 
-use std::fs::{self, File, Permissions};
-use std::path::PathBuf;
-use std::io::{Read, Write, Seek, SeekFrom};
-use std::os::unix::fs::PermissionsExt;
-use std::sync::Arc;
-use anyhow::Result;
-use tracing::{debug, warn};
-use crate::protocol::NinePeeMessage;
-use crate::protocol::{Stat, Qid};
 use crate::consensus::{BoundedGhostdag, NamespaceOp};
+use crate::protocol::NinePeeMessage;
+use crate::protocol::{Qid, Stat};
+use anyhow::Result;
+use std::fs::{self, File, Permissions};
+use std::io::{Read, Seek, SeekFrom, Write};
+use std::os::unix::fs::PermissionsExt;
+use std::path::PathBuf;
+use std::sync::Arc;
+use tracing::{debug, warn};
 
 use super::connection_state::{ConnectionState, FileHandle};
 
@@ -70,7 +70,12 @@ impl BasicOpsHandler {
             path: 0,
         };
 
-        Ok(NinePeeMessage::Attach { fid, afid: 0, uname, aname })
+        Ok(NinePeeMessage::Attach {
+            fid,
+            afid: 0,
+            uname,
+            aname,
+        })
     }
 
     /// Handle walk request
@@ -84,10 +89,12 @@ impl BasicOpsHandler {
 
         let handle = match self.connection_state.get_fid(fid).await {
             Some(h) => h,
-            None => return Ok(NinePeeMessage::Error {
-                ename: "Invalid fid".to_string(),
-                errno: 9, // EBADF
-            }),
+            None => {
+                return Ok(NinePeeMessage::Error {
+                    ename: "Invalid fid".to_string(),
+                    errno: 9, // EBADF
+                });
+            }
         };
 
         let mut current_path = PathBuf::from(&handle.path);
@@ -95,7 +102,9 @@ impl BasicOpsHandler {
 
         for name in &wnames {
             current_path.push(name);
-            let full_path = self.root.join(current_path.strip_prefix("/").unwrap_or(&current_path));
+            let full_path = self
+                .root
+                .join(current_path.strip_prefix("/").unwrap_or(&current_path));
 
             match fs::metadata(&full_path) {
                 Ok(metadata) => {
@@ -123,7 +132,11 @@ impl BasicOpsHandler {
             self.connection_state.add_fid(newfid, new_handle).await;
         }
 
-        Ok(NinePeeMessage::Walk { fid, newfid, wnames })
+        Ok(NinePeeMessage::Walk {
+            fid,
+            newfid,
+            wnames,
+        })
     }
 
     /// Handle open request
@@ -132,10 +145,12 @@ impl BasicOpsHandler {
 
         let mut handle = match self.connection_state.get_fid(fid).await {
             Some(h) => h,
-            None => return Ok(NinePeeMessage::Error {
-                ename: "Invalid fid".to_string(),
-                errno: 9, // EBADF
-            }),
+            None => {
+                return Ok(NinePeeMessage::Error {
+                    ename: "Invalid fid".to_string(),
+                    errno: 9, // EBADF
+                });
+            }
         };
 
         handle.mode = mode;
@@ -152,17 +167,24 @@ impl BasicOpsHandler {
         perm: u32,
         mode: u8,
     ) -> Result<NinePeeMessage> {
-        debug!("Create: fid={}, name={}, perm={:o}, mode={}", fid, name, perm, mode);
+        debug!(
+            "Create: fid={}, name={}, perm={:o}, mode={}",
+            fid, name, perm, mode
+        );
 
         let handle = match self.connection_state.get_fid(fid).await {
             Some(h) => h,
-            None => return Ok(NinePeeMessage::Error {
-                ename: "Invalid fid".to_string(),
-                errno: 9, // EBADF
-            }),
+            None => {
+                return Ok(NinePeeMessage::Error {
+                    ename: "Invalid fid".to_string(),
+                    errno: 9, // EBADF
+                });
+            }
         };
 
-        let parent_path = self.root.join(handle.path.strip_prefix("/").unwrap_or(&handle.path));
+        let parent_path = self
+            .root
+            .join(handle.path.strip_prefix("/").unwrap_or(&handle.path));
         let new_file_path = parent_path.join(&name);
 
         // Log operation to consensus DAG if available
@@ -211,7 +233,12 @@ impl BasicOpsHandler {
 
                 self.connection_state.add_fid(fid, new_handle).await;
 
-                Ok(NinePeeMessage::Create { fid, name, perm, mode })
+                Ok(NinePeeMessage::Create {
+                    fid,
+                    name,
+                    perm,
+                    mode,
+                })
             }
             Err(e) => {
                 warn!("Failed to create file {}: {}", name, e);
@@ -229,13 +256,17 @@ impl BasicOpsHandler {
 
         let handle = match self.connection_state.get_fid(fid).await {
             Some(h) => h,
-            None => return Ok(NinePeeMessage::Error {
-                ename: "Invalid fid".to_string(),
-                errno: 9, // EBADF
-            }),
+            None => {
+                return Ok(NinePeeMessage::Error {
+                    ename: "Invalid fid".to_string(),
+                    errno: 9, // EBADF
+                });
+            }
         };
 
-        let file_path = self.root.join(handle.path.strip_prefix("/").unwrap_or(&handle.path));
+        let file_path = self
+            .root
+            .join(handle.path.strip_prefix("/").unwrap_or(&handle.path));
 
         // Handle directory reads
         if file_path.is_dir() {
@@ -256,7 +287,11 @@ impl BasicOpsHandler {
                         version: 0,
                         path: 0,
                     },
-                    mode: if metadata.is_dir() { 0o040755 } else { 0o100644 },
+                    mode: if metadata.is_dir() {
+                        0o040755
+                    } else {
+                        0o100644
+                    },
                     atime: 0,
                     mtime: 0,
                     length: metadata.len(),
@@ -273,7 +308,11 @@ impl BasicOpsHandler {
 
             let start = offset as usize;
             let end = (start + count as usize).min(data.len());
-            let slice = if start < data.len() { &data[start..end] } else { &[] };
+            let slice = if start < data.len() {
+                &data[start..end]
+            } else {
+                &[]
+            };
 
             return Ok(NinePeeMessage::Read {
                 fid,
@@ -300,18 +339,27 @@ impl BasicOpsHandler {
     }
 
     /// Handle write request
-    pub async fn handle_write(&self, fid: u32, offset: u64, data: Vec<u8>) -> Result<NinePeeMessage> {
+    pub async fn handle_write(
+        &self,
+        fid: u32,
+        offset: u64,
+        data: Vec<u8>,
+    ) -> Result<NinePeeMessage> {
         debug!("Write: fid={}, offset={}, len={}", fid, offset, data.len());
 
         let handle = match self.connection_state.get_fid(fid).await {
             Some(h) => h,
-            None => return Ok(NinePeeMessage::Error {
-                ename: "Invalid fid".to_string(),
-                errno: 9, // EBADF
-            }),
+            None => {
+                return Ok(NinePeeMessage::Error {
+                    ename: "Invalid fid".to_string(),
+                    errno: 9, // EBADF
+                });
+            }
         };
 
-        let file_path = self.root.join(handle.path.strip_prefix("/").unwrap_or(&handle.path));
+        let file_path = self
+            .root
+            .join(handle.path.strip_prefix("/").unwrap_or(&handle.path));
 
         let mut file = fs::OpenOptions::new()
             .write(true)
@@ -379,13 +427,17 @@ impl BasicOpsHandler {
 
         let handle = match self.connection_state.get_fid(fid).await {
             Some(h) => h,
-            None => return Ok(NinePeeMessage::Error {
-                ename: "Invalid fid".to_string(),
-                errno: 9, // EBADF
-            }),
+            None => {
+                return Ok(NinePeeMessage::Error {
+                    ename: "Invalid fid".to_string(),
+                    errno: 9, // EBADF
+                });
+            }
         };
 
-        let file_path = self.root.join(handle.path.strip_prefix("/").unwrap_or(&handle.path));
+        let file_path = self
+            .root
+            .join(handle.path.strip_prefix("/").unwrap_or(&handle.path));
 
         let result = if file_path.is_dir() {
             fs::remove_dir(&file_path)
@@ -421,7 +473,10 @@ impl BasicOpsHandler {
                     if let Err(e) = dag.add_block(block).await {
                         warn!("Failed to log delete operation to consensus DAG: {}", e);
                     } else {
-                        debug!("Logged delete operation to consensus DAG for path: {}", handle.path);
+                        debug!(
+                            "Logged delete operation to consensus DAG for path: {}",
+                            handle.path
+                        );
                     }
                 }
 
@@ -431,7 +486,7 @@ impl BasicOpsHandler {
             Err(e) => Ok(NinePeeMessage::Error {
                 ename: format!("Remove failed: {}", e),
                 errno: 1, // EPERM
-            })
+            }),
         }
     }
 
@@ -441,13 +496,17 @@ impl BasicOpsHandler {
 
         let handle = match self.connection_state.get_fid(fid).await {
             Some(h) => h,
-            None => return Ok(NinePeeMessage::Error {
-                ename: "Invalid fid".to_string(),
-                errno: 9, // EBADF
-            }),
+            None => {
+                return Ok(NinePeeMessage::Error {
+                    ename: "Invalid fid".to_string(),
+                    errno: 9, // EBADF
+                });
+            }
         };
 
-        let file_path = self.root.join(handle.path.strip_prefix("/").unwrap_or(&handle.path));
+        let file_path = self
+            .root
+            .join(handle.path.strip_prefix("/").unwrap_or(&handle.path));
         let metadata = fs::metadata(&file_path)?;
 
         let stat = Stat {
@@ -459,11 +518,16 @@ impl BasicOpsHandler {
                 version: 0,
                 path: 0,
             },
-            mode: if metadata.is_dir() { 0o040755 } else { 0o100644 },
+            mode: if metadata.is_dir() {
+                0o040755
+            } else {
+                0o100644
+            },
             atime: 0,
             mtime: 0,
             length: metadata.len(),
-            name: file_path.file_name()
+            name: file_path
+                .file_name()
                 .unwrap_or_default()
                 .to_string_lossy()
                 .to_string(),
@@ -486,19 +550,26 @@ impl BasicOpsHandler {
 
         let handle = match self.connection_state.get_fid(fid).await {
             Some(h) => h,
-            None => return Ok(NinePeeMessage::Error {
-                ename: "Invalid fid".to_string(),
-                errno: 9, // EBADF
-            }),
+            None => {
+                return Ok(NinePeeMessage::Error {
+                    ename: "Invalid fid".to_string(),
+                    errno: 9, // EBADF
+                });
+            }
         };
 
-        let file_path = self.root.join(handle.path.strip_prefix("/").unwrap_or(&handle.path));
+        let file_path = self
+            .root
+            .join(handle.path.strip_prefix("/").unwrap_or(&handle.path));
 
         // Parse the stat structure from the data
         match self.parse_stat_changes(&stat_data).await {
             Ok(changes) => {
                 // Apply the changes to the file
-                if let Err(e) = self.apply_stat_changes(&file_path, &handle.path, &changes).await {
+                if let Err(e) = self
+                    .apply_stat_changes(&file_path, &handle.path, &changes)
+                    .await
+                {
                     warn!("Failed to apply stat changes: {}", e);
                     return Ok(NinePeeMessage::Error {
                         ename: format!("Wstat failed: {}", e),
@@ -545,7 +616,10 @@ impl BasicOpsHandler {
                     }
                 }
 
-                Ok(NinePeeMessage::Wstat { fid, stat: stat_data })
+                Ok(NinePeeMessage::Wstat {
+                    fid,
+                    stat: stat_data,
+                })
             }
             Err(e) => {
                 warn!("Failed to parse stat data: {}", e);
@@ -599,20 +673,27 @@ impl BasicOpsHandler {
     }
 
     /// Apply stat changes to the file
-    async fn apply_stat_changes(&self, file_path: &std::path::Path, _current_path: &str, changes: &StatChanges) -> Result<()> {
+    async fn apply_stat_changes(
+        &self,
+        file_path: &std::path::Path,
+        _current_path: &str,
+        changes: &StatChanges,
+    ) -> Result<()> {
         // Apply mode changes (permissions)
         if let Some(mode) = changes.mode {
             let permissions = Permissions::from_mode(mode & 0o777);
             fs::set_permissions(file_path, permissions)?;
-            debug!("Changed permissions for {:?} to {:o}", file_path, mode & 0o777);
+            debug!(
+                "Changed permissions for {:?} to {:o}",
+                file_path,
+                mode & 0o777
+            );
         }
 
         // Apply length changes (truncation)
         if let Some(length) = changes.length {
             if file_path.is_file() {
-                let file = fs::OpenOptions::new()
-                    .write(true)
-                    .open(file_path)?;
+                let file = fs::OpenOptions::new().write(true).open(file_path)?;
                 file.set_len(length)?;
                 debug!("Truncated file {:?} to {} bytes", file_path, length);
             }

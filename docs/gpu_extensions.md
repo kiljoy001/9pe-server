@@ -4,7 +4,7 @@ This document describes the enhanced GPU compute capabilities available through 
 
 ## Overview
 
-While GPU compute functionality is available through synthetic files (e.g., `/srv/compute/gpu0/info`), the 9P.e extensions provide a more efficient and type-safe interface for GPU operations.
+While GPU compute functionality is available through synthetic files (e.g., `/srv/compute/gpu0/info`), the 9P.e extensions provide a more efficient and type-safe interface for GPU operations. The server now ships with a system-level SYCL translator mounted at `/system/sycl`, so accelerator metadata and kernels are always available without deploying a separate WASM module.
 
 ## Available Extensions
 
@@ -58,7 +58,7 @@ Submit a compute job to be executed on a GPU.
 **Request:**
 ```
 ComputeSubmit {
-    job_type: String,          // "sycl", "wasm", "opencl"
+    job_type: String,          // "sycl", "wasm" (legacy "opencl" translators still recognized)
     kernel_name: String,       // Name of kernel/function to execute
     data: Vec<u8>,             // Input data for computation
     device_hint: Option<u32>,  // Preferred device (optional)

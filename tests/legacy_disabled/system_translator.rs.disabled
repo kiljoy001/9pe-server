@@ -1,0 +1,183 @@
+use std::path::PathBuf;
+
+use ninep_server::wasm::ThreadSafeTranslatorRegistry;
+use serde_json::Value;
+use tempfile::TempDir;
+
+#[tokio::test]
+async fn system_translator_is_registered_by_default() {
+    let temp_dir = TempDir::new().unwrap();
+    let registry = ThreadSafeTranslatorRegistry::new(temp_dir.path().to_path_buf());
+
+    registry
+        .scan_and_load()
+        .await
+        .expect("scan_and_load should succeed");
+
+    let translators = registry.list_translators().await;
+    assert!(
+        translators.iter().any(|name| name == "system-sycl"),
+        "expected system-sycl translator, got {translators:?}"
+    );
+}
+
+#[tokio::test]
+async fn system_translator_exposes_device_info() {
+    let temp_dir = TempDir::new().unwrap();
+    let registry = ThreadSafeTranslatorRegistry::new(temp_dir.path().to_path_buf());
+
+    registry
+        .scan_and_load()
+        .await
+        .expect("scan_and_load should succeed");
+
+    let mount_point = PathBuf::from("/system/sycl");
+    let translator = registry
+        .get_translator(&mount_point)
+        .await
+        .expect("system translator available");
+
+    let listing = translator
+        .list_files("/gpu")
+        .await
+        .expect("list_files should succeed");
+    assert!(listing.contains(&"devices".to_string()));
+
+    let bytes = translator
+        .read_file("/gpu/devices/info", 0, 4096)
+        .await
+        .expect("read_file should succeed");
+    assert!(!bytes.is_empty());
+
+    let payload: Value = serde_json::from_slice(&bytes).expect("valid json payload");
+    assert!(payload.get("devices").is_some());
+}
+
+#[tokio::test]
+async fn system_translator_executes_vector_add() {
+    let temp_dir = TempDir::new().unwrap();
+    let registry = ThreadSafeTranslatorRegistry::new(temp_dir.path().to_path_buf());
+    registry
+        .scan_and_load()
+        .await
+        .expect("scan_and_load should succeed");
+
+    let mount_point = PathBuf::from("/system/sycl");
+    let translator = registry
+        .get_translator(&mount_point)
+        .await
+        .expect("system translator available");
+
+    let job = serde_json::json!({
+        "kernel": "vector_add",
+        "device_id": "gpu0",
+        "work_dims": [4],
+        "arguments": [
+            { "name": "a", "value": [1.0, 2.0, 3.0, 4.0] },
+            { "name": "b", "value": [5.0, 6.0, 7.0, 8.0] }
+        ]
+    });
+
+    let response_bytes = translator
+        .write_file("/gpu/compute/submit", 0, serde_json::to_vec(&job).unwrap())
+        .await
+        .expect("vector_add submission should succeed");
+    let response: Value = serde_json::from_slice(&response_bytes).expect("valid response");
+
+    assert_eq!(
+        response.get("status"),
+        Some(&Value::String("completed".into()))
+    );
+    let job_id = response
+        .get("job_id")
+        .and_then(|v| v.as_str())
+        .expect("job id present");
+
+    // Read back the computed result
+    let result_path = format!("/gpu/jobs/{}/result", job_id);
+    let result_bytes = translator
+        .read_file(&result_path, 0, 1024)
+        .await
+        .expect("read result");
+    let result: Value = serde_json::from_slice(&result_bytes).expect("valid result json");
+    let values = result
+        .get("values")
+        .and_then(|v| v.as_array())
+        .expect("values array present");
+    let floats: Vec<f32> = values.iter().map(|v| v.as_f64().unwrap() as f32).collect();
+
+    assert_eq!(floats, vec![6.0, 8.0, 10.0, 12.0]);
+}
+
+#[tokio::test]
+async fn system_translator_tracks_buffers_and_vram() {
+    let temp_dir = TempDir::new().unwrap();
+    let registry = ThreadSafeTranslatorRegistry::new(temp_dir.path().to_path_buf());
+    registry
+        .scan_and_load()
+        .await
+        .expect("scan_and_load should succeed");
+
+    let mount_point = PathBuf::from("/system/sycl");
+    let translator = registry
+        .get_translator(&mount_point)
+        .await
+        .expect("system translator available");
+
+    let create_request = serde_json::json!({
+        "size": 4096,
+        "device_id": "gpu0",
+        "flags": []
+    });
+
+    let create_response: Value = serde_json::from_slice(
+        &translator
+            .write_file(
+                "/gpu/buffers/create",
+                0,
+                serde_json::to_vec(&create_request).unwrap(),
+            )
+            .await
+            .expect("buffer create"),
+    )
+    .expect("valid create response");
+
+    let buffer_id = create_response
+        .get("buffer_id")
+        .and_then(|v| v.as_str())
+        .expect("buffer id present");
+
+    let list: Value = serde_json::from_slice(
+        &translator
+            .read_file("/gpu/buffers/list", 0, 1024)
+            .await
+            .expect("read buffers"),
+    )
+    .expect("list json");
+
+    assert!(list
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|entry| entry.get("id").and_then(|v| v.as_str()) == Some(buffer_id)));
+
+    let release_request = serde_json::json!({ "buffer_id": buffer_id });
+    translator
+        .write_file(
+            "/gpu/buffers/release",
+            0,
+            serde_json::to_vec(&release_request).unwrap(),
+        )
+        .await
+        .expect("release buffer");
+
+    let post_release: Value = serde_json::from_slice(
+        &translator
+            .read_file("/gpu/buffers/list", 0, 1024)
+            .await
+            .expect("read buffers after release"),
+    )
+    .expect("post release json");
+
+    assert!(post_release.as_array().unwrap().is_empty());
+}

@@ -1,9 +1,9 @@
+use super::GpuInfo;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
-use super::GpuInfo;
 
 /// Registry of discovered GPU devices in the system.
-static GPU_REGISTRY: once_cell::sync::Lazy<Arc<RwLock<HashMap<String, GpuInfo>>>> = 
+static GPU_REGISTRY: once_cell::sync::Lazy<Arc<RwLock<HashMap<String, GpuInfo>>>> =
     once_cell::sync::Lazy::new(|| Arc::new(RwLock::new(HashMap::new())));
 
 /// Register a GPU device in the global registry.
@@ -23,5 +23,8 @@ pub fn get_gpu(id: &str) -> Option<GpuInfo> {
 /// List all registered GPUs.
 pub fn list_gpus() -> Vec<(String, GpuInfo)> {
     let registry = GPU_REGISTRY.read().unwrap();
-    registry.iter().map(|(id, info)| (id.clone(), info.clone())).collect()
+    registry
+        .iter()
+        .map(|(id, info)| (id.clone(), info.clone()))
+        .collect()
 }

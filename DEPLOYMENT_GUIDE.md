@@ -54,7 +54,7 @@ server_url = "http://localhost:8080"  # Your llama-launcher
 
 [gpu]
 enabled = true
-backend = "opencl"  # Intel Arc uses OpenCL
+backend = "sycl"  # AdaptiveCpp SYCL backend
 device_id = 0
 
 [consensus]
@@ -77,7 +77,7 @@ enabled = false  # No LLM here, just compute
 
 [gpu]
 enabled = true
-backend = "opencl"  # Or "cuda" if you have CUDA installed
+backend = "sycl"  # Or "cuda" if you have CUDA installed
 device_id = 0
 
 [consensus]

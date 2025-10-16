@@ -2,11 +2,11 @@
 //!
 //! Control the GHOSTDAG consensus system by reading/writing files in /srv/consensus/
 
-use crate::synth::{ControlHandler, SyntheticFilesystem};
 use crate::consensus::ConsensusCoordinator;
+use crate::synth::{ControlHandler, SyntheticFilesystem};
 use anyhow::Result;
-use std::sync::Arc;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 /// Register consensus control files in the synthetic filesystem
 pub async fn register_consensus_control(
@@ -14,43 +14,69 @@ pub async fn register_consensus_control(
     consensus: Arc<ConsensusCoordinator>,
 ) -> Result<()> {
     // Create /srv/consensus directory
-    synth.create_directory(&PathBuf::from("/srv/consensus")).await?;
+    synth
+        .create_directory(&PathBuf::from("/srv/consensus"))
+        .await?;
 
     // /srv/consensus/status - Read consensus state
-    synth.create_control_file(
-        &PathBuf::from("/srv/consensus/status"),
-        Arc::new(StatusHandler { consensus: consensus.clone() })
-    ).await?;
+    synth
+        .create_control_file(
+            &PathBuf::from("/srv/consensus/status"),
+            Arc::new(StatusHandler {
+                consensus: consensus.clone(),
+            }),
+        )
+        .await?;
 
     // /srv/consensus/submit - Write transaction to submit to DAG
-    synth.create_control_file(
-        &PathBuf::from("/srv/consensus/submit"),
-        Arc::new(SubmitHandler { consensus: consensus.clone() })
-    ).await?;
+    synth
+        .create_control_file(
+            &PathBuf::from("/srv/consensus/submit"),
+            Arc::new(SubmitHandler {
+                consensus: consensus.clone(),
+            }),
+        )
+        .await?;
 
     // /srv/consensus/blocks - Read list of recent blocks
-    synth.create_control_file(
-        &PathBuf::from("/srv/consensus/blocks"),
-        Arc::new(BlocksHandler { consensus: consensus.clone() })
-    ).await?;
+    synth
+        .create_control_file(
+            &PathBuf::from("/srv/consensus/blocks"),
+            Arc::new(BlocksHandler {
+                consensus: consensus.clone(),
+            }),
+        )
+        .await?;
 
     // /srv/consensus/dag - Read DAG structure
-    synth.create_control_file(
-        &PathBuf::from("/srv/consensus/dag"),
-        Arc::new(DagHandler { consensus: consensus.clone() })
-    ).await?;
+    synth
+        .create_control_file(
+            &PathBuf::from("/srv/consensus/dag"),
+            Arc::new(DagHandler {
+                consensus: consensus.clone(),
+            }),
+        )
+        .await?;
 
     // /srv/consensus/peers - Read consensus network peers
-    synth.create_control_file(
-        &PathBuf::from("/srv/consensus/peers"),
-        Arc::new(PeersHandler { consensus: consensus.clone() })
-    ).await?;
+    synth
+        .create_control_file(
+            &PathBuf::from("/srv/consensus/peers"),
+            Arc::new(PeersHandler {
+                consensus: consensus.clone(),
+            }),
+        )
+        .await?;
 
     // /srv/consensus/metrics - Read consensus metrics
-    synth.create_control_file(
-        &PathBuf::from("/srv/consensus/metrics"),
-        Arc::new(MetricsHandler { consensus: consensus.clone() })
-    ).await?;
+    synth
+        .create_control_file(
+            &PathBuf::from("/srv/consensus/metrics"),
+            Arc::new(MetricsHandler {
+                consensus: consensus.clone(),
+            }),
+        )
+        .await?;
 
     Ok(())
 }
@@ -109,9 +135,7 @@ impl ControlHandler for SubmitHandler {
         let tx: serde_json::Value = serde_json::from_str(&tx_data)?;
 
         // Submit to consensus
-        futures::executor::block_on(async {
-            self.consensus.submit_transaction(tx).await
-        })?;
+        futures::executor::block_on(async { self.consensus.submit_transaction(tx).await })?;
 
         Ok(())
     }
@@ -124,13 +148,12 @@ struct BlocksHandler {
 
 impl ControlHandler for BlocksHandler {
     fn read(&self) -> Result<Vec<u8>> {
-        let blocks = futures::executor::block_on(
-            self.consensus.get_recent_blocks(20)
-        );
+        let blocks = futures::executor::block_on(self.consensus.get_recent_blocks(20));
 
         let mut output = String::from("Recent Blocks\n=============\n");
         for block in blocks {
-            let parent_display = block.parent_id
+            let parent_display = block
+                .parent_id
                 .as_ref()
                 .map(|p| p.chars().take(8).collect::<String>())
                 .unwrap_or_else(|| "genesis".to_string());
@@ -159,9 +182,7 @@ struct DagHandler {
 
 impl ControlHandler for DagHandler {
     fn read(&self) -> Result<Vec<u8>> {
-        let dag_info = futures::executor::block_on(
-            self.consensus.get_dag_structure()
-        );
+        let dag_info = futures::executor::block_on(self.consensus.get_dag_structure());
 
         let output = format!(
             "DAG Structure\n\
@@ -200,18 +221,13 @@ struct PeersHandler {
 
 impl ControlHandler for PeersHandler {
     fn read(&self) -> Result<Vec<u8>> {
-        let peers = futures::executor::block_on(
-            self.consensus.get_network_peers()
-        );
+        let peers = futures::executor::block_on(self.consensus.get_network_peers());
 
         let mut output = String::from("Consensus Peers\n===============\n");
         for peer in peers {
             output.push_str(&format!(
                 "{}\t{}\t{} blocks ahead\t{} ms latency\n",
-                peer.peer_id,
-                peer.address,
-                peer.blocks_ahead,
-                peer.latency_ms
+                peer.peer_id, peer.address, peer.blocks_ahead, peer.latency_ms
             ));
         }
 
@@ -230,9 +246,7 @@ struct MetricsHandler {
 
 impl ControlHandler for MetricsHandler {
     fn read(&self) -> Result<Vec<u8>> {
-        let metrics = futures::executor::block_on(
-            self.consensus.get_metrics()
-        );
+        let metrics = futures::executor::block_on(self.consensus.get_metrics());
 
         let output = format!(
             "# Consensus Metrics (Prometheus format)\n\

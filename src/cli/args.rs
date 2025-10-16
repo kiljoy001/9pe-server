@@ -1,7 +1,7 @@
 //! Global arguments shared across all commands
 
-use clap::Args;
 use anyhow::Result;
+use clap::Args;
 use tracing_subscriber::EnvFilter;
 
 /// Global arguments available to all commands
@@ -54,11 +54,9 @@ impl GlobalArgs {
             (false, _) => "trace",
         };
 
-        let filter = EnvFilter::try_from_default_env()
-            .unwrap_or_else(|_| EnvFilter::new(level));
+        let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(level));
 
-        let subscriber = tracing_subscriber::fmt()
-            .with_env_filter(filter);
+        let subscriber = tracing_subscriber::fmt().with_env_filter(filter);
 
         match self.log_format {
             LogFormat::Json => {

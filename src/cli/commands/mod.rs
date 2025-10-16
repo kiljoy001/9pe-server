@@ -1,9 +1,9 @@
 //! Command implementations
 
-pub mod serve;
-pub mod client;
 pub mod auto_mount;
+pub mod client;
+pub mod serve;
 
-pub use serve::ServeCommand;
-pub use client::ClientCommand;
 pub use auto_mount::AutoMountCommand;
+pub use client::ClientCommand;
+pub use serve::ServeCommand;

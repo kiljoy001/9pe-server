@@ -54,12 +54,8 @@ impl BindAddress {
     /// Convert to socket address with port
     pub fn to_socket_addr(&self, port: u16) -> Result<SocketAddr> {
         let addr = match self {
-            Self::Any | Self::Ipv6Any => {
-                SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), port)
-            }
-            Self::Ipv4Any => {
-                SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), port)
-            }
+            Self::Any | Self::Ipv6Any => SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), port),
+            Self::Ipv4Any => SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), port),
             Self::Specific(ip) => SocketAddr::new(*ip, port),
         };
         Ok(addr)
@@ -78,7 +74,10 @@ impl BindAddress {
 
     /// Check if this is an IPv6 address (including dual-stack)
     pub fn is_ipv6(&self) -> bool {
-        matches!(self, Self::Any | Self::Ipv6Any | Self::Specific(IpAddr::V6(_)))
+        matches!(
+            self,
+            Self::Any | Self::Ipv6Any | Self::Specific(IpAddr::V6(_))
+        )
     }
 
     /// Check if this supports dual-stack
@@ -116,8 +115,7 @@ mod tests {
         assert_eq!(BindAddress::Any.to_bind_string(5640), "[::]:5640");
         assert_eq!(BindAddress::Ipv4Any.to_bind_string(5640), "0.0.0.0:5640");
         assert_eq!(
-            BindAddress::Specific(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)))
-                .to_bind_string(5640),
+            BindAddress::Specific(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1))).to_bind_string(5640),
             "127.0.0.1:5640"
         );
     }

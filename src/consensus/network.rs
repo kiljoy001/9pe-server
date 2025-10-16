@@ -4,17 +4,17 @@
 //! coordination for distributed consensus and work distribution.
 
 use anyhow::Result;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::net::SocketAddr;
 use std::sync::Arc;
-use tokio::sync::{RwLock, broadcast};
-use tokio::time::{Duration, interval, Interval};
-use tracing::{debug, warn, info};
+use tokio::sync::{broadcast, RwLock};
+use tokio::time::{interval, Duration, Interval};
+use tracing::{debug, info, warn};
 
 use super::crypto::{PublicKey, TrustedKeyStore};
 use super::ghostdag::BlockId;
-use super::work_distribution::{NodeInfo, NodeCapabilities};
+use super::work_distribution::{NodeCapabilities, NodeInfo};
 
 /// Network consensus coordinator
 pub struct NetworkConsensus {
@@ -83,7 +83,10 @@ impl NetworkConsensus {
                 let peer_addr = peer_info.address;
                 send_tasks.push(async move {
                     // In real implementation, send message over network
-                    debug!("Sending message {:?} to peer {} at {}", msg.msg_type, peer_id, peer_addr);
+                    debug!(
+                        "Sending message {:?} to peer {} at {}",
+                        msg.msg_type, peer_id, peer_addr
+                    );
                 });
             }
         }
@@ -111,7 +114,10 @@ impl NetworkConsensus {
 
     /// Handle incoming network message
     pub async fn handle_message(&self, from_peer: String, message: NetworkMessage) -> Result<()> {
-        debug!("Handling message {:?} from peer {}", message.msg_type, from_peer);
+        debug!(
+            "Handling message {:?} from peer {}",
+            message.msg_type, from_peer
+        );
 
         let handlers = self.message_handlers.read().await;
         if let Some(handler) = handlers.get(&message.msg_type) {
@@ -131,7 +137,10 @@ impl NetworkConsensus {
     /// Get current network statistics
     pub async fn get_network_stats(&self) -> NetworkStats {
         let peers = self.peers.read().await;
-        let connected_peers = peers.values().filter(|p| p.status == PeerStatus::Connected).count();
+        let connected_peers = peers
+            .values()
+            .filter(|p| p.status == PeerStatus::Connected)
+            .count();
         let total_peers = peers.len();
 
         NetworkStats {
@@ -188,7 +197,12 @@ impl NetworkConsensus {
     }
 
     /// Add a new peer to the network
-    pub async fn add_peer(&self, peer_id: String, address: SocketAddr, public_key: PublicKey) -> Result<()> {
+    pub async fn add_peer(
+        &self,
+        peer_id: String,
+        address: SocketAddr,
+        public_key: PublicKey,
+    ) -> Result<()> {
         let key_clone = public_key.clone();
         let peer_info = PeerInfo {
             node_id: peer_id.clone(),
@@ -213,7 +227,9 @@ impl NetworkConsensus {
         }
 
         // Notify event subscribers
-        let _ = self.event_sender.send(NetworkEvent::PeerDiscovered(peer_id));
+        let _ = self
+            .event_sender
+            .send(NetworkEvent::PeerDiscovered(peer_id));
         Ok(())
     }
 
@@ -362,7 +378,7 @@ impl ResourceDiscovery {
             storage_gb: 1000,
             capabilities: vec![
                 "compute".to_string(),
-                "opencl".to_string(),
+                "sycl".to_string(),
                 "wasm".to_string(),
             ],
             geographic_region: Some("us-west".to_string()),
@@ -373,8 +389,12 @@ impl ResourceDiscovery {
             *local_caps = capabilities;
         }
 
-        info!("Detected local capabilities: {} CPU cores, {} GB RAM, GPU: {}",
-              num_cpus::get(), 16, true);
+        info!(
+            "Detected local capabilities: {} CPU cores, {} GB RAM, GPU: {}",
+            num_cpus::get(),
+            16,
+            true
+        );
 
         Ok(())
     }
@@ -422,16 +442,24 @@ impl ResourceDiscovery {
     }
 
     /// Find nodes suitable for a job
-    pub async fn find_suitable_nodes(&self, requirements: &super::work_distribution::JobRequirements) -> Vec<String> {
+    pub async fn find_suitable_nodes(
+        &self,
+        requirements: &super::work_distribution::JobRequirements,
+    ) -> Vec<String> {
         let resources = self.network_resources.read().await;
 
-        resources.values()
+        resources
+            .values()
             .filter(|node| self.node_meets_requirements(node, requirements))
             .map(|node| node.node_id.clone())
             .collect()
     }
 
-    fn node_meets_requirements(&self, node: &NodeInfo, req: &super::work_distribution::JobRequirements) -> bool {
+    fn node_meets_requirements(
+        &self,
+        node: &NodeInfo,
+        req: &super::work_distribution::JobRequirements,
+    ) -> bool {
         if let Some(min_cpu) = req.min_cpu_cores {
             if node.capabilities.cpu_cores < min_cpu {
                 return false;
@@ -520,13 +548,17 @@ pub enum NetworkEvent {
 }
 
 pub struct MessageHandler {
-    handler: Box<dyn Fn(String, NetworkMessage) -> tokio::task::JoinHandle<Result<()>> + Send + Sync>,
+    handler:
+        Box<dyn Fn(String, NetworkMessage) -> tokio::task::JoinHandle<Result<()>> + Send + Sync>,
 }
 
 impl MessageHandler {
     pub fn new<F>(handler: F) -> Self
     where
-        F: Fn(String, NetworkMessage) -> tokio::task::JoinHandle<Result<()>> + Send + Sync + 'static,
+        F: Fn(String, NetworkMessage) -> tokio::task::JoinHandle<Result<()>>
+            + Send
+            + Sync
+            + 'static,
     {
         Self {
             handler: Box::new(handler),
@@ -543,7 +575,7 @@ impl MessageHandler {
 pub struct NetworkStats {
     pub connected_peers: u32,
     pub total_known_peers: u32,
-    pub network_health: f64, // 0.0 to 1.0
+    pub network_health: f64,     // 0.0 to 1.0
     pub message_throughput: f64, // messages per second
     pub average_latency_ms: f64,
 }
@@ -590,7 +622,9 @@ impl NetworkTopology {
 
         // Sort by distance (closer peers first)
         candidates.sort_by(|a, b| {
-            distances.get(a).unwrap_or(&f64::MAX)
+            distances
+                .get(a)
+                .unwrap_or(&f64::MAX)
                 .partial_cmp(distances.get(b).unwrap_or(&f64::MAX))
                 .unwrap()
         });
@@ -638,7 +672,8 @@ impl NetworkLoadBalancer {
         let workloads = self.node_workloads.read().await;
         let weights = self.resource_weights.read().await;
 
-        let mut node_scores: Vec<_> = available_nodes.iter()
+        let mut node_scores: Vec<_> = available_nodes
+            .iter()
             .map(|node_id| {
                 let workload = workloads.get(node_id).unwrap_or(&0.5);
                 let weight = weights.get(node_id).unwrap_or(&1.0);
@@ -650,7 +685,8 @@ impl NetworkLoadBalancer {
         // Sort by score (higher is better)
         node_scores.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
 
-        node_scores.into_iter()
+        node_scores
+            .into_iter()
             .take(required_nodes)
             .map(|(node_id, _)| node_id)
             .collect()

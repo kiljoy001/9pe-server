@@ -1,0 +1,14 @@
+/home/scott/Repo/9pe-server/transformers/sycl-gpu/target/wasm32-wasip1/release/deps/serde-1f269b8b1245cfda.d: /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /home/scott/Repo/9pe-server/transformers/sycl-gpu/target/wasm32-wasip1/release/build/serde-fb08bec0c2d0bc3a/out/private.rs
+
+/home/scott/Repo/9pe-server/transformers/sycl-gpu/target/wasm32-wasip1/release/deps/libserde-1f269b8b1245cfda.rlib: /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /home/scott/Repo/9pe-server/transformers/sycl-gpu/target/wasm32-wasip1/release/build/serde-fb08bec0c2d0bc3a/out/private.rs
+
+/home/scott/Repo/9pe-server/transformers/sycl-gpu/target/wasm32-wasip1/release/deps/libserde-1f269b8b1245cfda.rmeta: /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /home/scott/Repo/9pe-server/transformers/sycl-gpu/target/wasm32-wasip1/release/build/serde-fb08bec0c2d0bc3a/out/private.rs
+
+/home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs:
+/home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs:
+/home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs:
+/home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs:
+/home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs:
+/home/scott/Repo/9pe-server/transformers/sycl-gpu/target/wasm32-wasip1/release/build/serde-fb08bec0c2d0bc3a/out/private.rs:
+
+# env-dep:OUT_DIR=/home/scott/Repo/9pe-server/transformers/sycl-gpu/target/wasm32-wasip1/release/build/serde-fb08bec0c2d0bc3a/out

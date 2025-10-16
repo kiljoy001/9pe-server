@@ -3,9 +3,9 @@
 use anyhow::Result;
 use std::path::PathBuf;
 
+use super::{Server, ServerConfig};
 use crate::network::NetworkConfig;
 use crate::transport::TransportType;
-use super::{Server, ServerConfig};
 
 /// Builder for creating a Server with dependency injection
 pub struct ServerBuilder {
@@ -141,8 +141,12 @@ impl ServerBuilder {
             mesh_port: self.mesh_port,
             metrics_enabled: self.metrics_enabled,
             metrics_port: self.metrics_port,
-            translator_directory: self.translator_directory.unwrap_or_else(|| ninep_home.join("translators")),
-            settrans_directory: self.settrans_directory.unwrap_or_else(|| ninep_home.join("settrans")),
+            translator_directory: self
+                .translator_directory
+                .unwrap_or_else(|| ninep_home.join("translators")),
+            settrans_directory: self
+                .settrans_directory
+                .unwrap_or_else(|| ninep_home.join("settrans")),
             auto_mount_enabled: self.auto_mount_enabled,
             consensus_config,
             node_id,

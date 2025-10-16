@@ -2,15 +2,15 @@
 //!
 //! A complete 9P2000/9P.e client for connecting to 9P servers.
 
-use super::{*, messages::*};
-use tokio::net::TcpStream;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use super::{messages::*, *};
+use anyhow::{bail, Context, Result};
 use std::collections::HashMap;
-use std::sync::Arc;
-use tokio::sync::{Mutex, RwLock};
-use anyhow::{Result, Context, bail};
-use tracing::info;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::TcpStream;
+use tokio::sync::{Mutex, RwLock};
+use tracing::info;
 
 /// 9P Client for file operations
 pub struct NinePClient {
@@ -41,7 +41,7 @@ pub struct NinePClient {
 struct FidInfo {
     path: PathBuf,
     qid: Qid,
-    mode: Option<u8>,  // Open mode if file is open
+    mode: Option<u8>, // Open mode if file is open
 }
 
 impl NinePClient {
@@ -49,7 +49,8 @@ impl NinePClient {
     pub async fn connect(addr: &str) -> Result<Self> {
         info!("Connecting to 9P server at {}", addr);
 
-        let stream = TcpStream::connect(addr).await
+        let stream = TcpStream::connect(addr)
+            .await
             .context("Failed to connect to 9P server")?;
 
         let mut client = Self {
@@ -98,7 +99,9 @@ impl NinePClient {
         // Send message
         {
             let mut stream = self.stream.lock().await;
-            stream.write_all(&buf).await
+            stream
+                .write_all(&buf)
+                .await
                 .context("Failed to send message")?;
             stream.flush().await?;
         }
@@ -109,7 +112,9 @@ impl NinePClient {
 
             // Read size (4 bytes)
             let mut size_buf = [0u8; 4];
-            stream.read_exact(&mut size_buf).await
+            stream
+                .read_exact(&mut size_buf)
+                .await
                 .context("Failed to read response size")?;
             let size = u32::from_le_bytes(size_buf);
 
@@ -120,7 +125,9 @@ impl NinePClient {
             // Read full message
             let mut buf = vec![0u8; size as usize];
             buf[0..4].copy_from_slice(&size_buf);
-            stream.read_exact(&mut buf[4..]).await
+            stream
+                .read_exact(&mut buf[4..])
+                .await
                 .context("Failed to read response")?;
 
             buf
@@ -147,7 +154,10 @@ impl NinePClient {
         self.msize = resp.msize.min(self.msize);
         self.version = resp.version;
 
-        info!("Protocol negotiated: {} with msize {}", self.version, self.msize);
+        info!(
+            "Protocol negotiated: {} with msize {}",
+            self.version, self.msize
+        );
 
         Ok(())
     }
@@ -159,7 +169,7 @@ impl NinePClient {
         let msg = Tattach {
             tag: self.next_tag().await,
             fid,
-            afid: !0,  // No auth
+            afid: !0, // No auth
             uname: uname.to_string(),
             aname: aname.to_string(),
         };
@@ -170,11 +180,14 @@ impl NinePClient {
         self.root_fid = Some(fid);
 
         let mut fids = self.fids.write().await;
-        fids.insert(fid, FidInfo {
-            path: PathBuf::from("/"),
-            qid: resp.qid,
-            mode: None,
-        });
+        fids.insert(
+            fid,
+            FidInfo {
+                path: PathBuf::from("/"),
+                qid: resp.qid,
+                mode: None,
+            },
+        );
 
         info!("Attached as {} to {}", uname, aname);
 
@@ -183,7 +196,8 @@ impl NinePClient {
 
     /// Walk to a path
     pub async fn walk(&self, path: &Path) -> Result<(Fid, Vec<Qid>)> {
-        let root_fid = self.root_fid
+        let root_fid = self
+            .root_fid
             .ok_or_else(|| anyhow::anyhow!("Not attached"))?;
 
         let newfid = self.next_fid().await;
@@ -206,18 +220,24 @@ impl NinePClient {
         let resp: Rwalk = self.rpc(msg).await?;
 
         if resp.qids.len() != wnames.len() {
-            bail!("Walk failed: only walked {} of {} components",
-                  resp.qids.len(), wnames.len());
+            bail!(
+                "Walk failed: only walked {} of {} components",
+                resp.qids.len(),
+                wnames.len()
+            );
         }
 
         // Store the new fid
         if let Some(last_qid) = resp.qids.last() {
             let mut fids = self.fids.write().await;
-            fids.insert(newfid, FidInfo {
-                path: path.to_path_buf(),
-                qid: *last_qid,
-                mode: None,
-            });
+            fids.insert(
+                newfid,
+                FidInfo {
+                    path: path.to_path_buf(),
+                    qid: *last_qid,
+                    mode: None,
+                },
+            );
         }
 
         Ok((newfid, resp.qids))
@@ -332,8 +352,11 @@ impl NinePClient {
                 // In production, we'd properly deserialize the stat
                 let name_start = pos + 49; // Offset to name in stat structure
                 if name_start < data.len() {
-                    let name_len = u16::from_le_bytes([data[name_start], data[name_start + 1]]) as usize;
-                    let name = String::from_utf8_lossy(&data[name_start + 2..name_start + 2 + name_len]).into_owned();
+                    let name_len =
+                        u16::from_le_bytes([data[name_start], data[name_start + 1]]) as usize;
+                    let name =
+                        String::from_utf8_lossy(&data[name_start + 2..name_start + 2 + name_len])
+                            .into_owned();
 
                     entries.push(Stat {
                         size: size as u16,

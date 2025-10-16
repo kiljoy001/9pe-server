@@ -7,26 +7,26 @@
 //! - Read-only primitives for WASM transformers
 //! - Byzantine fault tolerance
 
-pub mod ghostdag;
-pub mod crypto;
-pub mod work_distribution;
-pub mod network;
 pub mod bounded_ghostdag;
+pub mod crypto;
 pub mod dynamic_scaling;
+pub mod ghostdag;
+pub mod network;
+pub mod work_distribution;
 
-pub use ghostdag::{GhostdagConsensus, ConsensusState, WorkBlock};
-pub use crypto::{CryptoProvider, Signature, PublicKey};
-pub use work_distribution::{WorkDistributor, JobRequest};
+pub use bounded_ghostdag::{Block, BlockId, BlockState, BoundedGhostdag, DagStats, NamespaceOp};
+pub use crypto::{CryptoProvider, PublicKey, Signature};
+pub use dynamic_scaling::{DynamicScaler, ScaleDecision, ScalingParams};
 pub use ghostdag::WorkResult;
+pub use ghostdag::{ConsensusState, GhostdagConsensus, WorkBlock};
 pub use network::{NetworkConsensus, PeerManager};
-pub use bounded_ghostdag::{BoundedGhostdag, NamespaceOp, BlockState, DagStats, Block, BlockId};
-pub use dynamic_scaling::{DynamicScaler, ScalingParams, ScaleDecision};
+pub use work_distribution::{JobRequest, WorkDistributor};
 
 use anyhow::Result;
+use crypto::TrustedKeyStore;
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use serde::{Serialize, Deserialize};
-use crypto::TrustedKeyStore;
 
 /// Main consensus coordinator for the 9P.e server
 pub struct ConsensusCoordinator {
@@ -53,8 +53,7 @@ impl ConsensusCoordinator {
         )));
         let work_distributor = Arc::new(WorkDistributor::new(node_id.clone()));
         let network = Arc::new(
-            NetworkConsensus::new(node_id.clone())
-                .with_trusted_store(Arc::clone(&trusted_keys)),
+            NetworkConsensus::new(node_id.clone()).with_trusted_store(Arc::clone(&trusted_keys)),
         );
 
         Self {
@@ -125,7 +124,8 @@ impl ConsensusCoordinator {
         let state = self.ghostdag.read().await.get_state();
         let main_chain = state.main_chain;
 
-        main_chain.iter()
+        main_chain
+            .iter()
             .rev()
             .take(count)
             .map(|block_id| {
@@ -169,14 +169,12 @@ impl ConsensusCoordinator {
     pub async fn get_network_peers(&self) -> Vec<ConsensusPeerInfo> {
         // For now, return placeholder data
         // TODO: Integrate with actual network layer
-        vec![
-            ConsensusPeerInfo {
-                peer_id: "peer-1".to_string(),
-                address: "192.168.1.100:5640".to_string(),
-                blocks_ahead: 0,
-                latency_ms: 15,
-            }
-        ]
+        vec![ConsensusPeerInfo {
+            peer_id: "peer-1".to_string(),
+            address: "192.168.1.100:5640".to_string(),
+            blocks_ahead: 0,
+            latency_ms: 15,
+        }]
     }
 
     /// Get consensus metrics (for /srv/consensus/metrics)
@@ -188,7 +186,7 @@ impl ConsensusCoordinator {
             total_blocks: state.dag_height,
             pending_tx_count: state.pending_work.len(),
             network_hashrate: 0.0, // TODO: Calculate from work proofs
-            active_peers: 1, // TODO: Get from network layer
+            active_peers: 1,       // TODO: Get from network layer
             consensus_reached: state.tips.len() <= 3, // Consider consensus reached if ≤3 tips
         }
     }

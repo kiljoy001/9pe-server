@@ -1,7 +1,7 @@
 //! Serve command implementation with QUIC as default
 
+use anyhow::{Context, Result};
 use clap::Args;
-use anyhow::{Result, Context};
 use std::path::PathBuf;
 use tracing::info;
 
@@ -63,14 +63,15 @@ impl ServeCommand {
         // Load config file if provided
         let file_config = if let Some(path) = config_path.as_ref() {
             info!("Loading configuration from: {}", path);
-            Some(crate::config::Config::from_file(std::path::Path::new(path))?)
+            Some(crate::config::Config::from_file(std::path::Path::new(
+                path,
+            ))?)
         } else {
             None
         };
 
         // Configure network with IPv6 preference
-        let network_config = NetworkConfig::new(self.port)
-            .with_interface(self.bind.as_deref())?;
+        let network_config = NetworkConfig::new(self.port).with_interface(self.bind.as_deref())?;
 
         // Determine transport type (QUIC by default unless --no-quic)
         let transport = if self.no_quic {
@@ -98,9 +99,7 @@ impl ServeCommand {
             builder = builder.with_config(config);
         }
 
-        let server = builder.build()
-            .await
-            .context("Failed to build server")?;
+        let server = builder.build().await.context("Failed to build server")?;
 
         // Start the server
         info!(

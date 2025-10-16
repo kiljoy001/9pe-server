@@ -4,7 +4,7 @@
 //! to ensure fair work allocation and reliable result collection.
 
 use anyhow::Result;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -98,7 +98,11 @@ impl WorkDistributor {
     }
 
     /// Register node capabilities
-    pub async fn register_node_capabilities(&self, node_id: String, capabilities: NodeCapabilities) {
+    pub async fn register_node_capabilities(
+        &self,
+        node_id: String,
+        capabilities: NodeCapabilities,
+    ) {
         let mut caps = self.node_capabilities.write().await;
         caps.insert(node_id, capabilities);
     }
@@ -126,7 +130,11 @@ impl WorkDistributor {
             pending.remove(&assignment.job_id);
         }
 
-        info!("Assigned work {} to {} nodes", assignment.job_id, assignment.assigned_nodes.len());
+        info!(
+            "Assigned work {} to {} nodes",
+            assignment.job_id,
+            assignment.assigned_nodes.len()
+        );
         Ok(())
     }
 
@@ -221,9 +229,10 @@ impl JobScheduler {
         let mut queue = self.scheduling_queue.write().await;
 
         // Insert job based on priority
-        let insert_pos = queue.iter().position(|existing_job| {
-            existing_job.priority < job.priority
-        }).unwrap_or(queue.len());
+        let insert_pos = queue
+            .iter()
+            .position(|existing_job| existing_job.priority < job.priority)
+            .unwrap_or(queue.len());
 
         queue.insert(insert_pos, job);
         Ok(())
@@ -234,8 +243,13 @@ impl JobScheduler {
         queue.pop_front()
     }
 
-    pub async fn select_nodes_for_job(&self, job: &JobRequest, available_nodes: &[NodeInfo]) -> Vec<String> {
-        let mut suitable_nodes: Vec<_> = available_nodes.iter()
+    pub async fn select_nodes_for_job(
+        &self,
+        job: &JobRequest,
+        available_nodes: &[NodeInfo],
+    ) -> Vec<String> {
+        let mut suitable_nodes: Vec<_> = available_nodes
+            .iter()
             .filter(|node| self.node_meets_job_requirements(node, job))
             .collect();
 
@@ -243,7 +257,8 @@ impl JobScheduler {
         suitable_nodes.sort_by(|a, b| a.current_workload.partial_cmp(&b.current_workload).unwrap());
 
         // Select required number of nodes
-        suitable_nodes.iter()
+        suitable_nodes
+            .iter()
             .take(job.requirements.min_nodes as usize)
             .map(|node| node.node_id.clone())
             .collect()
@@ -291,7 +306,11 @@ impl ResultCollector {
         }
     }
 
-    pub async fn collect_partial_result(&self, job_id: String, result: PartialResult) -> Result<Option<WorkResult>> {
+    pub async fn collect_partial_result(
+        &self,
+        job_id: String,
+        result: PartialResult,
+    ) -> Result<Option<WorkResult>> {
         let mut results = self.partial_results.write().await;
         let job_results = results.entry(job_id.clone()).or_insert_with(Vec::new);
         job_results.push(result);
@@ -306,13 +325,21 @@ impl ResultCollector {
         }
     }
 
-    async fn can_aggregate_results(&self, _job_id: &str, results: &[PartialResult]) -> Result<bool> {
+    async fn can_aggregate_results(
+        &self,
+        _job_id: &str,
+        results: &[PartialResult],
+    ) -> Result<bool> {
         // Simple majority consensus - need at least 2/3 of expected results
         // In real implementation, this would be more sophisticated
         Ok(results.len() >= 2)
     }
 
-    async fn aggregate_results(&self, job_id: String, results: &[PartialResult]) -> Result<WorkResult> {
+    async fn aggregate_results(
+        &self,
+        job_id: String,
+        results: &[PartialResult],
+    ) -> Result<WorkResult> {
         // Simple aggregation - in real implementation, this would be more sophisticated
         let mut aggregated_data = Vec::new();
         let mut total_execution_time = 0;

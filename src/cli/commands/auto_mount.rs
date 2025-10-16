@@ -1,12 +1,12 @@
 //! Auto-mount command implementation
 
-use clap::{Args, Subcommand};
 use anyhow::Result;
+use clap::{Args, Subcommand};
+use once_cell::sync::Lazy;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{info, warn};
-use once_cell::sync::Lazy;
 
 use crate::auto_mount::{AutoMountDaemon, AutoMountStatus};
 
@@ -69,9 +69,9 @@ impl AutoMountCommand {
                 // Start daemon in background
                 let daemon_clone = daemon.clone();
                 let start_result: tokio::task::JoinHandle<Result<()>> = tokio::spawn(async move {
-                let _daemon_ref = daemon_clone.as_ref();
-                info!("Auto-mount daemon starting...");
-                Ok(())
+                    let _daemon_ref = daemon_clone.as_ref();
+                    info!("Auto-mount daemon starting...");
+                    Ok(())
                 });
 
                 // Store daemon instance for management
@@ -131,7 +131,10 @@ impl AutoMountCommand {
     }
 
     fn print_status(status: &AutoMountStatus) {
-        println!("Status: {}", if status.running { "Running" } else { "Stopped" });
+        println!(
+            "Status: {}",
+            if status.running { "Running" } else { "Stopped" }
+        );
         println!("Mount point: {:?}", status.mount_point);
         println!("Discovered servers: {}", status.discovered_count);
         println!("Mounted servers: {}", status.mounted_count);

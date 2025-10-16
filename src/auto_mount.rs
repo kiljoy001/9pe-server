@@ -6,18 +6,18 @@
 //! - Automatic mount/unmount based on server availability
 //! - Zero user configuration required - runs transparently
 
-use anyhow::{Result, Context};
+use anyhow::{Context, Result};
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::process::Command;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
-use tokio::sync::{RwLock, mpsc};
+use tokio::sync::{mpsc, RwLock};
 use tokio::time::interval;
 use tracing::{debug, error, info, warn};
-use std::process::Command;
 
-use crate::transport::{TransportType, TransportFactory};
 use crate::consensus::ConsensusCoordinator;
+use crate::transport::{TransportFactory, TransportType};
 
 /// Auto-mount daemon managing individual server mounts
 /// Runs transparently - no user configuration needed
@@ -84,7 +84,8 @@ impl AutoMountDaemon {
     /// Generate mount point for a discovered server in /n or ~/n namespace
     fn generate_mount_point(server: &DiscoveredServer) -> PathBuf {
         // Create clean server name for mount point
-        let clean_name = server.address
+        let clean_name = server
+            .address
             .replace(".", "_")
             .replace(":", "_")
             .replace("-", "_");
@@ -104,10 +105,52 @@ impl AutoMountDaemon {
         Ok(())
     }
 
+    /// Parse a node address string into components `(host, port, transport)`
+    #[cfg_attr(not(test), allow(dead_code))]
+    fn parse_node_address(addr: &str) -> Result<(String, u16, TransportType)> {
+        let trimmed = addr.trim();
+        if trimmed.is_empty() {
+            anyhow::bail!("address cannot be empty");
+        }
+
+        // Split off transport type if provided (host:port@transport)
+        let (host_port, transport_str) = match trimmed.split_once('@') {
+            Some((hp, transport)) => (hp, Some(transport)),
+            None => (trimmed, None),
+        };
+
+        let (host_part, port_part) = host_port
+            .rsplit_once(':')
+            .ok_or_else(|| anyhow::anyhow!("address must be host:port format"))?;
+
+        if host_part.is_empty() {
+            anyhow::bail!("host portion is empty");
+        }
+
+        let port: u16 = port_part
+            .parse()
+            .map_err(|_| anyhow::anyhow!("invalid port value"))?;
+
+        let transport = match transport_str.map(|s| s.to_ascii_lowercase()) {
+            Some(ref t) if t == "quic" => TransportType::Quic { server_name: None },
+            Some(ref t) if t.is_empty() || t == "tcp" => TransportType::Tcp,
+            None => TransportType::Tcp,
+            Some(other) => {
+                warn!("Unknown transport '{}', defaulting to TCP", other);
+                TransportType::Tcp
+            }
+        };
+
+        Ok((host_part.to_string(), port, transport))
+    }
+
     /// Start the auto-mount daemon
     pub async fn start(&mut self) -> Result<()> {
         let n_path = crate::util::get_n_directory();
-        info!("Starting transparent auto-mount daemon for {:?} namespace", n_path);
+        info!(
+            "Starting transparent auto-mount daemon for {:?} namespace",
+            n_path
+        );
 
         // Ensure namespace directory exists
         Self::ensure_n_directory_exists()?;
@@ -161,7 +204,9 @@ impl AutoMountDaemon {
             loop {
                 health_timer.tick().await;
 
-                if let Err(e) = Self::health_check_mounted_servers(&mounted_servers, &discovered_servers).await {
+                if let Err(e) =
+                    Self::health_check_mounted_servers(&mounted_servers, &discovered_servers).await
+                {
                     error!("Health check failed: {}", e);
                 }
             }
@@ -174,7 +219,7 @@ impl AutoMountDaemon {
     /// Health check mounted servers and unmount dead ones
     async fn health_check_mounted_servers(
         mounted_servers: &Arc<RwLock<HashMap<String, MountedServer>>>,
-        discovered_servers: &Arc<RwLock<HashMap<String, DiscoveredServer>>>
+        discovered_servers: &Arc<RwLock<HashMap<String, DiscoveredServer>>>,
     ) -> Result<()> {
         let mut to_unmount = Vec::new();
 
@@ -187,14 +232,21 @@ impl AutoMountDaemon {
                 if let Some(server) = discovered.get(server_key) {
                     // Check if server was seen recently (within 2 intervals)
                     if let Ok(elapsed) = server.last_seen.elapsed() {
-                        if elapsed > Duration::from_secs(120) { // 2 minutes timeout
-                            warn!("Server {} not seen for {:?}, marking for unmount", server.address, elapsed);
+                        if elapsed > Duration::from_secs(120) {
+                            // 2 minutes timeout
+                            warn!(
+                                "Server {} not seen for {:?}, marking for unmount",
+                                server.address, elapsed
+                            );
                             to_unmount.push(server_key.clone());
                         }
                     }
                 } else {
                     // Server no longer discovered
-                    info!("Server {} no longer discovered, marking for unmount", mount.server.address);
+                    info!(
+                        "Server {} no longer discovered, marking for unmount",
+                        mount.server.address
+                    );
                     to_unmount.push(server_key.clone());
                 }
             }
@@ -267,7 +319,7 @@ impl AutoMountDaemon {
     async fn discover_and_mount_servers(
         consensus_coordinator: Option<&Arc<ConsensusCoordinator>>,
         discovered_servers: &Arc<RwLock<HashMap<String, DiscoveredServer>>>,
-        mounted_servers: &Arc<RwLock<HashMap<String, MountedServer>>>
+        mounted_servers: &Arc<RwLock<HashMap<String, MountedServer>>>,
     ) -> Result<()> {
         debug!("Starting server discovery and auto-mount cycle");
 
@@ -309,10 +361,17 @@ impl AutoMountDaemon {
                         warn!("Failed to mount server {}:{}: {}", address, port, e);
                     } else {
                         let n_dir = crate::util::get_n_directory();
-                        info!("Auto-mounted server {}:{} at {:?}/{}_port_{}",
-                              address, port, n_dir,
-                              address.replace(".", "_").replace(":", "_").replace("-", "_"),
-                              port);
+                        info!(
+                            "Auto-mounted server {}:{} at {:?}/{}_port_{}",
+                            address,
+                            port,
+                            n_dir,
+                            address
+                                .replace(".", "_")
+                                .replace(":", "_")
+                                .replace("-", "_"),
+                            port
+                        );
                     }
                 }
             }
@@ -322,7 +381,9 @@ impl AutoMountDaemon {
     }
 
     /// Get consensus network peers for discovery
-    async fn get_consensus_peers(consensus: &Arc<ConsensusCoordinator>) -> Result<Vec<(String, u16, TransportType)>> {
+    async fn get_consensus_peers(
+        consensus: &Arc<ConsensusCoordinator>,
+    ) -> Result<Vec<(String, u16, TransportType)>> {
         info!("Querying consensus network for active 9P.e servers");
         let consensus_state = consensus.get_consensus_state().await;
         // For now, use the node_id as a source, but this is a placeholder
@@ -343,14 +404,16 @@ impl AutoMountDaemon {
         ]
     }
 
-
     /// Mount a discovered server at its individual mount point
     async fn mount_server(
         server: &DiscoveredServer,
-        mounted_servers: &Arc<RwLock<HashMap<String, MountedServer>>>
+        mounted_servers: &Arc<RwLock<HashMap<String, MountedServer>>>,
     ) -> Result<()> {
         let mount_point = Self::generate_mount_point(server);
-        debug!("Mounting server {}:{} at {:?}", server.address, server.port, mount_point);
+        debug!(
+            "Mounting server {}:{} at {:?}",
+            server.address, server.port, mount_point
+        );
 
         // Create mount point directory
         if !mount_point.exists() {
@@ -363,8 +426,10 @@ impl AutoMountDaemon {
 
         // For now, we'll use a simple directory mount since we don't have 9P FUSE client yet
         // In a real implementation, this would mount the 9P server using FUSE
-        info!("Successfully connected to {}:{} - mount point ready at {:?}",
-              server.address, server.port, mount_point);
+        info!(
+            "Successfully connected to {}:{} - mount point ready at {:?}",
+            server.address, server.port, mount_point
+        );
 
         // Record the mount
         let server_key = format!("{}:{}", server.address, server.port);
@@ -384,13 +449,21 @@ impl AutoMountDaemon {
     }
 
     /// Create connection to 9P.e server using transport factory
-    async fn create_connection(address: &str, port: u16, transport_type: TransportType) -> Result<()> {
-        debug!("Establishing {:?} connection to {}:{}", transport_type, address, port);
+    async fn create_connection(
+        address: &str,
+        port: u16,
+        transport_type: TransportType,
+    ) -> Result<()> {
+        debug!(
+            "Establishing {:?} connection to {}:{}",
+            transport_type, address, port
+        );
 
-        let transport = TransportFactory::create(transport_type)
-            .context("Failed to create transport")?;
+        let transport =
+            TransportFactory::create(transport_type).context("Failed to create transport")?;
 
-        let addr = format!("{}:{}", address, port).parse()
+        let addr = format!("{}:{}", address, port)
+            .parse()
             .context("Invalid server address")?;
 
         match transport.connect(addr).await {
@@ -464,7 +537,9 @@ pub async fn initialize_auto_mount() -> Result<AutoMountDaemon> {
 }
 
 /// Initialize auto-mount with consensus coordinator
-pub async fn initialize_auto_mount_with_consensus(consensus: Arc<ConsensusCoordinator>) -> Result<AutoMountDaemon> {
+pub async fn initialize_auto_mount_with_consensus(
+    consensus: Arc<ConsensusCoordinator>,
+) -> Result<AutoMountDaemon> {
     let mut daemon = AutoMountDaemon::new().with_consensus(consensus);
     daemon.start().await?;
     Ok(daemon)

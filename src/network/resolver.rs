@@ -1,6 +1,6 @@
 //! Network address resolution with IPv6 preference
 
-use anyhow::{Result, Context};
+use anyhow::{Context, Result};
 use std::net::{SocketAddr, ToSocketAddrs};
 use tracing::debug;
 
@@ -71,10 +71,7 @@ impl NetworkResolver {
     /// Resolve and return the preferred address
     pub fn resolve_preferred(&self, host: &str, port: u16) -> Result<SocketAddr> {
         let addrs = self.resolve(host, port)?;
-        addrs
-            .into_iter()
-            .next()
-            .context("No addresses available")
+        addrs.into_iter().next().context("No addresses available")
     }
 
     /// Check if an address is IPv6
@@ -91,7 +88,7 @@ impl NetworkResolver {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::net::{Ipv4Addr, Ipv6Addr};
+    use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
     #[test]
     fn test_ipv6_preference() {

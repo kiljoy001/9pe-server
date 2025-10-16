@@ -1,16 +1,18 @@
 //! Server module with clean separation of concerns
 
-use anyhow::{Result, Context};
+use anyhow::{Context, Result};
 use std::path::PathBuf;
 use std::sync::Arc;
-use tracing::{info, debug, error, warn};
+use tracing::{debug, error, info, warn};
 
+use crate::auto_mount::AutoMountDaemon;
+use crate::compute_control::{register_compute_control, ComputeManager};
+use crate::gpu::{discover_gpus, synthetic::register_gpu_controls, GpuInfo, GpuRuntime};
 use crate::network::NetworkConfig;
-use crate::transport::{TransportType, TransportFactory, ConnectionListener};
-use crate::wasm::ThreadSafeTranslatorRegistry;
 use crate::settrans::VirtualSettransSystem;
 use crate::synth::SyntheticFilesystem;
-use crate::auto_mount::AutoMountDaemon;
+use crate::transport::{ConnectionListener, TransportFactory, TransportType};
+use crate::wasm::ThreadSafeTranslatorRegistry;
 
 pub mod builder;
 pub mod handler;
@@ -27,6 +29,8 @@ pub struct Server {
     translator_registry: Arc<ThreadSafeTranslatorRegistry>,
     settrans_system: Arc<VirtualSettransSystem>,
     synth_fs: Arc<SyntheticFilesystem>,
+    compute_manager: Arc<ComputeManager>,
+    gpu_infos: Vec<GpuInfo>,
     #[allow(dead_code)]
     namespace_manager: Arc<crate::namespace_manager::NamespaceManager>,
     #[allow(dead_code)]
@@ -87,17 +91,63 @@ impl Server {
         info!("Synthetic filesystem initialized for virtual directories");
 
         // Initialize thread-safe translator registry and load existing translators
-        let translator_registry = Arc::new(ThreadSafeTranslatorRegistry::new(config.translator_directory.clone()));
-        info!("Thread-safe WASM translator registry initialized at {:?}", config.translator_directory);
+        let translator_registry = Arc::new(ThreadSafeTranslatorRegistry::new(
+            config.translator_directory.clone(),
+        ));
+        info!(
+            "Thread-safe WASM translator registry initialized at {:?}",
+            config.translator_directory
+        );
 
         // Scan and load existing WASM translators from disk
         if let Err(e) = translator_registry.scan_and_load().await {
             error!("Failed to load existing translators: {}", e);
         }
 
+        // Discover GPUs and wire synthetic compute namespace
+        let gpu_infos = match discover_gpus() {
+            Ok(list) => {
+                info!("Discovered {} GPU device(s)", list.len());
+                list
+            }
+            Err(e) => {
+                warn!("GPU discovery failed: {e}");
+                Vec::new()
+            }
+        };
+
+        let gpu_runtimes: Vec<Arc<GpuRuntime>> = gpu_infos
+            .iter()
+            .map(|gpu| {
+                let device_id = format!("gpu{}", gpu.local_index);
+                Arc::new(GpuRuntime::new(&device_id, gpu.total_vram_bytes))
+            })
+            .collect();
+
+        let compute_manager = Arc::new(ComputeManager::with_runtimes(gpu_runtimes.clone()));
+
+        if let Err(e) = register_gpu_controls(&synth_fs, &gpu_infos, &gpu_runtimes).await {
+            warn!("Failed to register GPU synthetic controls: {e}");
+        } else {
+            info!("GPU synthetic controls mounted under /srv/compute");
+        }
+
+        if let Err(e) = register_compute_control(
+            &synth_fs,
+            Arc::clone(&compute_manager),
+            Arc::clone(&translator_registry),
+        )
+        .await
+        {
+            warn!("Failed to register compute control namespace: {e}");
+        }
+
         // Initialize consensus coordinator if enabled (needed by namespace manager)
         let consensus_coordinator = if let Some(ref consensus_cfg) = config.consensus_config {
-            info!("Initializing consensus coordinator for node: {}", config.node_id);
+            info!(
+                "Initializing consensus coordinator for node: {}",
+                config.node_id
+            );
 
             // Create crypto provider
             let crypto = Arc::new(crate::consensus::crypto::Ed25519Provider::new()?);
@@ -124,15 +174,13 @@ impl Server {
                                 .await;
                             debug!(
                                 "Registered trusted consensus peer {} (algorithm {})",
-                                trusted.node_id,
-                                trusted.algorithm
+                                trusted.node_id, trusted.algorithm
                             );
                         }
                         Err(e) => {
                             warn!(
                                 "Failed to register trusted consensus peer {}: {}",
-                                trusted.node_id,
-                                e
+                                trusted.node_id, e
                             );
                         }
                     }
@@ -168,7 +216,10 @@ impl Server {
                 error!("Failed to start mesh network: {}", e);
                 None
             } else {
-                info!("Mesh network started successfully on port {}", config.mesh_port);
+                info!(
+                    "Mesh network started successfully on port {}",
+                    config.mesh_port
+                );
                 Some(mesh)
             }
         } else {
@@ -179,7 +230,7 @@ impl Server {
         // Initialize namespace manager (system-level translator)
         let namespace_manager = {
             use crate::namespace_manager::NamespaceManager;
-            
+
             let manager = if let Some(ref mesh) = mesh_network {
                 NamespaceManager::new(synth_fs.clone())?.with_mesh_network(Arc::clone(mesh))
             } else {
@@ -195,7 +246,9 @@ impl Server {
             }
 
             // Initialize namespace manager synthetic filesystem
-            manager.initialize().await
+            manager
+                .initialize()
+                .await
                 .context("Failed to initialize namespace manager")?;
 
             // Register system namespaces
@@ -206,18 +259,23 @@ impl Server {
         // Set up mesh network with namespace manager if both exist
         if let Some(ref mesh) = mesh_network {
             use crate::namespace_manager::MeshMessageHandler;
-            mesh.set_namespace_manager(Arc::clone(&namespace_manager) as Arc<dyn MeshMessageHandler>).await;
+            mesh.set_namespace_manager(
+                Arc::clone(&namespace_manager) as Arc<dyn MeshMessageHandler>
+            )
+            .await;
         }
 
         // Initialize virtual settrans system with synthetic filesystem and namespace manager
         let settrans_system = Arc::new(
-            VirtualSettransSystem::new(
-                synth_fs.clone(),
-                translator_registry.clone(),
-            ).await.context("Failed to initialize virtual settrans system")?
+            VirtualSettransSystem::new(synth_fs.clone(), translator_registry.clone())
+                .await
+                .context("Failed to initialize virtual settrans system")?,
         );
         let settrans_path = crate::util::get_settrans_directory();
-        info!("Virtual settrans system initialized at {:?} (virtual only, no physical directories)", settrans_path);
+        info!(
+            "Virtual settrans system initialized at {:?} (virtual only, no physical directories)",
+            settrans_path
+        );
 
         // Metrics are now exposed as files in /srv/stats/ instead of HTTP server
         // This is more Plan 9-like: everything is a file, every file is a function
@@ -247,6 +305,8 @@ impl Server {
             translator_registry,
             settrans_system,
             synth_fs,
+            compute_manager,
+            gpu_infos,
             namespace_manager,
             auto_mount_daemon,
             consensus_coordinator,
@@ -257,6 +317,16 @@ impl Server {
     /// Get the server's listening address
     pub fn address(&self) -> String {
         self.config.network.display_address()
+    }
+
+    /// Access the compute manager used for GPU/WASM job orchestration.
+    pub fn compute_manager(&self) -> Arc<ComputeManager> {
+        Arc::clone(&self.compute_manager)
+    }
+
+    /// Access the cached GPU discovery results.
+    pub fn gpu_infos(&self) -> &[GpuInfo] {
+        &self.gpu_infos
     }
 
     /// Run the server
@@ -316,11 +386,7 @@ impl Server {
         synth_fs: Arc<SyntheticFilesystem>,
     ) -> Result<()> {
         let peer = connection.peer_addr()?;
-        info!(
-            "New {} connection from {}",
-            connection.protocol(),
-            peer
-        );
+        info!("New {} connection from {}", connection.protocol(), peer);
 
         // Create session
         let session_id = session_mgr.create_session(peer).await?;

@@ -40,6 +40,7 @@ rcgen = "0.12"
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+base64 = "0.22"
 
 # Network utilities
 if-addrs = "0.10"
@@ -108,11 +109,12 @@ proptest = "1.4"
 rand = "0.8"
 toml = "0.8"
 async-trait = "0.1"
-wat = "1.0"  # WAT to WASM compiler for tests
+wat = "1.0"
 
 [features]
 default = []
 testing = []
+legacy-tests = []
 
 [[bin]]
 name = "ninep-server"

@@ -2,15 +2,15 @@
 //!
 //! Server-side handler for processing 9P protocol messages.
 
-use super::{*, messages::*};
+use super::{messages::*, *};
+use anyhow::{bail, Context, Result};
 use std::collections::HashMap;
+use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use tokio::sync::RwLock;
-use anyhow::{Result, Context, bail};
-use tracing::{debug, info};
 use tokio::fs;
-use std::os::unix::fs::MetadataExt;
+use tokio::sync::RwLock;
+use tracing::{debug, info};
 
 /// Server-side protocol handler
 #[allow(dead_code)]
@@ -75,15 +75,20 @@ impl ProtocolHandler {
                 }))
             }
             _ => {
-                bail!("Message handling not yet fully implemented for: {:?}", msg_type);
+                bail!(
+                    "Message handling not yet fully implemented for: {:?}",
+                    msg_type
+                );
             }
         }
     }
 
     /// Handle version negotiation
     async fn handle_version(&self, msg: &Tversion) -> Result<Box<dyn Message>> {
-        info!("Version negotiation: client wants {} with msize {}",
-              msg.version, msg.msize);
+        info!(
+            "Version negotiation: client wants {} with msize {}",
+            msg.version, msg.msize
+        );
 
         // Negotiate msize and version
         let msize = msg.msize.min(self.msize);
@@ -106,22 +111,28 @@ impl ProtocolHandler {
 
         // Create session
         let mut sessions = self.sessions.write().await;
-        sessions.insert(msg.uname.clone(), SessionInfo {
-            user: msg.uname.clone(),
-            attached: true,
-            root_fid: Some(msg.fid),
-        });
+        sessions.insert(
+            msg.uname.clone(),
+            SessionInfo {
+                user: msg.uname.clone(),
+                attached: true,
+                root_fid: Some(msg.fid),
+            },
+        );
 
         // Create fid for root
         let root_qid = self.path_to_qid(&self.root).await?;
         let mut fids = self.fids.write().await;
-        fids.insert(msg.fid, FidState {
-            path: self.root.clone(),
-            qid: root_qid,
-            is_open: false,
-            mode: None,
-            user: msg.uname.clone(),
-        });
+        fids.insert(
+            msg.fid,
+            FidState {
+                path: self.root.clone(),
+                qid: root_qid,
+                is_open: false,
+                mode: None,
+                user: msg.uname.clone(),
+            },
+        );
 
         Ok(Box::new(Rattach {
             tag: msg.tag,
@@ -132,7 +143,8 @@ impl ProtocolHandler {
     /// Handle walk
     async fn handle_walk(&self, msg: &Twalk) -> Result<Box<dyn Message>> {
         let fids = self.fids.read().await;
-        let base_fid = fids.get(&msg.fid)
+        let base_fid = fids
+            .get(&msg.fid)
             .ok_or_else(|| anyhow::anyhow!("Invalid fid"))?;
 
         let mut current_path = base_fid.path.clone();
@@ -154,25 +166,26 @@ impl ProtocolHandler {
         // If we walked successfully, create new fid
         if qids.len() == msg.wnames.len() {
             let mut fids = self.fids.write().await;
-            fids.insert(msg.newfid, FidState {
-                path: current_path,
-                qid: *qids.last().unwrap(),
-                is_open: false,
-                mode: None,
-                user: base_fid.user.clone(),
-            });
+            fids.insert(
+                msg.newfid,
+                FidState {
+                    path: current_path,
+                    qid: *qids.last().unwrap(),
+                    is_open: false,
+                    mode: None,
+                    user: base_fid.user.clone(),
+                },
+            );
         }
 
-        Ok(Box::new(Rwalk {
-            tag: msg.tag,
-            qids,
-        }))
+        Ok(Box::new(Rwalk { tag: msg.tag, qids }))
     }
 
     /// Handle open
     async fn handle_open(&self, msg: &Topen) -> Result<Box<dyn Message>> {
         let mut fids = self.fids.write().await;
-        let fid_state = fids.get_mut(&msg.fid)
+        let fid_state = fids
+            .get_mut(&msg.fid)
             .ok_or_else(|| anyhow::anyhow!("Invalid fid"))?;
 
         // Check permissions (simplified)
@@ -191,7 +204,8 @@ impl ProtocolHandler {
     /// Handle read
     async fn handle_read(&self, msg: &Tread) -> Result<Box<dyn Message>> {
         let fids = self.fids.read().await;
-        let fid_state = fids.get(&msg.fid)
+        let fid_state = fids
+            .get(&msg.fid)
             .ok_or_else(|| anyhow::anyhow!("Invalid fid"))?;
 
         if !fid_state.is_open {
@@ -208,16 +222,14 @@ impl ProtocolHandler {
             self.read_file(path, msg.offset, msg.count).await?
         };
 
-        Ok(Box::new(Rread {
-            tag: msg.tag,
-            data,
-        }))
+        Ok(Box::new(Rread { tag: msg.tag, data }))
     }
 
     /// Handle write
     async fn handle_write(&self, msg: &Twrite) -> Result<Box<dyn Message>> {
         let fids = self.fids.read().await;
-        let fid_state = fids.get(&msg.fid)
+        let fid_state = fids
+            .get(&msg.fid)
             .ok_or_else(|| anyhow::anyhow!("Invalid fid"))?;
 
         if !fid_state.is_open {
@@ -242,15 +254,13 @@ impl ProtocolHandler {
     /// Handle stat
     async fn handle_stat(&self, msg: &Tstat) -> Result<Box<dyn Message>> {
         let fids = self.fids.read().await;
-        let fid_state = fids.get(&msg.fid)
+        let fid_state = fids
+            .get(&msg.fid)
             .ok_or_else(|| anyhow::anyhow!("Invalid fid"))?;
 
         let stat = self.path_to_stat(&fid_state.path).await?;
 
-        Ok(Box::new(Rstat {
-            tag: msg.tag,
-            stat,
-        }))
+        Ok(Box::new(Rstat { tag: msg.tag, stat }))
     }
 
     /// Handle clunk
@@ -258,16 +268,13 @@ impl ProtocolHandler {
         let mut fids = self.fids.write().await;
         fids.remove(&msg.fid);
 
-        Ok(Box::new(Rclunk {
-            tag: msg.tag,
-        }))
+        Ok(Box::new(Rclunk { tag: msg.tag }))
     }
 
     /// Convert path to Qid
     #[allow(dead_code)]
     async fn path_to_qid(&self, path: &Path) -> Result<Qid> {
-        let metadata = fs::metadata(path).await
-            .context("Failed to get metadata")?;
+        let metadata = fs::metadata(path).await.context("Failed to get metadata")?;
 
         let qtype = if metadata.is_dir() {
             permissions::DMDIR as u8
@@ -285,10 +292,10 @@ impl ProtocolHandler {
     /// Convert path to Stat
     #[allow(dead_code)]
     async fn path_to_stat(&self, path: &Path) -> Result<Stat> {
-        let metadata = fs::metadata(path).await
-            .context("Failed to get metadata")?;
+        let metadata = fs::metadata(path).await.context("Failed to get metadata")?;
 
-        let name = path.file_name()
+        let name = path
+            .file_name()
             .unwrap_or_default()
             .to_string_lossy()
             .into_owned();
@@ -320,7 +327,8 @@ impl ProtocolHandler {
     async fn read_file(&self, path: &Path, offset: u64, count: u32) -> Result<Vec<u8>> {
         use tokio::io::{AsyncReadExt, AsyncSeekExt};
 
-        let mut file = tokio::fs::File::open(path).await
+        let mut file = tokio::fs::File::open(path)
+            .await
             .context("Failed to open file")?;
 
         file.seek(std::io::SeekFrom::Start(offset)).await?;
@@ -335,7 +343,7 @@ impl ProtocolHandler {
     /// Write file contents
     #[allow(dead_code)]
     async fn write_file(&self, path: &Path, offset: u64, data: &[u8]) -> Result<usize> {
-        use tokio::io::{AsyncWriteExt, AsyncSeekExt};
+        use tokio::io::{AsyncSeekExt, AsyncWriteExt};
 
         let mut file = tokio::fs::OpenOptions::new()
             .write(true)
@@ -352,7 +360,8 @@ impl ProtocolHandler {
     /// Read directory entries
     #[allow(dead_code)]
     async fn read_directory(&self, path: &Path, offset: u64, count: u32) -> Result<Vec<u8>> {
-        let mut entries = fs::read_dir(path).await
+        let mut entries = fs::read_dir(path)
+            .await
             .context("Failed to read directory")?;
 
         let mut buffer = Vec::new();

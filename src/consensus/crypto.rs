@@ -3,10 +3,10 @@
 //! Provides cryptographic security for distributed work coordination,
 //! including signatures, key management, and secure communication.
 
-use anyhow::{Result, anyhow};
-use serde::{Serialize, Deserialize};
-use std::collections::HashMap;
+use anyhow::{anyhow, Result};
 use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// Cryptographic provider trait for consensus operations
 #[async_trait]
@@ -15,7 +15,12 @@ pub trait CryptoProvider: Send + Sync {
     async fn sign(&self, data: &[u8]) -> Result<Signature>;
 
     /// Verify a signature against a public key
-    async fn verify(&self, data: &[u8], signature: &Signature, public_key: &PublicKey) -> Result<bool>;
+    async fn verify(
+        &self,
+        data: &[u8],
+        signature: &Signature,
+        public_key: &PublicKey,
+    ) -> Result<bool>;
 
     /// Get the node's public key
     fn get_public_key(&self) -> PublicKey;
@@ -130,7 +135,12 @@ impl CryptoProvider for Ed25519Provider {
         })
     }
 
-    async fn verify(&self, data: &[u8], signature: &Signature, public_key: &PublicKey) -> Result<bool> {
+    async fn verify(
+        &self,
+        data: &[u8],
+        signature: &Signature,
+        public_key: &PublicKey,
+    ) -> Result<bool> {
         if signature.algorithm != "Ed25519" || public_key.algorithm != "Ed25519" {
             return Ok(false);
         }
@@ -224,10 +234,7 @@ impl SecureMessage {
         })
     }
 
-    pub async fn verify_and_decrypt(
-        &self,
-        crypto: &dyn CryptoProvider,
-    ) -> Result<Vec<u8>> {
+    pub async fn verify_and_decrypt(&self, crypto: &dyn CryptoProvider) -> Result<Vec<u8>> {
         // Decrypt payload first
         let payload = crypto.decrypt(&self.encrypted_payload).await?;
 
@@ -237,7 +244,9 @@ impl SecureMessage {
         sign_data.extend_from_slice(&self.nonce);
 
         // Verify signature
-        let valid = crypto.verify(&sign_data, &self.signature, &self.sender).await?;
+        let valid = crypto
+            .verify(&sign_data, &self.signature, &self.sender)
+            .await?;
         if !valid {
             anyhow::bail!("Invalid signature");
         }
@@ -294,7 +303,8 @@ impl TrustedKeyStore {
             return false;
         }
 
-        self.trusted_keys.get(node_id)
+        self.trusted_keys
+            .get(node_id)
             .map(|key| key == public_key)
             .unwrap_or(false)
     }
@@ -310,8 +320,13 @@ impl TrustedKeyStore {
 
 impl PublicKey {
     pub fn from_hex<S: AsRef<str>>(algorithm: String, key_hex: S) -> Result<Self> {
-        let bytes = hex::decode(key_hex.as_ref())
-            .map_err(|e| anyhow!("Invalid {} public key (hex decode failed): {}", algorithm, e))?;
+        let bytes = hex::decode(key_hex.as_ref()).map_err(|e| {
+            anyhow!(
+                "Invalid {} public key (hex decode failed): {}",
+                algorithm,
+                e
+            )
+        })?;
         Ok(Self {
             algorithm,
             key_data: bytes,
@@ -396,7 +411,9 @@ impl WorkProof {
         let mut sign_data = self.work_id.as_bytes().to_vec();
         sign_data.extend_from_slice(&self.result_hash);
 
-        let signature_valid = crypto.verify(&sign_data, &self.node_signature, node_public_key).await?;
+        let signature_valid = crypto
+            .verify(&sign_data, &self.node_signature, node_public_key)
+            .await?;
         if !signature_valid {
             return Ok(false);
         }
@@ -406,15 +423,15 @@ impl WorkProof {
             ComputationProof::HashProof { input_hash, .. } => {
                 let expected_input_hash = sha256_hash(expected_input);
                 Ok(*input_hash == expected_input_hash)
-            },
+            }
             ComputationProof::ZkProof { .. } => {
                 // Placeholder for ZK proof verification
                 Ok(true)
-            },
+            }
             ComputationProof::MerkleProof { .. } => {
                 // Placeholder for Merkle proof verification
                 Ok(true)
-            },
+            }
         }
     }
 

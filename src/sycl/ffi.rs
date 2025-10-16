@@ -253,18 +253,21 @@ mod tests {
 
     #[test]
     fn test_discover_devices() {
-        let mut devices = vec![SyclDeviceInfo {
-            name: [0; 256],
-            vendor: [0; 128],
-            compute_units: 0,
-            global_memory_size: 0,
-            local_memory_size: 0,
-            max_work_group_size: 0,
-            is_gpu: false,
-            is_cpu: false,
-            supports_fp64: false,
-            supports_fp16: false,
-        }; 16];
+        let mut devices = vec![
+            SyclDeviceInfo {
+                name: [0; 256],
+                vendor: [0; 128],
+                compute_units: 0,
+                global_memory_size: 0,
+                local_memory_size: 0,
+                max_work_group_size: 0,
+                is_gpu: false,
+                is_cpu: false,
+                supports_fp64: false,
+                supports_fp16: false,
+            };
+            16
+        ];
 
         let mut count: usize = 16;
 

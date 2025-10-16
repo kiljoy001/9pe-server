@@ -4,5 +4,5 @@
 
 pub mod ffi;
 
-pub use ffi::{SyclDevice, SyclQueue, SyclBuffer, SyclKernel, SyclEvent};
-pub use ffi::{SyclDeviceInfo, SyclError, SyclBackend};
+pub use ffi::{SyclBackend, SyclDeviceInfo, SyclError};
+pub use ffi::{SyclBuffer, SyclDevice, SyclEvent, SyclKernel, SyclQueue};

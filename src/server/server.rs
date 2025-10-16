@@ -33,7 +33,8 @@ impl Server {
         let gpu_runtimes: Vec<std::sync::Arc<GpuRuntime>> = gpu_infos
             .iter()
             .map(|gpu_info| {
-                Arc::new(GpuRuntime::new(gpu_info.total_vram_bytes))
+                let id = format!("gpu{}", gpu_info.local_index);
+                Arc::new(GpuRuntime::new(&id, gpu_info.total_vram_bytes))
             })
             .collect();
         
@@ -41,8 +42,8 @@ impl Server {
         register_gpu_controls(&synth_fs, &gpu_infos, &gpu_runtimes).await?;
         
         // 6️⃣ Create compute manager and register compute control files
-        let compute_mgr = Arc::new(ComputeManager::new());
-        register_compute_control(&synth_fs, compute_mgr.clone()).await?;
+        let compute_mgr = Arc::new(ComputeManager::with_runtimes(gpu_runtimes.clone()));
+        register_compute_control(&synth_fs, compute_mgr.clone(), translator_registry.clone()).await?;
         
         // Extract address from config for the address() method
         let address = config.listen_addr.clone();

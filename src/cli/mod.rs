@@ -1,13 +1,13 @@
 //! CLI module - Command-line interface with clean separation of concerns
 
-use clap::{Parser, Subcommand};
 use anyhow::Result;
+use clap::{Parser, Subcommand};
 
-pub mod commands;
 pub mod args;
+pub mod commands;
 
-pub use commands::{ServeCommand, ClientCommand, AutoMountCommand};
 pub use args::GlobalArgs;
+pub use commands::{AutoMountCommand, ClientCommand, ServeCommand};
 
 /// 9P.e Server - Everything is a file, and every file is a function
 #[derive(Parser, Debug)]

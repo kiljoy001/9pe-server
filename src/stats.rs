@@ -6,8 +6,8 @@
 use crate::synth::{ControlHandler, SyntheticFilesystem};
 use anyhow::Result;
 use std::sync::Arc;
-use tokio::sync::RwLock;
 use std::time::SystemTime;
+use tokio::sync::RwLock;
 
 /// Statistics tracking for the server
 pub struct ServerStats {
@@ -37,58 +37,84 @@ impl ServerStats {
         synth.create_directory(&PathBuf::from("/srv/stats")).await?;
 
         // Uptime: Computed on every read
-        synth.create_control_file(
-            &PathBuf::from("/srv/stats/uptime"),
-            Arc::new(UptimeHandler { start_time: self.start_time })
-        ).await?;
+        synth
+            .create_control_file(
+                &PathBuf::from("/srv/stats/uptime"),
+                Arc::new(UptimeHandler {
+                    start_time: self.start_time,
+                }),
+            )
+            .await?;
 
         // Connection count: Live counter
-        synth.create_control_file(
-            &PathBuf::from("/srv/stats/connections"),
-            Arc::new(CounterHandler { counter: self.connection_count.clone() })
-        ).await?;
+        synth
+            .create_control_file(
+                &PathBuf::from("/srv/stats/connections"),
+                Arc::new(CounterHandler {
+                    counter: self.connection_count.clone(),
+                }),
+            )
+            .await?;
 
         // Bytes read: Live counter
-        synth.create_control_file(
-            &PathBuf::from("/srv/stats/bytes_read"),
-            Arc::new(CounterHandler { counter: self.total_bytes_read.clone() })
-        ).await?;
+        synth
+            .create_control_file(
+                &PathBuf::from("/srv/stats/bytes_read"),
+                Arc::new(CounterHandler {
+                    counter: self.total_bytes_read.clone(),
+                }),
+            )
+            .await?;
 
         // Bytes written: Live counter
-        synth.create_control_file(
-            &PathBuf::from("/srv/stats/bytes_written"),
-            Arc::new(CounterHandler { counter: self.total_bytes_written.clone() })
-        ).await?;
+        synth
+            .create_control_file(
+                &PathBuf::from("/srv/stats/bytes_written"),
+                Arc::new(CounterHandler {
+                    counter: self.total_bytes_written.clone(),
+                }),
+            )
+            .await?;
 
         // Messages processed: Live counter
-        synth.create_control_file(
-            &PathBuf::from("/srv/stats/messages"),
-            Arc::new(CounterHandler { counter: self.total_messages.clone() })
-        ).await?;
+        synth
+            .create_control_file(
+                &PathBuf::from("/srv/stats/messages"),
+                Arc::new(CounterHandler {
+                    counter: self.total_messages.clone(),
+                }),
+            )
+            .await?;
 
         // Version: Static info
-        synth.create_control_file(
-            &PathBuf::from("/srv/stats/version"),
-            Arc::new(VersionHandler)
-        ).await?;
+        synth
+            .create_control_file(
+                &PathBuf::from("/srv/stats/version"),
+                Arc::new(VersionHandler),
+            )
+            .await?;
 
         // Protocol: Static info
-        synth.create_control_file(
-            &PathBuf::from("/srv/stats/protocol"),
-            Arc::new(ProtocolHandler)
-        ).await?;
+        synth
+            .create_control_file(
+                &PathBuf::from("/srv/stats/protocol"),
+                Arc::new(ProtocolHandler),
+            )
+            .await?;
 
         // All stats in one file (Prometheus-style format)
-        synth.create_control_file(
-            &PathBuf::from("/srv/stats/all"),
-            Arc::new(AllStatsHandler {
-                start_time: self.start_time,
-                connection_count: self.connection_count.clone(),
-                total_bytes_read: self.total_bytes_read.clone(),
-                total_bytes_written: self.total_bytes_written.clone(),
-                total_messages: self.total_messages.clone(),
-            })
-        ).await?;
+        synth
+            .create_control_file(
+                &PathBuf::from("/srv/stats/all"),
+                Arc::new(AllStatsHandler {
+                    start_time: self.start_time,
+                    connection_count: self.connection_count.clone(),
+                    total_bytes_read: self.total_bytes_read.clone(),
+                    total_bytes_written: self.total_bytes_written.clone(),
+                    total_messages: self.total_messages.clone(),
+                }),
+            )
+            .await?;
 
         Ok(())
     }
@@ -127,9 +153,7 @@ struct UptimeHandler {
 
 impl ControlHandler for UptimeHandler {
     fn read(&self) -> Result<Vec<u8>> {
-        let uptime = self.start_time.elapsed()
-            .unwrap_or_default()
-            .as_secs();
+        let uptime = self.start_time.elapsed().unwrap_or_default().as_secs();
         Ok(format!("{}\n", uptime).into_bytes())
     }
 
@@ -192,9 +216,7 @@ struct AllStatsHandler {
 
 impl ControlHandler for AllStatsHandler {
     fn read(&self) -> Result<Vec<u8>> {
-        let uptime = self.start_time.elapsed()
-            .unwrap_or_default()
-            .as_secs();
+        let uptime = self.start_time.elapsed().unwrap_or_default().as_secs();
 
         let connections = *futures::executor::block_on(self.connection_count.read());
         let bytes_read = *futures::executor::block_on(self.total_bytes_read.read());
@@ -227,7 +249,12 @@ impl ControlHandler for AllStatsHandler {
              # TYPE ninep_version gauge\n\
              ninep_version{{version=\"{}\"}} 1\n\
              ",
-            uptime, connections, bytes_read, bytes_written, messages, crate::VERSION
+            uptime,
+            connections,
+            bytes_read,
+            bytes_written,
+            messages,
+            crate::VERSION
         );
 
         Ok(output.into_bytes())
@@ -247,7 +274,10 @@ mod tests {
         let stats = ServerStats::new();
         let synth = SyntheticFilesystem::new();
 
-        stats.register(&synth).await.expect("Failed to register stats");
+        stats
+            .register(&synth)
+            .await
+            .expect("Failed to register stats");
 
         // Check that /srv/stats directory exists
         assert!(synth.exists(&std::path::PathBuf::from("/srv/stats")).await);
@@ -276,7 +306,10 @@ mod tests {
 
         // Read uptime file
         let uptime_path = std::path::PathBuf::from("/srv/stats/uptime");
-        let content = synth.read_file(&uptime_path).await.expect("Failed to read uptime");
+        let content = synth
+            .read_file(&uptime_path)
+            .await
+            .expect("Failed to read uptime");
         let uptime_str = String::from_utf8(content).expect("Invalid UTF-8");
         let uptime: u64 = uptime_str.trim().parse().expect("Invalid number");
 

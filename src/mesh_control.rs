@@ -3,12 +3,12 @@
 //! Everything is a file, every file is a function!
 //! Control mesh networking by reading/writing files in /srv/mesh/
 
-use crate::synth::{ControlHandler, SyntheticFilesystem};
 use crate::mesh::{MeshNetwork, MeshStatus};
+use crate::synth::{ControlHandler, SyntheticFilesystem};
 use anyhow::Result;
-use std::sync::Arc;
-use std::path::PathBuf;
 use hex;
+use std::path::PathBuf;
+use std::sync::Arc;
 
 /// Register mesh control files in the synthetic filesystem
 pub async fn register_mesh_control(
@@ -19,40 +19,52 @@ pub async fn register_mesh_control(
     synth.create_directory(&PathBuf::from("/srv/mesh")).await?;
 
     // /srv/mesh/peers - Read to see connected peers
-    synth.create_control_file(
-        &PathBuf::from("/srv/mesh/peers"),
-        Arc::new(PeersHandler { mesh: mesh.clone() })
-    ).await?;
+    synth
+        .create_control_file(
+            &PathBuf::from("/srv/mesh/peers"),
+            Arc::new(PeersHandler { mesh: mesh.clone() }),
+        )
+        .await?;
 
     // /srv/mesh/connect - Write peer address to connect
-    synth.create_control_file(
-        &PathBuf::from("/srv/mesh/connect"),
-        Arc::new(ConnectHandler { mesh: mesh.clone() })
-    ).await?;
+    synth
+        .create_control_file(
+            &PathBuf::from("/srv/mesh/connect"),
+            Arc::new(ConnectHandler { mesh: mesh.clone() }),
+        )
+        .await?;
 
     // /srv/mesh/disconnect - Write peer ID to disconnect
-    synth.create_control_file(
-        &PathBuf::from("/srv/mesh/disconnect"),
-        Arc::new(DisconnectHandler { mesh: mesh.clone() })
-    ).await?;
+    synth
+        .create_control_file(
+            &PathBuf::from("/srv/mesh/disconnect"),
+            Arc::new(DisconnectHandler { mesh: mesh.clone() }),
+        )
+        .await?;
 
     // /srv/mesh/announce - Write service name to announce via mDNS
-    synth.create_control_file(
-        &PathBuf::from("/srv/mesh/announce"),
-        Arc::new(AnnounceHandler { mesh: mesh.clone() })
-    ).await?;
+    synth
+        .create_control_file(
+            &PathBuf::from("/srv/mesh/announce"),
+            Arc::new(AnnounceHandler { mesh: mesh.clone() }),
+        )
+        .await?;
 
     // /srv/mesh/status - Read mesh network status
-    synth.create_control_file(
-        &PathBuf::from("/srv/mesh/status"),
-        Arc::new(StatusHandler { mesh: mesh.clone() })
-    ).await?;
+    synth
+        .create_control_file(
+            &PathBuf::from("/srv/mesh/status"),
+            Arc::new(StatusHandler { mesh: mesh.clone() }),
+        )
+        .await?;
 
     // /srv/mesh/dht - Read DHT routing table
-    synth.create_control_file(
-        &PathBuf::from("/srv/mesh/dht"),
-        Arc::new(DhtHandler { mesh: mesh.clone() })
-    ).await?;
+    synth
+        .create_control_file(
+            &PathBuf::from("/srv/mesh/dht"),
+            Arc::new(DhtHandler { mesh: mesh.clone() }),
+        )
+        .await?;
 
     Ok(())
 }
@@ -68,7 +80,11 @@ impl ControlHandler for PeersHandler {
 
         let mut output = String::new();
         for (peer_id, peer) in peers {
-            let status = if peer.is_connected() { "connected" } else { "disconnected" };
+            let status = if peer.is_connected() {
+                "connected"
+            } else {
+                "disconnected"
+            };
             output.push_str(&format!(
                 "{}\t{}\t{}\t{:?}\n",
                 peer_id,
@@ -82,7 +98,9 @@ impl ControlHandler for PeersHandler {
     }
 
     fn write(&self, _data: &[u8]) -> Result<()> {
-        Err(anyhow::anyhow!("peers file is read-only, use 'connect' to add peers"))
+        Err(anyhow::anyhow!(
+            "peers file is read-only, use 'connect' to add peers"
+        ))
     }
 }
 
@@ -97,9 +115,7 @@ impl ControlHandler for ConnectHandler {
     }
 
     fn write(&self, data: &[u8]) -> Result<()> {
-        let address = String::from_utf8(data.to_vec())?
-            .trim()
-            .to_string();
+        let address = String::from_utf8(data.to_vec())?.trim().to_string();
 
         // Parse address: "peer-id@ip:port" or just "ip:port"
         let (peer_id, addr) = if let Some((id, addr)) = address.split_once('@') {
@@ -109,9 +125,7 @@ impl ControlHandler for ConnectHandler {
         };
 
         // Connect to peer
-        futures::executor::block_on(async {
-            self.mesh.connect_to_peer(&addr, peer_id).await
-        })?;
+        futures::executor::block_on(async { self.mesh.connect_to_peer(&addr, peer_id).await })?;
 
         Ok(())
     }
@@ -128,13 +142,9 @@ impl ControlHandler for DisconnectHandler {
     }
 
     fn write(&self, data: &[u8]) -> Result<()> {
-        let peer_id = String::from_utf8(data.to_vec())?
-            .trim()
-            .to_string();
+        let peer_id = String::from_utf8(data.to_vec())?.trim().to_string();
 
-        futures::executor::block_on(async {
-            self.mesh.disconnect_peer(&peer_id).await
-        })?;
+        futures::executor::block_on(async { self.mesh.disconnect_peer(&peer_id).await })?;
 
         Ok(())
     }
@@ -151,13 +161,9 @@ impl ControlHandler for AnnounceHandler {
     }
 
     fn write(&self, data: &[u8]) -> Result<()> {
-        let service_name = String::from_utf8(data.to_vec())?
-            .trim()
-            .to_string();
+        let service_name = String::from_utf8(data.to_vec())?.trim().to_string();
 
-        futures::executor::block_on(async {
-            self.mesh.announce_service(&service_name).await
-        })?;
+        futures::executor::block_on(async { self.mesh.announce_service(&service_name).await })?;
 
         Ok(())
     }
@@ -228,7 +234,9 @@ mod tests {
         let synth = SyntheticFilesystem::new();
         let mesh = Arc::new(MeshNetwork::new("test-node".to_string(), 9650, vec![]));
 
-        register_mesh_control(&synth, mesh).await.expect("Failed to register mesh control");
+        register_mesh_control(&synth, mesh)
+            .await
+            .expect("Failed to register mesh control");
 
         // Check that /srv/mesh directory exists
         assert!(synth.exists(&PathBuf::from("/srv/mesh")).await);

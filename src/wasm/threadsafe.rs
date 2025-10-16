@@ -3,19 +3,34 @@
 //! Solves the wasmtime threading issues by running each WASM instance
 //! in its own dedicated thread with a message-passing interface.
 
-use anyhow::{Result, Context};
+use anyhow::{bail, Context, Result};
+use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
 use std::collections::HashMap;
+use std::ffi::c_void;
 use std::path::PathBuf;
+use std::ptr;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
-use tokio::sync::{RwLock, mpsc, oneshot};
-use tracing::{info, debug, error};
-use wasmtime::{Engine, Module, Store, Instance, Linker, Caller};
-use crate::wasm::opencl_host::add_opencl_functions;
+use std::time::Instant;
+use tokio::sync::{mpsc, oneshot, RwLock};
+use tracing::{debug, error, info};
+use wasmtime::{Caller, Engine, Instance, Linker, Module, Store};
+use wasmtime_wasi::preview1::{self, WasiP1Ctx};
+use wasmtime_wasi::WasiCtxBuilder;
+
+use crate::gpu::{get_device_state, register_device_state, DeviceState};
+use crate::sycl::ffi::{
+    sycl_create_buffer, sycl_create_queue, sycl_discover_devices, sycl_get_device,
+    sycl_get_device_backend, sycl_matmul_f32, sycl_queue_wait, sycl_read_buffer,
+    sycl_release_buffer, sycl_release_device, sycl_release_queue, sycl_vector_add_f32,
+    sycl_write_buffer, SyclBackend, SyclBuffer, SyclDevice, SyclDeviceInfo, SyclError, SyclQueue,
+};
 
 /// Store data for WASM instances
-#[derive(Default)]
 struct StoreData {
-    // Can add context data here later
+    wasi: WasiP1Ctx,
 }
 
 /// Thread-safe WASM translator that runs in a dedicated thread
@@ -46,22 +61,32 @@ enum TranslatorCommand {
     Shutdown,
 }
 
+#[async_trait]
+pub trait TranslatorBackend: Send + Sync {
+    fn name(&self) -> &str;
+    fn mount_point(&self) -> &PathBuf;
+    fn is_system(&self) -> bool {
+        false
+    }
+
+    async fn read_file(&self, path: &str, offset: u64, count: u32) -> Result<Vec<u8>>;
+
+    async fn write_file(&self, path: &str, offset: u64, data: Vec<u8>) -> Result<Vec<u8>>;
+
+    async fn list_files(&self, path: &str) -> Result<Vec<String>>;
+}
+
 /// Thread-safe translator registry
 pub struct ThreadSafeTranslatorRegistry {
-    translators: Arc<RwLock<HashMap<PathBuf, Arc<ThreadSafeTranslator>>>>,
+    translators: Arc<RwLock<HashMap<PathBuf, Arc<dyn TranslatorBackend>>>>,
     install_dir: PathBuf,
 }
 
 impl ThreadSafeTranslator {
     /// Create a new thread-safe translator
-    pub async fn new(
-        name: String,
-        mount_point: PathBuf,
-        wasm_bytes: Vec<u8>,
-    ) -> Result<Self> {
+    pub async fn new(name: String, mount_point: PathBuf, wasm_bytes: Vec<u8>) -> Result<Self> {
         // CRITICAL: Validate WASM before spawning thread
-        Self::validate_wasm_bytes(&wasm_bytes)
-            .context("WASM validation failed")?;
+        Self::validate_wasm_bytes(&wasm_bytes).context("WASM validation failed")?;
 
         let (command_tx, command_rx) = mpsc::unbounded_channel();
 
@@ -84,11 +109,18 @@ impl ThreadSafeTranslator {
     fn validate_wasm_bytes(wasm_bytes: &[u8]) -> Result<()> {
         // 1. Basic size checks
         if wasm_bytes.len() < 8 {
-            return Err(anyhow::anyhow!("WASM module too small: {} bytes", wasm_bytes.len()));
+            return Err(anyhow::anyhow!(
+                "WASM module too small: {} bytes",
+                wasm_bytes.len()
+            ));
         }
 
-        if wasm_bytes.len() > 50 * 1024 * 1024 {  // 50MB limit
-            return Err(anyhow::anyhow!("WASM module too large: {} bytes", wasm_bytes.len()));
+        if wasm_bytes.len() > 50 * 1024 * 1024 {
+            // 50MB limit
+            return Err(anyhow::anyhow!(
+                "WASM module too large: {} bytes",
+                wasm_bytes.len()
+            ));
         }
 
         // 2. Magic number validation
@@ -137,8 +169,7 @@ impl ThreadSafeTranslator {
         let engine = Engine::new(&config)?;
 
         // 5. Validate by attempting to parse as module
-        let module = Module::new(&engine, wasm_bytes)
-            .context("WASM module parsing failed")?;
+        let module = Module::new(&engine, wasm_bytes).context("WASM module parsing failed")?;
 
         // 6. Security: Check for required exports
         let mut has_read_file = false;
@@ -178,15 +209,21 @@ impl ThreadSafeTranslator {
         }
 
         if !has_read_file {
-            return Err(anyhow::anyhow!("WASM module must export 'read_file' function"));
+            return Err(anyhow::anyhow!(
+                "WASM module must export 'read_file' function"
+            ));
         }
 
         if !has_write_file {
-            return Err(anyhow::anyhow!("WASM module must export 'write_file' function"));
+            return Err(anyhow::anyhow!(
+                "WASM module must export 'write_file' function"
+            ));
         }
 
         if !has_list_files {
-            return Err(anyhow::anyhow!("WASM module must export 'list_files' function"));
+            return Err(anyhow::anyhow!(
+                "WASM module must export 'list_files' function"
+            ));
         }
 
         // 8. Security: Validate imports
@@ -208,23 +245,18 @@ impl ThreadSafeTranslator {
                         }
                     }
                 }
-                "opencl" => {
-                    // Allow OpenCL host functions for compute transformers
-                    match import.name() {
-                        "get_platform_count" | "get_platforms" | "get_device_count" | "get_devices" |
-                        "create_context" | "create_queue" | "create_buffer" | "write_buffer" |
-                        "read_buffer" | "release_buffer" | "create_program" | "build_program" |
-                        "create_kernel" | "set_kernel_arg" | "enqueue_kernel" | "finish" => {
-                            if import.ty().func().is_none() {
-                                return Err(anyhow::anyhow!("opencl.{} must be a function", import.name()));
-                            }
-                        }
-                        _ => {
-                            return Err(anyhow::anyhow!(
-                                "Unauthorized OpenCL import: opencl.{}",
-                                import.name()
-                            ));
-                        }
+                "wasi_snapshot_preview1" => {
+                    // Standard WASI imports are allowed
+                    if import.ty().func().is_none()
+                        && import.ty().memory().is_none()
+                        && import.ty().global().is_none()
+                        && import.ty().table().is_none()
+                    {
+                        return Err(anyhow::anyhow!(
+                            "Unsupported WASI import type: {}.{}",
+                            import.module(),
+                            import.name()
+                        ));
                     }
                 }
                 _ => {
@@ -236,7 +268,10 @@ impl ThreadSafeTranslator {
             }
         }
 
-        info!("WASM validation passed for {} byte module", wasm_bytes.len());
+        info!(
+            "WASM validation passed for {} byte module",
+            wasm_bytes.len()
+        );
         Ok(())
     }
 
@@ -251,18 +286,26 @@ impl ThreadSafeTranslator {
         let module = Module::new(&engine, &wasm_bytes)?;
 
         // Create store with context data
-        let store_data = StoreData::default();
+        let mut wasi_builder = WasiCtxBuilder::new();
+        wasi_builder.inherit_stdio();
+        let wasi = wasi_builder.build_p1();
+        let store_data = StoreData { wasi };
         let mut store = Store::new(&engine, store_data);
         let mut linker: Linker<StoreData> = Linker::new(&engine);
 
+        preview1::add_to_linker_sync(&mut linker, |data: &mut StoreData| &mut data.wasi)?;
+
         // Add custom host functions for 9P operations
         let translator_name = name.clone();
-        linker.func_wrap("ninep", "log", move |_caller: Caller<'_, StoreData>, message: i32| {
-            debug!("WASM translator '{}' log: {}", translator_name, message);
-        })?;
+        linker.func_wrap(
+            "ninep",
+            "log",
+            move |_caller: Caller<'_, StoreData>, message: i32| {
+                debug!("WASM translator '{}' log: {}", translator_name, message);
+            },
+        )?;
 
         // Add OpenCL host functions for compute access
-        add_opencl_functions(&mut linker)?;
 
         // Instantiate the module
         let instance = linker.instantiate(&mut store, &module)?;
@@ -276,7 +319,11 @@ impl ThreadSafeTranslator {
                     let result = Self::handle_read_file(&mut store, &instance, &path);
                     let _ = response_tx.send(result);
                 }
-                TranslatorCommand::WriteFile { path, data, response_tx } => {
+                TranslatorCommand::WriteFile {
+                    path,
+                    data,
+                    response_tx,
+                } => {
                     let result = Self::handle_write_file(&mut store, &instance, &path, data);
                     let _ = response_tx.send(result);
                 }
@@ -382,6 +429,30 @@ impl ThreadSafeTranslator {
     }
 }
 
+#[async_trait]
+impl TranslatorBackend for ThreadSafeTranslator {
+    fn name(&self) -> &str {
+        &self.name
+    }
+
+    fn mount_point(&self) -> &PathBuf {
+        &self.mount_point
+    }
+
+    async fn read_file(&self, path: &str, _offset: u64, _count: u32) -> Result<Vec<u8>> {
+        self.read_file(path).await
+    }
+
+    async fn write_file(&self, path: &str, _offset: u64, data: Vec<u8>) -> Result<Vec<u8>> {
+        self.write_file(path, data).await?;
+        Ok(Vec::new())
+    }
+
+    async fn list_files(&self, path: &str) -> Result<Vec<String>> {
+        self.list_files(path).await
+    }
+}
+
 impl Drop for ThreadSafeTranslator {
     fn drop(&mut self) {
         // Send shutdown command
@@ -410,6 +481,9 @@ impl ThreadSafeTranslatorRegistry {
         // Create directory if it doesn't exist
         fs::create_dir_all(&self.install_dir).await.ok();
 
+        // Ensure system translators are registered before loading user modules
+        self.register_system_translators().await?;
+
         // Read all .wasm files from the directory
         let mut entries = fs::read_dir(&self.install_dir).await?;
 
@@ -422,7 +496,10 @@ impl ThreadSafeTranslatorRegistry {
 
                     match fs::read(&path).await {
                         Ok(wasm_bytes) => {
-                            if let Err(e) = self.load_translator(name.clone(), mount_point, wasm_bytes).await {
+                            if let Err(e) = self
+                                .load_translator(name.clone(), mount_point, wasm_bytes)
+                                .await
+                            {
                                 error!("Failed to load translator {}: {}", name, e);
                             } else {
                                 info!("Loaded translator {} from {:?}", name, path);
@@ -439,6 +516,27 @@ impl ThreadSafeTranslatorRegistry {
         Ok(())
     }
 
+    async fn register_system_translators(&self) -> Result<()> {
+        let mount_point = PathBuf::from("/system/sycl");
+
+        let needs_install = {
+            let translators = self.translators.read().await;
+            !translators.contains_key(&mount_point)
+        };
+
+        if needs_install {
+            let translator: Arc<dyn TranslatorBackend> = Arc::new(
+                SystemTranslator::new("system-sycl".to_string(), mount_point.clone()).await?,
+            );
+
+            let mut translators = self.translators.write().await;
+            translators.insert(mount_point.clone(), translator);
+            info!("Registered system translator at {:?}", mount_point);
+        }
+
+        Ok(())
+    }
+
     /// Load a translator from WASM bytes
     pub async fn load_translator(
         &self,
@@ -446,8 +544,8 @@ impl ThreadSafeTranslatorRegistry {
         mount_point: PathBuf,
         wasm_bytes: Vec<u8>,
     ) -> Result<()> {
-        let translator = Arc::new(
-            ThreadSafeTranslator::new(name.clone(), mount_point.clone(), wasm_bytes).await?
+        let translator: Arc<dyn TranslatorBackend> = Arc::new(
+            ThreadSafeTranslator::new(name.clone(), mount_point.clone(), wasm_bytes).await?,
         );
 
         let mut translators = self.translators.write().await;
@@ -458,7 +556,10 @@ impl ThreadSafeTranslatorRegistry {
     }
 
     /// Get a translator by mount point
-    pub async fn get_translator(&self, mount_point: &PathBuf) -> Option<Arc<ThreadSafeTranslator>> {
+    pub async fn get_translator(
+        &self,
+        mount_point: &PathBuf,
+    ) -> Option<Arc<dyn TranslatorBackend>> {
         let translators = self.translators.read().await;
         translators.get(mount_point).cloned()
     }
@@ -466,15 +567,18 @@ impl ThreadSafeTranslatorRegistry {
     /// List all loaded translators
     pub async fn list_translators(&self) -> Vec<String> {
         let translators = self.translators.read().await;
-        translators
-            .values()
-            .map(|t| t.name().to_string())
-            .collect()
+        translators.values().map(|t| t.name().to_string()).collect()
     }
 
     /// Remove a translator
     pub async fn remove_translator(&self, mount_point: &PathBuf) -> Result<()> {
         let mut translators = self.translators.write().await;
+        if let Some(translator) = translators.get(mount_point) {
+            if translator.is_system() {
+                anyhow::bail!("Cannot remove system translator {}", translator.name());
+            }
+        }
+
         if let Some(translator) = translators.remove(mount_point) {
             info!("Removed translator: {}", translator.name());
             // Translator will be dropped here, triggering shutdown
@@ -487,11 +591,1040 @@ impl ThreadSafeTranslatorRegistry {
 unsafe impl Send for ThreadSafeTranslatorRegistry {}
 unsafe impl Sync for ThreadSafeTranslatorRegistry {}
 
+struct SystemTranslator {
+    name: String,
+    mount_point: PathBuf,
+    state: RwLock<GpuFileSystem>,
+    device_states: HashMap<String, Arc<DeviceState>>,
+}
+
+impl SystemTranslator {
+    async fn new(name: String, mount_point: PathBuf) -> Result<Self> {
+        let (devices, device_states) = load_device_inventory();
+
+        let translator = Self {
+            name,
+            mount_point,
+            state: RwLock::new(GpuFileSystem {
+                devices,
+                kernels: HashMap::new(),
+                buffers: HashMap::new(),
+                jobs: HashMap::new(),
+            }),
+            device_states,
+        };
+
+        Ok(translator)
+    }
+
+    fn device_state_handle(&self, device_id: &str) -> Result<Arc<DeviceState>> {
+        if let Some(state) = self.device_states.get(device_id) {
+            return Ok(state.clone());
+        }
+        if let Some(state) = get_device_state(device_id) {
+            return Ok(state);
+        }
+        bail!("Unknown device '{}'", device_id)
+    }
+
+    async fn read_file(&self, path: &str, offset: u64, count: u32) -> Result<Vec<u8>> {
+        let content = match path {
+            "/gpu/devices/info" => {
+                let state = self.state.read().await;
+                json!({ "devices": state.devices }).to_string().into_bytes()
+            }
+            _ if path.starts_with("/gpu/devices/") => {
+                let device_id = path.trim_start_matches("/gpu/devices/");
+                let state = self.state.read().await;
+                match state.devices.iter().find(|d| d.id == device_id) {
+                    Some(device) => serde_json::to_vec(device)?,
+                    None => return Ok(Vec::new()),
+                }
+            }
+            "/gpu/kernels/matrix_multiply" => MATRIX_MULTIPLY_KERNEL.as_bytes().to_vec(),
+            "/gpu/kernels/vector_add" => VECTOR_ADD_KERNEL.as_bytes().to_vec(),
+            "/gpu/kernels/fft" => FFT_KERNEL.as_bytes().to_vec(),
+            "/gpu/kernels/reduce" => REDUCTION_KERNEL.as_bytes().to_vec(),
+            "/gpu/buffers/list" => {
+                let state = self.state.read().await;
+                let buffers: Vec<&BufferInfo> = state.buffers.values().collect();
+                serde_json::to_vec(&buffers)?
+            }
+            _ if path.starts_with("/gpu/jobs/") && path.ends_with("/status") => {
+                let job_id = path
+                    .trim_start_matches("/gpu/jobs/")
+                    .trim_end_matches("/status");
+                let state = self.state.read().await;
+                match state.jobs.get(job_id) {
+                    Some(job) => serde_json::to_vec(job)?,
+                    None => Vec::new(),
+                }
+            }
+            _ if path.starts_with("/gpu/jobs/") && path.ends_with("/result") => {
+                let job_id = path
+                    .trim_start_matches("/gpu/jobs/")
+                    .trim_end_matches("/result");
+                let state = self.state.read().await;
+                match state.jobs.get(job_id).and_then(|job| job.result.clone()) {
+                    Some(result) => serde_json::to_vec(&result)?,
+                    None => Vec::new(),
+                }
+            }
+            _ if path.starts_with("/gpu/jobs/") => {
+                let job_id = path.trim_start_matches("/gpu/jobs/");
+                let state = self.state.read().await;
+                match state.jobs.get(job_id) {
+                    Some(job) => serde_json::to_vec(job)?,
+                    None => Vec::new(),
+                }
+            }
+            _ => Vec::new(),
+        };
+
+        if content.is_empty() {
+            return Ok(content);
+        }
+
+        let start = offset as usize;
+        let end = content.len().min(start + count as usize);
+        if start >= content.len() {
+            Ok(Vec::new())
+        } else {
+            Ok(content[start..end].to_vec())
+        }
+    }
+
+    async fn write_file(&self, path: &str, data: Vec<u8>) -> Result<Vec<u8>> {
+        match path {
+            "/gpu/compute/submit" => {
+                let job_request: JobRequest = serde_json::from_slice(&data)?;
+                let job_id = format!("job_{}", next_job_id());
+
+                {
+                    let mut state = self.state.write().await;
+                    state.jobs.insert(
+                        job_id.clone(),
+                        JobInfo {
+                            id: job_id.clone(),
+                            kernel: job_request.kernel.clone(),
+                            status: JobStatus::Pending,
+                            device_id: job_request.device_id.clone(),
+                            work_dims: job_request.work_dims.clone(),
+                            execution_time_ns: None,
+                            result: None,
+                        },
+                    );
+                }
+
+                let start = Instant::now();
+                let execution = self.execute_job(&job_request).await;
+                let elapsed = start.elapsed().as_nanos() as u64;
+
+                let (status, message, result_value) = match execution {
+                    Ok(value) => (
+                        "completed".to_string(),
+                        format!("Job {} completed", job_id),
+                        Some(value),
+                    ),
+                    Err(err) => (
+                        "failed".to_string(),
+                        format!("Job {} failed: {}", job_id, err),
+                        None,
+                    ),
+                };
+
+                {
+                    let mut state = self.state.write().await;
+                    if let Some(job) = state.jobs.get_mut(&job_id) {
+                        job.execution_time_ns = Some(elapsed);
+                        match (&status[..], &result_value) {
+                            ("completed", Some(val)) => {
+                                job.status = JobStatus::Completed;
+                                job.result = Some(val.clone());
+                            }
+                            _ => {
+                                job.status = JobStatus::Failed(message.clone());
+                                job.result = None;
+                            }
+                        }
+                    }
+                }
+
+                let response = JobResponse {
+                    job_id: job_id.clone(),
+                    status,
+                    message,
+                    result: result_value,
+                };
+
+                Ok(serde_json::to_vec(&response)?)
+            }
+            "/gpu/devices/register" => {
+                let device = serde_json::from_slice::<DeviceInfo>(&data)?;
+                let mut state = self.state.write().await;
+                if let Some(existing) = state.devices.iter_mut().find(|d| d.id == device.id) {
+                    *existing = device;
+                } else {
+                    state.devices.push(device);
+                }
+
+                Ok(json!({ "status": "registered" }).to_string().into_bytes())
+            }
+            "/gpu/devices/remove" => {
+                let payload: serde_json::Value = serde_json::from_slice(&data)?;
+                if let Some(id) = payload.get("id").and_then(|v| v.as_str()) {
+                    let mut state = self.state.write().await;
+                    state.devices.retain(|d| d.id != id);
+                    Ok(json!({ "status": "removed", "id": id })
+                        .to_string()
+                        .into_bytes())
+                } else {
+                    Ok(Vec::new())
+                }
+            }
+            "/gpu/buffers/create" => {
+                let buffer_request: BufferRequest = serde_json::from_slice(&data)?;
+                let device_state = self.device_state_handle(&buffer_request.device_id)?;
+                let size_bytes = buffer_request.size as u64;
+                let guard = VramAllocationGuard::acquire(device_state.clone(), size_bytes)?;
+
+                let buffer_id = format!("buf_{}", next_buffer_id());
+                {
+                    let mut state = self.state.write().await;
+                    state.buffers.insert(
+                        buffer_id.clone(),
+                        BufferInfo {
+                            id: buffer_id.clone(),
+                            size: buffer_request.size,
+                            device_id: buffer_request.device_id.clone(),
+                            flags: buffer_request.flags.clone(),
+                        },
+                    );
+                }
+
+                guard.disarm();
+
+                let response = BufferResponse {
+                    buffer_id: buffer_id.clone(),
+                    allocated_size: buffer_request.size,
+                    device: buffer_request.device_id,
+                };
+                Ok(serde_json::to_vec(&response)?)
+            }
+            "/gpu/buffers/release" => {
+                let release: BufferReleaseRequest = serde_json::from_slice(&data)?;
+                let mut state = self.state.write().await;
+                if let Some(info) = state.buffers.remove(&release.buffer_id) {
+                    if let Ok(device_state) = self.device_state_handle(&info.device_id) {
+                        let _ = device_state.release(info.size as u64);
+                    }
+                    Ok(
+                        json!({ "status": "released", "buffer_id": release.buffer_id })
+                            .to_string()
+                            .into_bytes(),
+                    )
+                } else {
+                    bail!("Unknown buffer '{}'", release.buffer_id);
+                }
+            }
+            _ => Ok(Vec::new()),
+        }
+    }
+
+    async fn list_files(&self, path: &str) -> Result<Vec<String>> {
+        match path {
+            "/" => Ok(vec!["gpu".to_string()]),
+            "/gpu" => Ok(vec![
+                "devices".to_string(),
+                "kernels".to_string(),
+                "buffers".to_string(),
+                "jobs".to_string(),
+                "compute".to_string(),
+            ]),
+            "/gpu/devices" => {
+                let mut entries = vec![
+                    "info".to_string(),
+                    "register".to_string(),
+                    "remove".to_string(),
+                ];
+                let state = self.state.read().await;
+                entries.extend(state.devices.iter().map(|d| d.id.clone()));
+                Ok(entries)
+            }
+            "/gpu/kernels" => Ok(vec![
+                "matrix_multiply".to_string(),
+                "vector_add".to_string(),
+                "fft".to_string(),
+                "reduce".to_string(),
+                "custom".to_string(),
+            ]),
+            "/gpu/buffers" => {
+                let state = self.state.read().await;
+                let mut entries = vec![
+                    "create".to_string(),
+                    "list".to_string(),
+                    "release".to_string(),
+                ];
+                entries.extend(state.buffers.keys().cloned());
+                Ok(entries)
+            }
+            "/gpu/jobs" => {
+                let state = self.state.read().await;
+                let mut entries = vec![];
+                for job in state.jobs.keys() {
+                    entries.push(job.clone());
+                    entries.push(format!("{}/status", job));
+                    entries.push(format!("{}/result", job));
+                }
+                Ok(entries)
+            }
+            path if path.starts_with("/gpu/jobs/") && path.ends_with("/status") => Ok(vec![]),
+            path if path.starts_with("/gpu/jobs/") && path.ends_with("/result") => Ok(vec![]),
+            "/gpu/compute" => Ok(vec!["submit".to_string()]),
+            _ => Ok(Vec::new()),
+        }
+    }
+
+    async fn execute_job(&self, job_request: &JobRequest) -> Result<Value> {
+        match job_request.kernel.as_str() {
+            "vector_add" => self.execute_vector_add(job_request).await,
+            "matrix_multiply" => self.execute_matrix_multiply(job_request).await,
+            "fft" => bail!("fft kernel not yet implemented"),
+            "reduce" => bail!("reduce kernel not yet implemented"),
+            other => bail!("Unknown kernel '{}'.", other),
+        }
+    }
+
+    async fn execute_vector_add(&self, job_request: &JobRequest) -> Result<Value> {
+        let a_arg = find_argument(&job_request.arguments, "a")
+            .ok_or_else(|| anyhow::anyhow!("vector_add requires argument 'a'"))?;
+        let b_arg = find_argument(&job_request.arguments, "b")
+            .ok_or_else(|| anyhow::anyhow!("vector_add requires argument 'b'"))?;
+
+        let a = parse_f32_values(a_arg)?;
+        let b = parse_f32_values(b_arg)?;
+
+        if a.len() != b.len() {
+            bail!("vector_add arguments must be the same length");
+        }
+
+        if a.is_empty() {
+            bail!("vector_add requires at least one element");
+        }
+
+        let device_state = self.device_state_handle(&job_request.device_id)?;
+        let bytes_per_buffer = (a.len() * std::mem::size_of::<f32>()) as u64;
+        let total_bytes = bytes_per_buffer * 3;
+        let _allocation_guard = VramAllocationGuard::acquire(device_state.clone(), total_bytes)?;
+
+        let device_index = {
+            let state = self.state.read().await;
+            state
+                .devices
+                .iter()
+                .position(|d| d.id == job_request.device_id)
+                .unwrap_or(0)
+        };
+
+        let mut result = vec![0f32; a.len()];
+
+        unsafe {
+            let mut device: SyclDevice = ptr::null_mut();
+            let mut queue: SyclQueue = ptr::null_mut();
+            let mut buf_a: SyclBuffer = ptr::null_mut();
+            let mut buf_b: SyclBuffer = ptr::null_mut();
+            let mut buf_c: SyclBuffer = ptr::null_mut();
+
+            let outcome = (|| -> Result<()> {
+                check_sycl(
+                    sycl_get_device(device_index as u32, &mut device as *mut _),
+                    "sycl_get_device",
+                )?;
+                check_sycl(
+                    sycl_create_queue(device, &mut queue as *mut _),
+                    "sycl_create_queue",
+                )?;
+
+                let byte_len = a.len() * std::mem::size_of::<f32>();
+
+                check_sycl(
+                    sycl_create_buffer(queue, byte_len, &mut buf_a as *mut _),
+                    "create buffer a",
+                )?;
+                check_sycl(
+                    sycl_create_buffer(queue, byte_len, &mut buf_b as *mut _),
+                    "create buffer b",
+                )?;
+                check_sycl(
+                    sycl_create_buffer(queue, byte_len, &mut buf_c as *mut _),
+                    "create buffer c",
+                )?;
+
+                check_sycl(
+                    sycl_write_buffer(
+                        queue,
+                        buf_a,
+                        f32_slice_as_bytes(&a).as_ptr() as *const c_void,
+                        byte_len,
+                        0,
+                    ),
+                    "write buffer a",
+                )?;
+                check_sycl(
+                    sycl_write_buffer(
+                        queue,
+                        buf_b,
+                        f32_slice_as_bytes(&b).as_ptr() as *const c_void,
+                        byte_len,
+                        0,
+                    ),
+                    "write buffer b",
+                )?;
+
+                check_sycl(
+                    sycl_vector_add_f32(queue, buf_a, buf_b, buf_c, a.len()),
+                    "sycl_vector_add_f32",
+                )?;
+
+                check_sycl(sycl_queue_wait(queue), "sycl_queue_wait")?;
+
+                check_sycl(
+                    sycl_read_buffer(
+                        queue,
+                        buf_c,
+                        result.as_mut_ptr() as *mut c_void,
+                        byte_len,
+                        0,
+                    ),
+                    "read buffer c",
+                )?;
+
+                Ok(())
+            })();
+
+            if !buf_c.is_null() {
+                sycl_release_buffer(buf_c);
+            }
+            if !buf_b.is_null() {
+                sycl_release_buffer(buf_b);
+            }
+            if !buf_a.is_null() {
+                sycl_release_buffer(buf_a);
+            }
+            if !queue.is_null() {
+                sycl_release_queue(queue);
+            }
+            if !device.is_null() {
+                sycl_release_device(device);
+            }
+
+            outcome?;
+        }
+
+        Ok(json!({ "values": result }))
+    }
+
+    async fn execute_matrix_multiply(&self, job_request: &JobRequest) -> Result<Value> {
+        let a_arg = find_argument(&job_request.arguments, "a")
+            .ok_or_else(|| anyhow::anyhow!("matrix_multiply requires argument 'a'"))?;
+        let b_arg = find_argument(&job_request.arguments, "b")
+            .ok_or_else(|| anyhow::anyhow!("matrix_multiply requires argument 'b'"))?;
+        let m_arg = find_argument(&job_request.arguments, "m")
+            .ok_or_else(|| anyhow::anyhow!("matrix_multiply requires argument 'm'"))?;
+        let n_arg = find_argument(&job_request.arguments, "n")
+            .ok_or_else(|| anyhow::anyhow!("matrix_multiply requires argument 'n'"))?;
+        let k_arg = find_argument(&job_request.arguments, "k")
+            .ok_or_else(|| anyhow::anyhow!("matrix_multiply requires argument 'k'"))?;
+
+        let a = parse_f32_values(a_arg)?;
+        let b = parse_f32_values(b_arg)?;
+        let m = parse_u32_value(m_arg, "m")?;
+        let n = parse_u32_value(n_arg, "n")?;
+        let k = parse_u32_value(k_arg, "k")?;
+
+        if a.len() != (m as usize * k as usize) {
+            bail!(
+                "matrix_multiply expected {} elements for 'a', received {}",
+                m as usize * k as usize,
+                a.len()
+            );
+        }
+
+        if b.len() != (k as usize * n as usize) {
+            bail!(
+                "matrix_multiply expected {} elements for 'b', received {}",
+                k as usize * n as usize,
+                b.len()
+            );
+        }
+
+        let device_state = self.device_state_handle(&job_request.device_id)?;
+        let bytes_a = (a.len() * std::mem::size_of::<f32>()) as u64;
+        let bytes_b = (b.len() * std::mem::size_of::<f32>()) as u64;
+        let bytes_c = (m as usize * n as usize * std::mem::size_of::<f32>()) as u64;
+        let total_bytes = bytes_a + bytes_b + bytes_c;
+        let _allocation_guard = VramAllocationGuard::acquire(device_state.clone(), total_bytes)?;
+
+        let device_index = {
+            let state = self.state.read().await;
+            state
+                .devices
+                .iter()
+                .position(|d| d.id == job_request.device_id)
+                .unwrap_or(0)
+        };
+
+        let mut result = vec![0f32; (m * n) as usize];
+
+        unsafe {
+            let mut device: SyclDevice = ptr::null_mut();
+            let mut queue: SyclQueue = ptr::null_mut();
+            let mut buf_a: SyclBuffer = ptr::null_mut();
+            let mut buf_b: SyclBuffer = ptr::null_mut();
+            let mut buf_c: SyclBuffer = ptr::null_mut();
+
+            let outcome = (|| -> Result<()> {
+                check_sycl(
+                    sycl_get_device(device_index as u32, &mut device as *mut _),
+                    "sycl_get_device",
+                )?;
+                check_sycl(
+                    sycl_create_queue(device, &mut queue as *mut _),
+                    "sycl_create_queue",
+                )?;
+
+                let bytes_a_usize = a.len() * std::mem::size_of::<f32>();
+                let bytes_b_usize = b.len() * std::mem::size_of::<f32>();
+                let bytes_c_usize = result.len() * std::mem::size_of::<f32>();
+
+                check_sycl(
+                    sycl_create_buffer(queue, bytes_a_usize, &mut buf_a as *mut _),
+                    "create buffer a",
+                )?;
+                check_sycl(
+                    sycl_create_buffer(queue, bytes_b_usize, &mut buf_b as *mut _),
+                    "create buffer b",
+                )?;
+                check_sycl(
+                    sycl_create_buffer(queue, bytes_c_usize, &mut buf_c as *mut _),
+                    "create buffer c",
+                )?;
+
+                check_sycl(
+                    sycl_write_buffer(
+                        queue,
+                        buf_a,
+                        f32_slice_as_bytes(&a).as_ptr() as *const c_void,
+                        bytes_a_usize,
+                        0,
+                    ),
+                    "write buffer a",
+                )?;
+                check_sycl(
+                    sycl_write_buffer(
+                        queue,
+                        buf_b,
+                        f32_slice_as_bytes(&b).as_ptr() as *const c_void,
+                        bytes_b_usize,
+                        0,
+                    ),
+                    "write buffer b",
+                )?;
+
+                check_sycl(
+                    sycl_matmul_f32(queue, buf_a, buf_b, buf_c, m, n, k),
+                    "sycl_matmul_f32",
+                )?;
+
+                check_sycl(sycl_queue_wait(queue), "sycl_queue_wait")?;
+
+                check_sycl(
+                    sycl_read_buffer(
+                        queue,
+                        buf_c,
+                        result.as_mut_ptr() as *mut c_void,
+                        bytes_c_usize,
+                        0,
+                    ),
+                    "read buffer c",
+                )?;
+
+                Ok(())
+            })();
+
+            if !buf_c.is_null() {
+                sycl_release_buffer(buf_c);
+            }
+            if !buf_b.is_null() {
+                sycl_release_buffer(buf_b);
+            }
+            if !buf_a.is_null() {
+                sycl_release_buffer(buf_a);
+            }
+            if !queue.is_null() {
+                sycl_release_queue(queue);
+            }
+            if !device.is_null() {
+                sycl_release_device(device);
+            }
+
+            outcome?;
+        }
+
+        Ok(json!({
+            "values": result,
+            "m": m,
+            "n": n,
+            "k": k,
+        }))
+    }
+}
+
+#[async_trait]
+impl TranslatorBackend for SystemTranslator {
+    fn name(&self) -> &str {
+        &self.name
+    }
+
+    fn mount_point(&self) -> &PathBuf {
+        &self.mount_point
+    }
+
+    fn is_system(&self) -> bool {
+        true
+    }
+
+    async fn read_file(&self, path: &str, offset: u64, count: u32) -> Result<Vec<u8>> {
+        self.read_file(path, offset, count).await
+    }
+
+    async fn write_file(&self, path: &str, _offset: u64, data: Vec<u8>) -> Result<Vec<u8>> {
+        self.write_file(path, data).await
+    }
+
+    async fn list_files(&self, path: &str) -> Result<Vec<String>> {
+        self.list_files(path).await
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+struct GpuFileSystem {
+    devices: Vec<DeviceInfo>,
+    kernels: HashMap<String, KernelInfo>,
+    buffers: HashMap<String, BufferInfo>,
+    jobs: HashMap<String, JobInfo>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+struct DeviceInfo {
+    id: String,
+    name: String,
+    vendor: String,
+    backend: String,
+    device_type: String,
+    compute_units: u32,
+    max_work_group_size: usize,
+    global_mem_size: u64,
+    local_mem_size: u64,
+    capabilities: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+struct KernelInfo {
+    name: String,
+    source: String,
+    compiled: bool,
+    parameters: Vec<KernelParameter>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+struct KernelParameter {
+    name: String,
+    param_type: String,
+    direction: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+struct BufferInfo {
+    id: String,
+    size: usize,
+    device_id: String,
+    flags: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct JobInfo {
+    id: String,
+    kernel: String,
+    status: JobStatus,
+    device_id: String,
+    work_dims: Vec<usize>,
+    execution_time_ns: Option<u64>,
+    result: Option<Value>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+enum JobStatus {
+    Pending,
+    Running,
+    Completed,
+    Failed(String),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct JobRequest {
+    kernel: String,
+    device_id: String,
+    work_dims: Vec<usize>,
+    arguments: Vec<ArgumentData>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct ArgumentData {
+    name: String,
+    buffer_id: Option<String>,
+    value: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct JobResponse {
+    job_id: String,
+    status: String,
+    message: String,
+    result: Option<Value>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct BufferRequest {
+    size: usize,
+    device_id: String,
+    flags: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct BufferResponse {
+    buffer_id: String,
+    allocated_size: usize,
+    device: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct BufferReleaseRequest {
+    buffer_id: String,
+}
+
+static JOB_COUNTER: AtomicU64 = AtomicU64::new(1);
+static BUFFER_COUNTER: AtomicU64 = AtomicU64::new(1);
+
+fn next_job_id() -> u64 {
+    JOB_COUNTER.fetch_add(1, Ordering::Relaxed)
+}
+
+fn next_buffer_id() -> u64 {
+    BUFFER_COUNTER.fetch_add(1, Ordering::Relaxed)
+}
+
+fn query_sycl_devices() -> Result<Vec<DeviceInfo>> {
+    let mut infos = vec![
+        SyclDeviceInfo {
+            name: [0; 256],
+            vendor: [0; 128],
+            compute_units: 0,
+            global_memory_size: 0,
+            local_memory_size: 0,
+            max_work_group_size: 0,
+            is_gpu: false,
+            is_cpu: false,
+            supports_fp64: false,
+            supports_fp16: false,
+        };
+        32
+    ];
+
+    let mut count = infos.len();
+    let err = unsafe { sycl_discover_devices(infos.as_mut_ptr(), &mut count as *mut usize) };
+    if err.is_err() {
+        return Err(anyhow::anyhow!(
+            "Failed to enumerate SYCL devices: {:?}",
+            err
+        ));
+    }
+
+    infos.truncate(count);
+
+    let mut devices = Vec::with_capacity(infos.len());
+    for (index, info) in infos.into_iter().enumerate() {
+        let mut backend_label = "unknown".to_string();
+
+        unsafe {
+            let mut device: SyclDevice = std::ptr::null_mut();
+            if sycl_get_device(index as u32, &mut device as *mut SyclDevice).is_ok()
+                && !device.is_null()
+            {
+                let mut backend = SyclBackend::CPU;
+                if sycl_get_device_backend(device, &mut backend as *mut SyclBackend).is_ok() {
+                    backend_label = backend.to_string();
+                }
+                sycl_release_device(device);
+            }
+        }
+
+        let mut capabilities = Vec::new();
+        if info.supports_fp64 {
+            capabilities.push("fp64".to_string());
+        }
+        if info.supports_fp16 {
+            capabilities.push("fp16".to_string());
+        }
+
+        devices.push(DeviceInfo {
+            id: format!("gpu{}", index),
+            name: info.name_str().to_string(),
+            vendor: info.vendor_str().to_string(),
+            backend: backend_label,
+            device_type: if info.is_gpu {
+                "GPU".to_string()
+            } else if info.is_cpu {
+                "CPU".to_string()
+            } else {
+                "Accelerator".to_string()
+            },
+            compute_units: info.compute_units,
+            max_work_group_size: info.max_work_group_size as usize,
+            global_mem_size: info.global_memory_size,
+            local_mem_size: info.local_memory_size,
+            capabilities,
+        });
+    }
+
+    Ok(devices)
+}
+
+fn load_device_inventory() -> (Vec<DeviceInfo>, HashMap<String, Arc<DeviceState>>) {
+    let mut devices = query_sycl_devices().unwrap_or_else(|_| Vec::new());
+    if devices.is_empty() {
+        devices = default_devices();
+    }
+
+    let mut states = HashMap::new();
+    for device in &devices {
+        let state = register_device_state(&device.id, device.global_mem_size);
+        states.insert(device.id.clone(), state);
+    }
+
+    (devices, states)
+}
+
+fn default_devices() -> Vec<DeviceInfo> {
+    vec![
+        DeviceInfo {
+            id: "gpu0".to_string(),
+            name: "SYCL Sample NVIDIA Adapter".to_string(),
+            vendor: "NVIDIA".to_string(),
+            backend: "cuda".to_string(),
+            device_type: "GPU".to_string(),
+            compute_units: 128,
+            max_work_group_size: 1024,
+            global_mem_size: 24_576_000_000u64,
+            local_mem_size: 48_192,
+            capabilities: vec![
+                "fp64".to_string(),
+                "atomics".to_string(),
+                "images".to_string(),
+            ],
+        },
+        DeviceInfo {
+            id: "gpu1".to_string(),
+            name: "SYCL Sample Intel Adapter".to_string(),
+            vendor: "Intel".to_string(),
+            backend: "level-zero".to_string(),
+            device_type: "GPU".to_string(),
+            compute_units: 96,
+            max_work_group_size: 512,
+            global_mem_size: 24_576_000_000u64,
+            local_mem_size: 65_536,
+            capabilities: vec!["fp64".to_string(), "matrix".to_string()],
+        },
+    ]
+}
+
+fn check_sycl(err: SyclError, context: &str) -> Result<()> {
+    if err.is_err() {
+        bail!("{}: {:?}", context, err);
+    }
+    Ok(())
+}
+
+fn find_argument<'a>(args: &'a [ArgumentData], name: &str) -> Option<&'a ArgumentData> {
+    args.iter().find(|arg| arg.name == name)
+}
+
+fn parse_f32_values(arg: &ArgumentData) -> Result<Vec<f32>> {
+    match &arg.value {
+        Some(Value::Array(items)) => {
+            let mut output = Vec::with_capacity(items.len());
+            for item in items {
+                let number = item.as_f64().ok_or_else(|| {
+                    anyhow::anyhow!("expected numeric value in argument '{}'", arg.name)
+                })?;
+                output.push(number as f32);
+            }
+            Ok(output)
+        }
+        _ => bail!("argument '{}' must be an array of numbers", arg.name),
+    }
+}
+
+fn parse_u32_value(arg: &ArgumentData, field: &str) -> Result<u32> {
+    match &arg.value {
+        Some(Value::Number(num)) => num
+            .as_u64()
+            .ok_or_else(|| anyhow::anyhow!("argument '{}' must be unsigned integer", field))
+            .map(|v| v as u32),
+        _ => bail!("argument '{}' must be numeric", field),
+    }
+}
+
+fn f32_slice_as_bytes(data: &[f32]) -> &[u8] {
+    let ptr = data.as_ptr() as *const u8;
+    let len = data.len() * std::mem::size_of::<f32>();
+    unsafe { std::slice::from_raw_parts(ptr, len) }
+}
+
+struct VramAllocationGuard {
+    state: Arc<DeviceState>,
+    size: u64,
+    released: bool,
+}
+
+impl VramAllocationGuard {
+    fn acquire(state: Arc<DeviceState>, size: u64) -> Result<Self> {
+        if state.allocate(size) {
+            Ok(Self {
+                state,
+                size,
+                released: false,
+            })
+        } else {
+            bail!("Insufficient VRAM ({} bytes)", size);
+        }
+    }
+
+    fn release(&mut self) {
+        if !self.released {
+            let _ = self.state.release(self.size);
+            self.released = true;
+        }
+    }
+
+    fn disarm(mut self) {
+        self.released = true;
+    }
+}
+
+impl Drop for VramAllocationGuard {
+    fn drop(&mut self) {
+        self.release();
+    }
+}
+
+const MATRIX_MULTIPLY_KERNEL: &str = r#"#include <sycl/sycl.hpp>
+
+void matrix_multiply(sycl::queue& q,
+                     sycl::buffer<float>& a,
+                     sycl::buffer<float>& b,
+                     sycl::buffer<float>& c,
+                     int M, int N, int K) {
+    q.submit([&](sycl::handler& h) {
+        auto acc_a = a.get_access<sycl::access::mode::read>(h);
+        auto acc_b = b.get_access<sycl::access::mode::read>(h);
+        auto acc_c = c.get_access<sycl::access::mode::write>(h);
+        h.parallel_for(sycl::range<2>(M, N), [=](sycl::id<2> id) {
+            int row = id[0];
+            int col = id[1];
+            float sum = 0.0f;
+            for (int k = 0; k < K; ++k) {
+                sum += acc_a[row * K + k] * acc_b[k * N + col];
+            }
+            acc_c[row * N + col] = sum;
+        });
+    });
+}
+"#;
+
+const VECTOR_ADD_KERNEL: &str = r#"#include <sycl/sycl.hpp>
+
+void vector_add(sycl::queue& q,
+                sycl::buffer<float>& a,
+                sycl::buffer<float>& b,
+                sycl::buffer<float>& c,
+                int n) {
+    q.submit([&](sycl::handler& h) {
+        auto acc_a = a.get_access<sycl::access::mode::read>(h);
+        auto acc_b = b.get_access<sycl::access::mode::read>(h);
+        auto acc_c = c.get_access<sycl::access::mode::write>(h);
+        h.parallel_for(sycl::range<1>(n), [=](sycl::id<1> idx) {
+            acc_c[idx] = acc_a[idx] + acc_b[idx];
+        });
+    });
+}
+"#;
+
+const FFT_KERNEL: &str = r#"#include <sycl/sycl.hpp>
+
+void fft_radix2(sycl::queue& q,
+                sycl::buffer<std::complex<float>>& data,
+                int n) {
+    q.submit([&](sycl::handler& h) {
+        auto acc = data.get_access<sycl::access::mode::read_write>(h);
+        h.parallel_for(sycl::range<1>(n), [=](sycl::id<1> idx) {
+            // Placeholder kernel
+            auto i = idx[0];
+            acc[i] = std::complex<float>(acc[i].real(), 0.0f);
+        });
+    });
+}
+"#;
+
+const REDUCTION_KERNEL: &str = r#"#include <sycl/sycl.hpp>
+
+void reduce_sum(sycl::queue& q,
+                sycl::buffer<float>& input,
+                sycl::buffer<float>& output,
+                int n) {
+    q.submit([&](sycl::handler& h) {
+        auto in = input.get_access<sycl::access::mode::read>(h);
+        auto out = output.get_access<sycl::access::mode::write>(h);
+        sycl::local_accessor<float, 1> scratch(sycl::range<1>(h.get_local_range().size()), h);
+
+        h.parallel_for(sycl::nd_range<1>(sycl::range<1>(n), sycl::range<1>(256)),
+                       [=](sycl::nd_item<1> item) {
+            size_t global_id = item.get_global_linear_id();
+            size_t local_id = item.get_local_linear_id();
+
+                scratch[local_id] = (global_id < n) ? in[global_id] : 0.0f;
+                item.barrier(sycl::access::fence_space::local_space);
+
+                for (size_t stride = item.get_local_range().size() / 2; stride > 0; stride /= 2) {
+                    if (local_id < stride) {
+                        scratch[local_id] += scratch[local_id + stride];
+                    }
+                    item.barrier(sycl::access::fence_space::local_space);
+                }
+
+                if (local_id == 0) {
+                    out[item.get_group_linear_id()] = scratch[0];
+                }
+        });
+    });
+}
+"#;
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::TempDir;
     use proptest::prelude::*;
+    use tempfile::TempDir;
 
     #[tokio::test]
     async fn test_thread_safe_registry() {
@@ -507,11 +1640,9 @@ mod tests {
         // Invalid WASM (just magic number)
         let wasm_bytes = vec![0x00, 0x61, 0x73, 0x6d]; // WASM magic number only
 
-        let result = ThreadSafeTranslator::new(
-            "test".to_string(),
-            PathBuf::from("/srv/test"),
-            wasm_bytes,
-        ).await;
+        let result =
+            ThreadSafeTranslator::new("test".to_string(), PathBuf::from("/srv/test"), wasm_bytes)
+                .await;
 
         // Should fail with invalid WASM
         assert!(result.is_err());
@@ -529,12 +1660,40 @@ mod tests {
         assert!(registry.scan_and_load().await.is_ok());
     }
 
+    #[test]
+    fn test_translators_must_export_expected_entrypoints() {
+        let wasm = wat::parse_str(
+            r#"
+            (module
+              (memory (export "memory") 1)
+              (func (export "handle_read") (param i32 i32) (result i32)
+                i32.const 0
+              )
+              (func (export "write_file") (param i32 i32 i32 i32) (result i32)
+                i32.const 0
+              )
+              (func (export "list_files") (param i32 i32) (result i32)
+                i32.const 0
+              )
+            )
+        "#,
+        )
+        .unwrap();
+
+        let err = ThreadSafeTranslator::validate_wasm_bytes(&wasm).unwrap_err();
+        assert!(
+            err.to_string().contains("read_file"),
+            "Expected missing read_file export error, got: {err}"
+        );
+    }
+
     // =================== PROPERTY TESTS ===================
 
     /// Create a minimal but valid WASM module that meets our requirements
     fn create_minimal_valid_wasm() -> Vec<u8> {
         // Use the wat crate to compile WAT text to WASM bytes
-        wat::parse_str(r#"
+        wat::parse_str(
+            r#"
             (module
               (memory (export "memory") 1)
               (func (export "read_file") (param i32 i32) (result i32)
@@ -547,7 +1706,9 @@ mod tests {
                 i32.const 0
               )
             )
-        "#).expect("Failed to compile WAT to WASM")
+        "#,
+        )
+        .expect("Failed to compile WAT to WASM")
     }
 
     /// Property test: invalid WASM bytes should be rejected
@@ -574,9 +1735,14 @@ mod tests {
                 format!("test_invalid_{}", i),
                 PathBuf::from("/srv/test"),
                 invalid_wasm,
-            ).await;
+            )
+            .await;
 
-            assert!(result.is_err(), "Invalid WASM case {} should be rejected", i);
+            assert!(
+                result.is_err(),
+                "Invalid WASM case {} should be rejected",
+                i
+            );
         }
     }
 
@@ -589,9 +1755,14 @@ mod tests {
             "test_valid".to_string(),
             PathBuf::from("/srv/test"),
             valid_wasm,
-        ).await;
+        )
+        .await;
 
-        assert!(result.is_ok(), "Valid WASM should be accepted, got error: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Valid WASM should be accepted, got error: {:?}",
+            result.err()
+        );
     }
 
     /// Test that WASM modules without required exports are rejected
@@ -606,13 +1777,20 @@ mod tests {
             "test_no_memory".to_string(),
             PathBuf::from("/srv/test"),
             vec![0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00], // Minimal header only
-        ).await;
+        )
+        .await;
 
         assert!(result.is_err());
         let err_msg = result.unwrap_err().to_string();
         // The minimal header should trigger a validation/parsing error
-        assert!(err_msg.contains("validation") || err_msg.contains("parsing") || err_msg.contains("too small") || err_msg.contains("end-of-file"),
-                "Expected validation error, got: {}", err_msg);
+        assert!(
+            err_msg.contains("validation")
+                || err_msg.contains("parsing")
+                || err_msg.contains("too small")
+                || err_msg.contains("end-of-file"),
+            "Expected validation error, got: {}",
+            err_msg
+        );
     }
 
     /// Test concurrent WASM validation
@@ -633,13 +1811,15 @@ mod tests {
                     format!("valid_{}", i),
                     PathBuf::from("/srv/valid"),
                     valid,
-                ).await;
+                )
+                .await;
 
                 let invalid_result = ThreadSafeTranslator::new(
                     format!("invalid_{}", i),
                     PathBuf::from("/srv/invalid"),
                     invalid,
-                ).await;
+                )
+                .await;
 
                 (valid_result.is_ok(), invalid_result.is_err())
             });
@@ -662,7 +1842,7 @@ mod tests {
 
         // 1. WASM with unauthorized imports
         let result = ThreadSafeTranslator::validate_wasm_bytes(
-            &create_minimal_valid_wasm() // This would need to be modified to have bad imports
+            &create_minimal_valid_wasm(), // This would need to be modified to have bad imports
         );
         // For now, our minimal WASM should pass
         assert!(result.is_ok());
@@ -691,13 +1871,19 @@ mod tests {
         let wrong_magic = vec![0xFF, 0xFF, 0xFF, 0xFF, 0x01, 0x00, 0x00, 0x00];
         let result = ThreadSafeTranslator::validate_wasm_bytes(&wrong_magic);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Invalid WASM magic number"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Invalid WASM magic number"));
 
         // Wrong version
         let wrong_version = vec![0x00, 0x61, 0x73, 0x6d, 0xFF, 0xFF, 0xFF, 0xFF];
         let result = ThreadSafeTranslator::validate_wasm_bytes(&wrong_version);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Unsupported WASM version"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Unsupported WASM version"));
 
         // Too small
         let too_small = vec![0x00, 0x61, 0x73];
@@ -812,7 +1998,12 @@ mod tests {
         for (i, wat) in test_cases.iter().enumerate() {
             let wasm = wat::parse_str(wat).expect("WAT should compile");
             let result = ThreadSafeTranslator::validate_wasm_bytes(&wasm);
-            assert!(result.is_err(), "Test case {} - WASM missing required exports should be rejected: {:?}", i, result);
+            assert!(
+                result.is_err(),
+                "Test case {} - WASM missing required exports should be rejected: {:?}",
+                i,
+                result
+            );
         }
     }
 }
