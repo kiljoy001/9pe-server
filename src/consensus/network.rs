@@ -223,6 +223,19 @@ impl NetworkConsensus {
         }
         Ok(())
     }
+
+    pub async fn get_peer_count(&self) -> usize {
+        let peers = self.peers.read().await;
+        peers.iter().filter(|(_, p)| p.status == PeerStatus::Connected).count()
+    }
+
+    pub async fn get_all_peers(&self) -> Vec<(String, String)> {
+        let peers = self.peers.read().await;
+        peers.iter()
+            .filter(|(_, p)| p.status == PeerStatus::Connected)
+            .map(|(id, p)| (id.clone(), p.address.to_string()))
+            .collect()
+    }
 }
 
 /// Peer manager for node discovery and connection management

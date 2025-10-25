@@ -68,6 +68,8 @@ impl MessageHandler {
             settrans_system,
             synth_fs,
             connection_state.clone(),
+            Some(consensus_dag.clone()),
+            None,
         );
 
         Ok(Self {

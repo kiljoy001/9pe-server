@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, Bytes};
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::sync::RwLock;
 use chrono::{DateTime, Utc};
 use ed25519_dalek::{SigningKey, VerifyingKey, Signature, Signer, Verifier};
@@ -258,7 +259,7 @@ impl NamespaceManager {
             let block_id = format!("ns_{}", hex::encode(&claim.owner_pubkey[..8]));
             let timestamp = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
-                .unwrap()
+                .unwrap_or(Duration::ZERO)
                 .as_secs();
 
             let block = Block {
@@ -274,10 +275,9 @@ impl NamespaceManager {
             };
 
             consensus.add_block(block).await?;
-            claim.consensus_block_id = Some(block_id);
+            claim.consensus_block_id = Some(block_id.clone());
 
-            info!("Namespace {} registered with consensus block {}",
-                  path, claim.consensus_block_id.as_ref().unwrap());
+            info!("Namespace {} registered with consensus block {}", path, block_id);
         }
 
         // Store claim
@@ -338,7 +338,7 @@ impl NamespaceManager {
             let block_id = format!("del_{}", hex::encode(&owner_keypair.verifying_key().to_bytes()[..8]));
             let timestamp = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
-                .unwrap()
+                .unwrap_or(Duration::ZERO)
                 .as_secs();
 
             let block = Block {
@@ -532,9 +532,79 @@ impl ControlHandler for DeleteNamespaceHandler {
         let req: DelRequest = serde_json::from_slice(data)
             .context("Invalid delete JSON")?;
 
-        // TODO: Verify signature and delete
-        info!("Namespace delete request for {}", req.path);
-        Ok(())
+        // Decode pubkey and signature
+        let pubkey_bytes = hex::decode(&req.pubkey)
+            .context("Invalid pubkey hex")?;
+        let sig_bytes = hex::decode(&req.signature)
+            .context("Invalid signature hex")?;
+
+        if pubkey_bytes.len() != 32 {
+            return Err(anyhow!("Public key must be 32 bytes"));
+        }
+        if sig_bytes.len() != 64 {
+            return Err(anyhow!("Signature must be 64 bytes"));
+        }
+
+        let mut pubkey = [0u8; 32];
+        pubkey.copy_from_slice(&pubkey_bytes);
+
+        // Verify signature
+        let public_key = VerifyingKey::from_bytes(&pubkey)
+            .map_err(|e| anyhow!("Invalid public key: {}", e))?;
+
+        let mut signature = [0u8; 64];
+        signature.copy_from_slice(&sig_bytes);
+        let sig = Signature::from_bytes(&signature);
+
+        let sign_data = format!("{}{}", req.path, hex::encode(pubkey));
+        public_key.verify(sign_data.as_bytes(), &sig)
+            .map_err(|e| anyhow!("Signature verification failed: {}", e))?;
+
+        // Create keypair from the verified public key for delete_namespace call
+        // We need to reconstruct a SigningKey, but we only have the public key
+        let manager = self.manager.clone();
+        tokio::runtime::Handle::current().block_on(async move {
+            // Verify ownership first
+            if !manager.verify_namespace(&req.path, &pubkey).await? {
+                return Err(anyhow!("Not authorized to delete namespace {}", req.path));
+            }
+
+            // Submit to consensus
+            if let Some(ref consensus) = manager.consensus {
+                use crate::consensus::Block;
+                use std::time::{SystemTime, UNIX_EPOCH};
+
+                let op = NamespaceOp::Delete {
+                    path: req.path.clone(),
+                };
+
+                let block_id = format!("del_{}", hex::encode(&pubkey[..8]));
+                let timestamp = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .context("System time error")?
+                    .as_secs();
+
+                let block = Block {
+                    id: block_id.clone(),
+                    parents: vec![],
+                    operations: vec![op],
+                    timestamp,
+                    creator: "namespace_manager".to_string(),
+                    signature: vec![],
+                    state: crate::consensus::BlockState::Pending,
+                    ghost_weight: 1,
+                    height: 0,
+                };
+
+                consensus.add_block(block).await?;
+            }
+
+            // Remove claim
+            manager.claims.write().await.remove(&req.path);
+
+            info!("Deleted namespace: {}", req.path);
+            Ok(())
+        })
     }
 }
 

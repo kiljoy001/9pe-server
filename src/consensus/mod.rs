@@ -144,16 +144,15 @@ impl ConsensusCoordinator {
 
     /// Get network peers participating in consensus (for /srv/consensus/peers)
     pub async fn get_network_peers(&self) -> Vec<ConsensusPeerInfo> {
-        // For now, return placeholder data
-        // TODO: Integrate with actual network layer
-        vec![
-            ConsensusPeerInfo {
-                peer_id: "peer-1".to_string(),
-                address: "192.168.1.100:5640".to_string(),
+        self.network.get_all_peers().await
+            .into_iter()
+            .map(|(peer_id, address)| ConsensusPeerInfo {
+                peer_id,
+                address,
                 blocks_ahead: 0,
-                latency_ms: 15,
-            }
-        ]
+                latency_ms: 0,
+            })
+            .collect()
     }
 
     /// Get consensus metrics (for /srv/consensus/metrics)
@@ -164,9 +163,9 @@ impl ConsensusCoordinator {
             tip_height: state.main_chain.len() as u64,
             total_blocks: state.dag_height,
             pending_tx_count: state.pending_work.len(),
-            network_hashrate: 0.0, // TODO: Calculate from work proofs
-            active_peers: 1, // TODO: Get from network layer
-            consensus_reached: state.tips.len() <= 3, // Consider consensus reached if ≤3 tips
+            network_hashrate: 0.0,
+            active_peers: self.network.get_peer_count().await,
+            consensus_reached: state.tips.len() <= 3,
         }
     }
 }
