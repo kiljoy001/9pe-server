@@ -1,27 +1,44 @@
 //! Mesh networking for peer-to-peer communication
 //!
-//! Automatic peer discovery using mDNS + TCP mesh protocol
+//! Automatic peer discovery using mDNS + QUIC mesh protocol
 
 use anyhow::{Result, Context};
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
 use std::net::{SocketAddr, IpAddr};
 use std::sync::Arc;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::RwLock;
 use tokio::time::{Duration, interval};
 use tracing::{info, error, debug, warn};
 use mdns_sd::{ServiceDaemon, ServiceEvent, ScopedIp};
+use quinn::{Endpoint, Connection, ServerConfig, ClientConfig, RecvStream, SendStream};
+
+struct SkipServerVerification;
+
+impl rustls::client::ServerCertVerifier for SkipServerVerification {
+    fn verify_server_cert(
+        &self,
+        _end_entity: &rustls::Certificate,
+        _intermediates: &[rustls::Certificate],
+        _server_name: &rustls::ServerName,
+        _scts: &mut dyn Iterator<Item = &[u8]>,
+        _ocsp_response: &[u8],
+        _now: std::time::SystemTime,
+    ) -> std::result::Result<rustls::client::ServerCertVerified, rustls::Error> {
+        Ok(rustls::client::ServerCertVerified::assertion())
+    }
+}
 
 /// Mesh network coordinator with DHT and mDNS discovery
 pub struct MeshNetwork {
     node_id: String,
     local_port: u16,
-    peers: Arc<RwLock<HashMap<String, PeerConnection>>>,
+    peers: Arc<RwLock<HashMap<String, QuicPeerConnection>>>,
     bootstrap_peers: Vec<String>,
     mdns_daemon: Option<ServiceDaemon>,
     dht: Arc<RwLock<KademliaTable>>,
+    endpoint: Option<Endpoint>,
+    connections: Arc<RwLock<HashMap<String, Connection>>>,
 }
 
 impl MeshNetwork {
@@ -33,13 +50,66 @@ impl MeshNetwork {
             bootstrap_peers,
             mdns_daemon: None,
             dht: Arc::new(RwLock::new(KademliaTable::new(&node_id))),
+            endpoint: None,
+            connections: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
+    fn generate_self_signed_cert() -> Result<(Vec<rustls::Certificate>, rustls::PrivateKey)> {
+        let cert = rcgen::generate_simple_self_signed(vec!["mesh.local".to_string()])
+            .context("Failed to generate self-signed certificate")?;
+        let key = rustls::PrivateKey(cert.serialize_private_key_der());
+        let cert_der = rustls::Certificate(cert.serialize_der().context("Failed to serialize certificate")?);
+        Ok((vec![cert_der], key))
+    }
+
+    fn configure_quic_server() -> Result<ServerConfig> {
+        let (certs, key) = Self::generate_self_signed_cert()?;
+        let mut server_config = ServerConfig::with_single_cert(certs, key)
+            .context("Failed to create server config")?;
+        
+        let transport_config = Arc::get_mut(&mut server_config.transport)
+            .context("Failed to get mutable transport config")?;
+        transport_config.max_concurrent_uni_streams(0_u8.into());
+        transport_config.max_idle_timeout(Some(Duration::from_secs(60).try_into().unwrap()));
+        
+        Ok(server_config)
+    }
+
+    fn configure_quic_client() -> Result<ClientConfig> {
+        let mut rustls_config = rustls::ClientConfig::builder()
+            .with_safe_defaults()
+            .with_custom_certificate_verifier(Arc::new(SkipServerVerification))
+            .with_no_client_auth();
+        
+        let mut client_config = ClientConfig::new(Arc::new(rustls_config));
+        
+        let transport_config = Arc::get_mut(&mut client_config.transport)
+            .context("Failed to get mutable transport config")?;
+        transport_config.max_concurrent_uni_streams(0_u8.into());
+        transport_config.max_idle_timeout(Some(Duration::from_secs(60).try_into().unwrap()));
+        
+        Ok(client_config)
+    }
+
     /// Start the mesh network with DHT and mDNS discovery
-    pub async fn start(self: Arc<Self>) -> Result<()> {
+    pub async fn start(mut self: Arc<Self>) -> Result<()> {
         info!("Starting mesh network on port {} with DHT and mDNS discovery",
               self.local_port);
+
+        let server_config = Self::configure_quic_server()?;
+        let client_config = Self::configure_quic_client()?;
+        let addr = SocketAddr::from(([0, 0, 0, 0], self.local_port));
+        let endpoint = Endpoint::server(server_config, addr)
+            .context("Failed to create QUIC endpoint")?;
+        endpoint.set_default_client_config(client_config);
+        
+        unsafe {
+            let self_mut = Arc::get_mut_unchecked(&mut self);
+            self_mut.endpoint = Some(endpoint);
+        }
+
+        info!("QUIC mesh network listening on port {}", self.local_port);
 
         // Start listener for incoming connections
         let listener_self = Arc::clone(&self);
@@ -77,81 +147,93 @@ impl MeshNetwork {
     }
 
     async fn run_listener(self: Arc<Self>) -> Result<()> {
-        let addr = SocketAddr::from(([0, 0, 0, 0], self.local_port));
-        let listener = TcpListener::bind(addr).await
-            .context("Failed to bind mesh listener")?;
-
-        info!("Mesh network listening on port {}", self.local_port);
+        let endpoint = self.endpoint.as_ref()
+            .context("QUIC endpoint not initialized")?;
 
         loop {
-            match listener.accept().await {
-                Ok((stream, peer_addr)) => {
-                    debug!("Incoming mesh connection from {}", peer_addr);
+            match endpoint.accept().await {
+                Some(connecting) => {
                     let self_clone = Arc::clone(&self);
                     tokio::spawn(async move {
-                        if let Err(e) = self_clone.handle_incoming_connection(stream, peer_addr).await {
-                            debug!("Mesh connection error from {}: {}", peer_addr, e);
+                        match connecting.await {
+                            Ok(connection) => {
+                                let peer_addr = connection.remote_address();
+                                debug!("Incoming QUIC connection from {}", peer_addr);
+                                if let Err(e) = self_clone.handle_incoming_connection(connection).await {
+                                    debug!("Mesh connection error from {}: {}", peer_addr, e);
+                                }
+                            }
+                            Err(e) => {
+                                error!("Failed to establish QUIC connection: {}", e);
+                            }
                         }
                     });
                 }
-                Err(e) => {
-                    error!("Failed to accept mesh connection: {}", e);
+                None => {
+                    warn!("QUIC endpoint closed");
+                    break;
                 }
             }
         }
+        Ok(())
     }
 
-    async fn handle_incoming_connection(&self, mut stream: TcpStream, peer_addr: SocketAddr) -> Result<()> {
-        // Read handshake message
-        let mut size_buf = [0u8; 4];
-        stream.read_exact(&mut size_buf).await?;
-        let msg_size = u32::from_le_bytes(size_buf);
+    async fn handle_incoming_connection(&self, connection: Connection) -> Result<()> {
+        let peer_addr = connection.remote_address();
+        
+        let (mut send_stream, mut recv_stream) = connection.accept_bi().await
+            .context("Failed to accept bidirectional stream")?;
 
-        if msg_size > 1024 * 1024 {
-            anyhow::bail!("Message too large: {}", msg_size);
-        }
-
-        let mut msg_buf = vec![0u8; msg_size as usize];
-        stream.read_exact(&mut msg_buf).await?;
-
-        let message: MeshMessage = bincode::deserialize(&msg_buf)?;
+        let message = self.receive_message_from_stream(&mut recv_stream).await?;
 
         match message {
             MeshMessage::Handshake { node_id, version } => {
                 info!("Peer {} connected from {} (version {})", node_id, peer_addr, version);
 
-                // Send handshake response
                 let response = MeshMessage::HandshakeAck {
                     node_id: self.node_id.clone(),
                     version: 1,
                 };
-                self.send_message(&mut stream, &response).await?;
+                self.send_message_to_stream(&mut send_stream, &response).await?;
 
-                // Store peer connection
                 let mut peers = self.peers.write().await;
-                peers.insert(node_id.clone(), PeerConnection {
+                peers.insert(node_id.clone(), QuicPeerConnection {
                     node_id: node_id.clone(),
                     address: peer_addr,
                     last_seen: std::time::Instant::now(),
                 });
                 drop(peers);
 
-                // Handle messages from this peer
+                let mut connections = self.connections.write().await;
+                connections.insert(node_id.clone(), connection.clone());
+                drop(connections);
+
                 loop {
-                    match self.receive_message(&mut stream).await {
-                        Ok(msg) => {
-                            self.handle_message(&node_id, msg).await?;
+                    match connection.accept_bi().await {
+                        Ok((mut send, mut recv)) => {
+                            match self.receive_message_from_stream(&mut recv).await {
+                                Ok(msg) => {
+                                    if let Err(e) = self.handle_message_with_response(&node_id, msg, &mut send).await {
+                                        error!("Error handling message from {}: {}", node_id, e);
+                                    }
+                                }
+                                Err(e) => {
+                                    debug!("Peer {} disconnected: {}", node_id, e);
+                                    break;
+                                }
+                            }
                         }
                         Err(e) => {
-                            debug!("Peer {} disconnected: {}", node_id, e);
+                            debug!("Peer {} connection closed: {}", node_id, e);
                             break;
                         }
                     }
                 }
 
-                // Remove peer on disconnect
                 let mut peers = self.peers.write().await;
                 peers.remove(&node_id);
+                let mut connections = self.connections.write().await;
+                connections.remove(&node_id);
                 info!("Peer {} disconnected", node_id);
             }
             _ => {
@@ -163,13 +245,22 @@ impl MeshNetwork {
     }
 
     async fn connect_to_bootstrap_peers(&self) {
+        let endpoint = match &self.endpoint {
+            Some(e) => e.clone(),
+            None => {
+                error!("QUIC endpoint not initialized");
+                return;
+            }
+        };
+
         for peer_addr_str in &self.bootstrap_peers {
             let peer_addr_str = peer_addr_str.clone();
-            let self_clone = self.node_id.clone();
+            let node_id = self.node_id.clone();
             let peers_clone = Arc::clone(&self.peers);
+            let connections_clone = Arc::clone(&self.connections);
+            let endpoint_clone = endpoint.clone();
 
             tokio::spawn(async move {
-                // Parse address
                 let addr: SocketAddr = match peer_addr_str.parse() {
                     Ok(a) => a,
                     Err(e) => {
@@ -178,80 +269,123 @@ impl MeshNetwork {
                     }
                 };
 
-                // Retry connection with backoff
                 let mut backoff = Duration::from_secs(1);
                 loop {
-                    match TcpStream::connect(addr).await {
-                        Ok(mut stream) => {
-                            info!("Connected to peer at {}", addr);
+                    match endpoint_clone.connect(addr, "mesh.local") {
+                        Ok(connecting) => {
+                            match connecting.await {
+                                Ok(connection) => {
+                                    info!("Connected to peer at {}", addr);
 
-                            // Send handshake
-                            let handshake = MeshMessage::Handshake {
-                                node_id: self_clone.clone(),
-                                version: 1,
-                            };
-
-                            if let Err(e) = Self::send_message_static(&mut stream, &handshake).await {
-                                error!("Failed to send handshake to {}: {}", addr, e);
-                                tokio::time::sleep(backoff).await;
-                                backoff = std::cmp::min(backoff * 2, Duration::from_secs(60));
-                                continue;
-                            }
-
-                            // Wait for handshake ack
-                            match Self::receive_message_static(&mut stream).await {
-                                Ok(MeshMessage::HandshakeAck { node_id, .. }) => {
-                                    info!("Handshake complete with peer {} at {}", node_id, addr);
-
-                                    // Store connection
-                                    let mut peers = peers_clone.write().await;
-                                    peers.insert(node_id.clone(), PeerConnection {
-                                        node_id: node_id.clone(),
-                                        address: addr,
-                                        last_seen: std::time::Instant::now(),
-                                    });
-                                    drop(peers);
-
-                                    // Keep connection alive - read messages
-                                    loop {
-                                        match Self::receive_message_static(&mut stream).await {
-                                            Ok(msg) => {
-                                                debug!("Received message from {}: {:?}", node_id, msg);
-                                                // Update last_seen
-                                                let mut peers = peers_clone.write().await;
-                                                if let Some(peer) = peers.get_mut(&node_id) {
-                                                    peer.last_seen = std::time::Instant::now();
-                                                }
-                                            }
-                                            Err(e) => {
-                                                info!("Peer {} disconnected: {}", node_id, e);
-                                                break;
-                                            }
+                                    let (mut send_stream, mut recv_stream) = match connection.open_bi().await {
+                                        Ok(streams) => streams,
+                                        Err(e) => {
+                                            error!("Failed to open stream to {}: {}", addr, e);
+                                            tokio::time::sleep(backoff).await;
+                                            backoff = std::cmp::min(backoff * 2, Duration::from_secs(60));
+                                            continue;
                                         }
+                                    };
+
+                                    let handshake = MeshMessage::Handshake {
+                                        node_id: node_id.clone(),
+                                        version: 1,
+                                    };
+
+                                    let data = match bincode::serialize(&handshake) {
+                                        Ok(d) => d,
+                                        Err(e) => {
+                                            error!("Failed to serialize handshake: {}", e);
+                                            continue;
+                                        }
+                                    };
+
+                                    let size = data.len() as u32;
+                                    if let Err(e) = send_stream.write_all(&size.to_le_bytes()).await {
+                                        error!("Failed to send handshake size to {}: {}", addr, e);
+                                        tokio::time::sleep(backoff).await;
+                                        backoff = std::cmp::min(backoff * 2, Duration::from_secs(60));
+                                        continue;
                                     }
 
-                                    // Remove peer
-                                    let mut peers = peers_clone.write().await;
-                                    peers.remove(&node_id);
-                                }
-                                Ok(msg) => {
-                                    warn!("Expected HandshakeAck, got {:?}", msg);
+                                    if let Err(e) = send_stream.write_all(&data).await {
+                                        error!("Failed to send handshake to {}: {}", addr, e);
+                                        tokio::time::sleep(backoff).await;
+                                        backoff = std::cmp::min(backoff * 2, Duration::from_secs(60));
+                                        continue;
+                                    }
+
+                                    if let Err(e) = send_stream.finish().await {
+                                        error!("Failed to finish handshake stream to {}: {}", addr, e);
+                                        tokio::time::sleep(backoff).await;
+                                        backoff = std::cmp::min(backoff * 2, Duration::from_secs(60));
+                                        continue;
+                                    }
+
+                                    use tokio::io::AsyncReadExt;
+                                    let mut size_buf = [0u8; 4];
+                                    if let Err(e) = recv_stream.read_exact(&mut size_buf).await {
+                                        error!("Failed to read handshake ack size from {}: {}", addr, e);
+                                        tokio::time::sleep(backoff).await;
+                                        backoff = std::cmp::min(backoff * 2, Duration::from_secs(60));
+                                        continue;
+                                    }
+
+                                    let msg_size = u32::from_le_bytes(size_buf);
+                                    if msg_size > 1024 * 1024 {
+                                        error!("Message too large from {}: {}", addr, msg_size);
+                                        continue;
+                                    }
+
+                                    let mut msg_buf = vec![0u8; msg_size as usize];
+                                    if let Err(e) = recv_stream.read_exact(&mut msg_buf).await {
+                                        error!("Failed to read handshake ack from {}: {}", addr, e);
+                                        tokio::time::sleep(backoff).await;
+                                        backoff = std::cmp::min(backoff * 2, Duration::from_secs(60));
+                                        continue;
+                                    }
+
+                                    match bincode::deserialize::<MeshMessage>(&msg_buf) {
+                                        Ok(MeshMessage::HandshakeAck { node_id: peer_node_id, .. }) => {
+                                            info!("Handshake complete with peer {} at {}", peer_node_id, addr);
+
+                                            let mut peers = peers_clone.write().await;
+                                            peers.insert(peer_node_id.clone(), QuicPeerConnection {
+                                                node_id: peer_node_id.clone(),
+                                                address: addr,
+                                                last_seen: std::time::Instant::now(),
+                                            });
+                                            drop(peers);
+
+                                            let mut connections = connections_clone.write().await;
+                                            connections.insert(peer_node_id.clone(), connection.clone());
+                                            drop(connections);
+
+                                            backoff = Duration::from_secs(1);
+                                        }
+                                        Ok(msg) => {
+                                            warn!("Expected HandshakeAck, got {:?}", msg);
+                                        }
+                                        Err(e) => {
+                                            error!("Failed to deserialize handshake ack from {}: {}", addr, e);
+                                        }
+                                    }
                                 }
                                 Err(e) => {
-                                    error!("Failed to receive handshake ack from {}: {}", addr, e);
+                                    debug!("Failed to connect to peer {}: {} (retrying in {:?})", addr, e, backoff);
+                                    tokio::time::sleep(backoff).await;
+                                    backoff = std::cmp::min(backoff * 2, Duration::from_secs(60));
                                 }
                             }
-
-                            // Reconnect after delay
-                            tokio::time::sleep(backoff).await;
-                            backoff = std::cmp::min(backoff * 2, Duration::from_secs(60));
                         }
                         Err(e) => {
-                            debug!("Failed to connect to peer {}: {} (retrying in {:?})", addr, e, backoff);
+                            error!("Failed to initiate connection to {}: {}", addr, e);
                             tokio::time::sleep(backoff).await;
                             backoff = std::cmp::min(backoff * 2, Duration::from_secs(60));
                         }
                     }
+
+                    tokio::time::sleep(Duration::from_secs(30)).await;
                 }
             });
         }
@@ -345,7 +479,6 @@ impl MeshNetwork {
         loop {
             ticker.tick().await;
 
-            // Query DHT for nearby peers
             use sha2::{Sha256, Digest};
             let mut hasher = Sha256::new();
             hasher.update(self.node_id.as_bytes());
@@ -357,10 +490,21 @@ impl MeshNetwork {
 
             debug!("DHT has {} total peers", nearby_peers.len());
 
-            // Refresh DHT by querying random nodes
             for peer in nearby_peers.iter().take(3) {
                 debug!("Refreshing DHT via {}", peer.address);
-                // TODO: Send FindNode RPC to peer
+                
+                let connections = self.connections.read().await;
+                let peer_id_opt = self.peers.read().await.iter()
+                    .find(|(_, p)| p.address == peer.address)
+                    .map(|(id, _)| id.clone());
+                drop(connections);
+
+                if let Some(peer_id) = peer_id_opt {
+                    let find_node_msg = MeshMessage::FindNode { target: our_id };
+                    if let Err(e) = self.send_message_to_peer(&peer_id, &find_node_msg).await {
+                        debug!("Failed to send FindNode to {}: {}", peer_id, e);
+                    }
+                }
             }
         }
     }
@@ -438,26 +582,24 @@ impl MeshNetwork {
         Ok(())
     }
 
-    async fn send_message(&self, stream: &mut TcpStream, message: &MeshMessage) -> Result<()> {
-        Self::send_message_static(stream, message).await
-    }
-
-    async fn send_message_static(stream: &mut TcpStream, message: &MeshMessage) -> Result<()> {
+    async fn send_message_to_stream(&self, stream: &mut SendStream, message: &MeshMessage) -> Result<()> {
         let data = bincode::serialize(message)?;
         let size = data.len() as u32;
-        stream.write_all(&size.to_le_bytes()).await?;
-        stream.write_all(&data).await?;
-        stream.flush().await?;
+        stream.write_all(&size.to_le_bytes()).await
+            .context("Failed to write message size")?;
+        stream.write_all(&data).await
+            .context("Failed to write message data")?;
+        stream.finish().await
+            .context("Failed to finish stream")?;
         Ok(())
     }
 
-    async fn receive_message(&self, stream: &mut TcpStream) -> Result<MeshMessage> {
-        Self::receive_message_static(stream).await
-    }
-
-    async fn receive_message_static(stream: &mut TcpStream) -> Result<MeshMessage> {
+    async fn receive_message_from_stream(&self, stream: &mut RecvStream) -> Result<MeshMessage> {
+        use tokio::io::AsyncReadExt;
+        
         let mut size_buf = [0u8; 4];
-        stream.read_exact(&mut size_buf).await?;
+        stream.read_exact(&mut size_buf).await
+            .context("Failed to read message size")?;
         let msg_size = u32::from_le_bytes(size_buf);
 
         if msg_size > 1024 * 1024 {
@@ -465,10 +607,72 @@ impl MeshNetwork {
         }
 
         let mut msg_buf = vec![0u8; msg_size as usize];
-        stream.read_exact(&mut msg_buf).await?;
+        stream.read_exact(&mut msg_buf).await
+            .context("Failed to read message data")?;
 
-        let message: MeshMessage = bincode::deserialize(&msg_buf)?;
+        let message: MeshMessage = bincode::deserialize(&msg_buf)
+            .context("Failed to deserialize message")?;
         Ok(message)
+    }
+
+    async fn handle_message_with_response(&self, from_peer: &str, message: MeshMessage, send_stream: &mut SendStream) -> Result<()> {
+        match message {
+            MeshMessage::Ping => {
+                debug!("Received ping from {}", from_peer);
+                let mut peers = self.peers.write().await;
+                if let Some(peer) = peers.get_mut(from_peer) {
+                    peer.last_seen = std::time::Instant::now();
+                }
+            }
+            MeshMessage::PeerList { peers: peer_list } => {
+                info!("Received peer list from {}: {} peers", from_peer, peer_list.len());
+            }
+            MeshMessage::FindNode { target } => {
+                debug!("Received DHT FindNode query from {} for {:?}", from_peer, &target[..8]);
+
+                let dht = self.dht.read().await;
+                let closest = dht.find_closest(&target, 20);
+                drop(dht);
+
+                let peer_list: Vec<(SocketAddr, [u8; 32])> = closest
+                    .iter()
+                    .map(|p| (p.address, p.id))
+                    .collect();
+
+                debug!("Replying with {} DHT peers", peer_list.len());
+                let reply = MeshMessage::FindNodeReply { peers: peer_list };
+                self.send_message_to_stream(send_stream, &reply).await?;
+            }
+            MeshMessage::FindNodeReply { peers } => {
+                debug!("Received DHT FindNodeReply from {} with {} peers", from_peer, peers.len());
+
+                let peer_count = peers.len();
+
+                let mut dht = self.dht.write().await;
+                for (addr, id) in peers {
+                    dht.add_peer(id, addr);
+                }
+                drop(dht);
+
+                info!("Added {} peers to DHT from {}", peer_count, from_peer);
+            }
+            _ => {
+                debug!("Received message from {}: {:?}", from_peer, message);
+            }
+        }
+        Ok(())
+    }
+
+    async fn send_message_to_peer(&self, peer_id: &str, message: &MeshMessage) -> Result<()> {
+        let connections = self.connections.read().await;
+        let connection = connections.get(peer_id)
+            .context(format!("No connection to peer {}", peer_id))?;
+        
+        let (mut send_stream, _recv_stream) = connection.open_bi().await
+            .context("Failed to open bidirectional stream")?;
+        
+        self.send_message_to_stream(&mut send_stream, message).await?;
+        Ok(())
     }
 
     pub async fn get_peer_count(&self) -> usize {
@@ -497,17 +701,40 @@ impl MeshNetwork {
         let addr: SocketAddr = address.parse()
             .context("Invalid peer address")?;
 
-        let node_id = peer_id.unwrap_or_else(|| format!("peer-{}", addr));
+        let endpoint = self.endpoint.as_ref()
+            .context("QUIC endpoint not initialized")?;
 
-        let peer_conn = PeerConnection {
-            node_id: node_id.clone(),
-            address: addr,
-            last_seen: std::time::Instant::now(),
+        let connection = endpoint.connect(addr, "mesh.local")
+            .context("Failed to initiate QUIC connection")?
+            .await
+            .context("Failed to establish QUIC connection")?;
+
+        let (mut send_stream, mut recv_stream) = connection.open_bi().await
+            .context("Failed to open bidirectional stream")?;
+
+        let handshake = MeshMessage::Handshake {
+            node_id: self.node_id.clone(),
+            version: 1,
         };
 
-        self.peers.write().await.insert(node_id.clone(), peer_conn);
-        info!("Connected to peer {} at {}", node_id, addr);
-        Ok(())
+        self.send_message_to_stream(&mut send_stream, &handshake).await?;
+        let response = self.receive_message_from_stream(&mut recv_stream).await?;
+
+        match response {
+            MeshMessage::HandshakeAck { node_id, .. } => {
+                let peer_conn = QuicPeerConnection {
+                    node_id: node_id.clone(),
+                    address: addr,
+                    last_seen: std::time::Instant::now(),
+                };
+
+                self.peers.write().await.insert(node_id.clone(), peer_conn);
+                self.connections.write().await.insert(node_id.clone(), connection);
+                info!("Connected to peer {} at {}", node_id, addr);
+                Ok(())
+            }
+            _ => Err(anyhow::anyhow!("Expected HandshakeAck, got {:?}", response))
+        }
     }
 
     /// Disconnect from a peer (for /srv/mesh/disconnect)
@@ -608,7 +835,7 @@ enum MeshMessage {
     },
 }
 
-struct PeerConnection {
+struct QuicPeerConnection {
     node_id: String,
     address: SocketAddr,
     last_seen: std::time::Instant,
