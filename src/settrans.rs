@@ -312,6 +312,25 @@ impl VirtualSettransSystem {
         self.command_tx.send(SettransCommand::Disable(name.to_string()))?;
         Ok(())
     }
+
+    pub async fn set_translator(&self, path: &str, translator_name: &str, args: Vec<String>) -> Result<()> {
+        let translators = self.translators.read().await;
+        
+        if let Some(info) = translators.get(translator_name) {
+            let mount_point = PathBuf::from(path);
+            
+            self.translator_registry.load_translator(
+                info.name.clone(),
+                mount_point,
+                info.wasm_data.clone(),
+            ).await?;
+            
+            info!("Set translator {} on path {} with args {:?}", translator_name, path, args);
+            Ok(())
+        } else {
+            Err(anyhow::anyhow!("Translator {} not found", translator_name))
+        }
+    }
 }
 
 #[cfg(test)]

@@ -43,6 +43,11 @@ enum TranslatorCommand {
         path: String,
         response_tx: oneshot::Sender<Result<Vec<String>>>,
     },
+    InvokeFunction {
+        function_name: String,
+        args: Vec<u8>,
+        response_tx: oneshot::Sender<Result<Vec<u8>>>,
+    },
     Shutdown,
 }
 
@@ -284,6 +289,10 @@ impl ThreadSafeTranslator {
                     let result = Self::handle_list_files(&mut store, &instance, &path);
                     let _ = response_tx.send(result);
                 }
+                TranslatorCommand::InvokeFunction { function_name, args, response_tx } => {
+                    let result = Self::handle_invoke_function(&mut store, &instance, &function_name, args);
+                    let _ = response_tx.send(result);
+                }
                 TranslatorCommand::Shutdown => {
                     info!("WASM translator '{}' shutting down", name);
                     break;
@@ -334,6 +343,42 @@ impl ThreadSafeTranslator {
         ])
     }
 
+    /// Handle invoke function operation
+    fn handle_invoke_function(
+        store: &mut Store<StoreData>,
+        instance: &Instance,
+        function_name: &str,
+        args: Vec<u8>,
+    ) -> Result<Vec<u8>> {
+        debug!("WASM translator invoking function: {}", function_name);
+        
+        let memory = instance
+            .get_memory(&mut *store, "memory")
+            .context("WASM module must export 'memory'")?;
+        
+        let args_ptr = 1024;
+        memory.write(&mut *store, args_ptr, &args)
+            .context("Failed to write arguments to WASM memory")?;
+        
+        let func = instance
+            .get_typed_func::<(i32, i32), i32>(&mut *store, function_name)
+            .context(format!("Function '{}' not found or has wrong signature", function_name))?;
+        
+        let result_ptr = func.call(&mut *store, (args_ptr as i32, args.len() as i32))
+            .context(format!("Failed to call function '{}'", function_name))?;
+        
+        let mut len_bytes = [0u8; 4];
+        memory.read(&*store, result_ptr as usize, &mut len_bytes)
+            .context("Failed to read result length from WASM memory")?;
+        let len = u32::from_le_bytes(len_bytes) as usize;
+        
+        let mut result = vec![0u8; len];
+        memory.read(&*store, result_ptr as usize + 4, &mut result)
+            .context("Failed to read result data from WASM memory")?;
+        
+        Ok(result)
+    }
+
     /// Read a file through the WASM translator
     pub async fn read_file(&self, path: &str) -> Result<Vec<u8>> {
         let (response_tx, response_rx) = oneshot::channel();
@@ -365,6 +410,19 @@ impl ThreadSafeTranslator {
 
         self.command_tx.send(TranslatorCommand::ListFiles {
             path: path.to_string(),
+            response_tx,
+        })?;
+
+        response_rx.await?
+    }
+
+    /// Invoke a function in the WASM translator
+    pub async fn invoke_function(&self, function_name: &str, args: Vec<u8>) -> Result<Vec<u8>> {
+        let (response_tx, response_rx) = oneshot::channel();
+
+        self.command_tx.send(TranslatorCommand::InvokeFunction {
+            function_name: function_name.to_string(),
+            args,
             response_tx,
         })?;
 
