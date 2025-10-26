@@ -8,7 +8,8 @@ use crate::protocol::NinePeeMessage;
 use crate::wasm::ThreadSafeTranslatorRegistry;
 use crate::synth::SyntheticFilesystem;
 use crate::settrans::VirtualSettransSystem;
-use crate::consensus::BoundedGhostdag;
+use crate::consensus::{BoundedGhostdag, ConsensusCoordinator, JobRequest};
+use crate::consensus::work_distribution::JobRequirements;
 use crate::mesh::MeshNetwork;
 
 use super::connection_state::ConnectionState;
@@ -28,6 +29,8 @@ pub struct NinePeeExtensionsHandler {
     connection_state: ConnectionState,
 
     consensus: Option<Arc<BoundedGhostdag>>,
+    
+    consensus_coordinator: Option<Arc<ConsensusCoordinator>>,
 
     mesh_network: Option<Arc<MeshNetwork>>,
 }
@@ -48,8 +51,13 @@ impl NinePeeExtensionsHandler {
             synth_fs,
             connection_state,
             consensus,
+            consensus_coordinator: None,
             mesh_network,
         }
+    }
+    
+    pub fn set_consensus_coordinator(&mut self, coordinator: Arc<ConsensusCoordinator>) {
+        self.consensus_coordinator = Some(coordinator);
     }
 
     /// Handle settrans request
@@ -226,42 +234,32 @@ impl NinePeeExtensionsHandler {
     ) -> Result<NinePeeMessage> {
         debug!("WorkSubmit: task_id={}, data_size={}", task_id, data.len());
 
-        match &self.consensus {
-            Some(consensus) => {
-                use crate::consensus::Block;
-                use std::time::{SystemTime, UNIX_EPOCH};
-
-                let op = crate::consensus::NamespaceOp::RegisterNamespace {
-                    path: format!("/work/{}", task_id),
-                    owner_pubkey: [0u8; 32],
-                    signature: vec![],
+        match &self.consensus_coordinator {
+            Some(coordinator) => {
+                let job = JobRequest {
+                    id: String::new(),
+                    work_type: task_id.clone(),
+                    input_data: data,
+                    requirements: JobRequirements {
+                        min_nodes: 1,
+                        min_cpu_cores: None,
+                        min_memory_gb: None,
+                        requires_gpu: false,
+                        required_capabilities: vec![],
+                        geographic_constraints: None,
+                    },
+                    priority: 1,
+                    timeout_seconds: 300,
+                    submitted_at: 0,
                 };
 
-                let block_id = format!("work_{}", task_id);
-                let timestamp = SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .map(|d| d.as_secs())
-                    .unwrap_or(0);
-
-                let block = Block {
-                    id: block_id.clone(),
-                    parents: vec![],
-                    operations: vec![op],
-                    timestamp,
-                    creator: "work_distributor".to_string(),
-                    signature: vec![],
-                    state: crate::consensus::BlockState::Pending,
-                    ghost_weight: 1,
-                    height: 0,
-                };
-
-                match consensus.add_block(block).await {
-                    Ok(_) => {
-                        info!("Work submitted successfully: {}", task_id);
+                match coordinator.submit_work(job).await {
+                    Ok(job_id) => {
+                        info!("Work submitted successfully: task_id={}, job_id={}", task_id, job_id);
                         Ok(NinePeeMessage::SyntheticCreate {
                             fid: 0,
                             generator: "work".to_string(),
-                            params: format!("Work {} submitted", task_id).into_bytes(),
+                            params: format!("Work submitted: {}", job_id).into_bytes(),
                         })
                     }
                     Err(e) => {
@@ -274,9 +272,9 @@ impl NinePeeExtensionsHandler {
                 }
             }
             None => {
-                warn!("Consensus system not configured");
+                warn!("Work distribution not configured");
                 Ok(NinePeeMessage::Error {
-                    ename: "Consensus system not configured".to_string(),
+                    ename: "Work distribution not configured".to_string(),
                     errno: 38,
                 })
             }
@@ -291,19 +289,37 @@ impl NinePeeExtensionsHandler {
     ) -> Result<NinePeeMessage> {
         debug!("WorkResult: task_id={}, result_size={}", task_id, result.len());
 
-        match &self.consensus {
-            Some(_consensus) => {
-                info!("Work result received for task: {}", task_id);
-                Ok(NinePeeMessage::SyntheticCreate {
-                    fid: 0,
-                    generator: "work".to_string(),
-                    params: format!("Result for {} received", task_id).into_bytes(),
-                })
+        match &self.consensus_coordinator {
+            Some(coordinator) => {
+                match coordinator.get_work_result(&task_id).await {
+                    Ok(Some(work_result)) => {
+                        info!("Work result retrieved for task: {}", task_id);
+                        Ok(NinePeeMessage::SyntheticCreate {
+                            fid: 0,
+                            generator: "work".to_string(),
+                            params: work_result.result_data,
+                        })
+                    }
+                    Ok(None) => {
+                        warn!("No result found for task: {}", task_id);
+                        Ok(NinePeeMessage::Error {
+                            ename: format!("No result found for task: {}", task_id),
+                            errno: 2,
+                        })
+                    }
+                    Err(e) => {
+                        warn!("Failed to get work result: {}", e);
+                        Ok(NinePeeMessage::Error {
+                            ename: format!("Failed to get work result: {}", e),
+                            errno: 5,
+                        })
+                    }
+                }
             }
             None => {
-                warn!("Consensus system not configured");
+                warn!("Work distribution not configured");
                 Ok(NinePeeMessage::Error {
-                    ename: "Consensus system not configured".to_string(),
+                    ename: "Work distribution not configured".to_string(),
                     errno: 38,
                 })
             }

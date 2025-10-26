@@ -12,7 +12,8 @@ use tracing::{debug, info};
 use crate::wasm::ThreadSafeTranslatorRegistry;
 use crate::synth::SyntheticFilesystem;
 use crate::settrans::VirtualSettransSystem;
-use crate::consensus::BoundedGhostdag;
+use crate::consensus::{BoundedGhostdag, ConsensusCoordinator};
+use crate::consensus::crypto::Ed25519Provider;
 use crate::protocol::NinePeeMessage;
 
 use self::connection_state::ConnectionState;
@@ -54,7 +55,7 @@ impl MessageHandler {
         synth_fs: Arc<SyntheticFilesystem>,
     ) -> Result<Self> {
         let node_id = format!("node-{}", std::process::id());
-        let consensus_dag = Arc::new(BoundedGhostdag::new(node_id));
+        let consensus_dag = Arc::new(BoundedGhostdag::new(node_id.clone()));
         let connection_state = ConnectionState::new();
 
         let mut basic_ops = BasicOpsHandler::new(
@@ -63,7 +64,10 @@ impl MessageHandler {
         );
         basic_ops.set_consensus_dag(consensus_dag.clone());
 
-        let ninepee_extensions = NinePeeExtensionsHandler::new(
+        let crypto_provider = Arc::new(Ed25519Provider::new());
+        let consensus_coordinator = Arc::new(ConsensusCoordinator::new(node_id, crypto_provider));
+
+        let mut ninepee_extensions = NinePeeExtensionsHandler::new(
             translator_registry,
             settrans_system,
             synth_fs,
@@ -71,6 +75,7 @@ impl MessageHandler {
             Some(consensus_dag.clone()),
             None,
         );
+        ninepee_extensions.set_consensus_coordinator(consensus_coordinator);
 
         Ok(Self {
             root: root_path,
