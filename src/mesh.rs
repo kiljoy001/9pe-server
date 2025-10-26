@@ -396,7 +396,7 @@ impl MeshNetwork {
 
         match ServiceDaemon::new() {
             Ok(mdns) => {
-                let service_type = "_9pe._tcp.local.";
+                let service_type = "_9pe._udp.local.";
                 let instance_name = format!("9pe-{}", self.node_id);
                 let host_name = format!("{}.local.", self.node_id);
 

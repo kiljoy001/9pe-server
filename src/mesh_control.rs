@@ -146,7 +146,7 @@ struct AnnounceHandler {
 
 impl ControlHandler for AnnounceHandler {
     fn read(&self) -> Result<Vec<u8>> {
-        Ok(b"Write service name to announce (e.g., 'myserver._9pe._tcp.local')\n".to_vec())
+        Ok(b"Write service name to announce (e.g., 'myserver._9pe._udp.local')\n".to_vec())
     }
 
     fn write(&self, data: &[u8]) -> Result<()> {
