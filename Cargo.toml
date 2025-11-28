@@ -33,7 +33,7 @@ async-trait = "0.1"
 
 # QUIC transport support
 quinn = "0.10"
-rustls = "0.21"
+rustls = { version = "0.21", features = ["dangerous_configuration"] }
 webpki-roots = "0.26"
 rcgen = "0.12"
 
@@ -48,7 +48,7 @@ if-addrs = "0.10"
 libc = "0.2"
 
 # Local 9P.e protocol implementation
-ninepee = { path = "../9PE" }
+ninepee = { path = "./9PE" }
 
 # UUID generation
 uuid = { version = "1.0", features = ["v4", "serde"] }
