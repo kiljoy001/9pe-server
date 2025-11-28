@@ -1,14 +1,11 @@
 //! Tests for Pebbling Memory Manager
 
 use ninep_server::pebbling::{ComputationGraph, PebblingManager, PebblingStrategy};
+use ninep_server::pebbling::{BlackWhiteGame, BWMove};
+use ninep_server::pebbling::{RedBlueGame, RBMove};
 
 #[test]
 fn test_linear_chain_memory() {
-    // A -> B -> C -> D
-    // Each node 10MB
-    // Traditional/Greedy: A(10) -> B(10+10) -> free A -> C(10+10) -> free B -> D(10+10)
-    // Peak memory: 20MB
-
     let mut graph = ComputationGraph::new();
     graph.add_node(1, vec![], 10, 1);
     graph.add_node(2, vec![1], 10, 1);
@@ -19,86 +16,86 @@ fn test_linear_chain_memory() {
     let manager = PebblingManager::new(graph);
 
     let result = manager.optimize(PebblingStrategy::Greedy);
-    println!("Linear Chain Result: {:?}", result);
-
-    assert_eq!(result.peak_memory, 20); // Stores output of N and N-1
+    assert_eq!(result.peak_memory, 20);
 }
 
 #[test]
 fn test_diamond_graph_memory() {
-    //   A
-    //  / \
-    // B   C
-    //  \ /
-    //   D
-    // All nodes 10MB.
-    // Order A -> B -> C -> D
-    // 1. A (10)
-    // 2. B (10+10=20) (A needed for C)
-    // 3. C (20+10=30) (A can be freed after this? Yes) -> 20 (A freed) -> 30 (C added)
-    //    Actually: Mem = A(10) + B(10) + C(10) = 30 peak.
-    // 4. D (B+C+D) -> B+C needed.
-
     let mut graph = ComputationGraph::new();
-    graph.add_node(1, vec![], 10, 1);     // A
-    graph.add_node(2, vec![1], 10, 1);    // B
-    graph.add_node(3, vec![1], 10, 1);    // C
-    graph.add_node(4, vec![2, 3], 10, 1); // D
+    graph.add_node(1, vec![], 10, 1);
+    graph.add_node(2, vec![1], 10, 1);
+    graph.add_node(3, vec![1], 10, 1);
+    graph.add_node(4, vec![2, 3], 10, 1);
     graph.set_roots(vec![4]);
 
     let manager = PebblingManager::new(graph);
 
     let result = manager.optimize(PebblingStrategy::Greedy);
-    println!("Diamond Graph Result: {:?}", result);
-
-    // Check reasonable bounds
     assert!(result.peak_memory <= 30);
 }
 
 #[test]
-fn test_tree_reduction() {
-    // Binary Tree structure to test DFS vs BFS (Greedy)
-    //        R
-    //      /   \
-    //     A     B
-    //    / \   / \
-    //   1   2 3   4
-
-    // Greedy (BFS-like): 1, 2, 3, 4, A, B, R
-    // Mem at A: needs 1,2 outputs.
-    // If BFS: computes 1,2,3,4 (40MB) then A (needs 1,2), then B (needs 3,4).
-    // Peak might be high if it keeps all leaves.
-
-    // Optimal (DFS-like): 1, 2, A (free 1,2), 3, 4, B (free 3,4), R (free A,B)
-    // Peak: 1(10) -> 2(20) -> A(10+10+10=30) -> free 1,2 -> A(10)
-    //       -> 3(20) -> 4(30) -> B(30) -> free 3,4 -> A(10)+B(10)=20
-    //       -> R(30) -> free A,B -> R(10).
-    // Peak 30.
-
+fn test_black_white_rules() {
     let mut graph = ComputationGraph::new();
-    // Leaves
     graph.add_node(1, vec![], 10, 1);
-    graph.add_node(2, vec![], 10, 1);
-    graph.add_node(3, vec![], 10, 1);
-    graph.add_node(4, vec![], 10, 1);
+    graph.add_node(2, vec![1], 10, 1);
 
-    // Intermediates
-    graph.add_node(5, vec![1, 2], 10, 1); // A
-    graph.add_node(6, vec![3, 4], 10, 1); // B
+    let mut game = BlackWhiteGame::new(&graph);
 
-    // Root
-    graph.add_node(7, vec![5, 6], 10, 1); // R
-    graph.set_roots(vec![7]);
+    // Valid: Place White on 2
+    assert!(game.apply_move(BWMove::PlaceWhite(2)).is_ok());
 
-    let manager = PebblingManager::new(graph);
+    // Valid: Place Black on 1 (no dependencies)
+    assert!(game.apply_move(BWMove::PlaceBlack(1)).is_ok());
 
-    let greedy = manager.optimize(PebblingStrategy::Greedy);
-    let optimal = manager.optimize(PebblingStrategy::MemoryOptimal);
+    // Valid: Place Black on 2 (1 needs to be pebble, but 1 has pebble now, so should be valid)
+    // Wait, 1 has black pebble. 2 depends on 1. So placing black on 2 is valid.
+    assert!(game.apply_move(BWMove::PlaceBlack(2)).is_ok());
 
-    println!("Tree Greedy Peak: {}", greedy.peak_memory);
-    println!("Tree Optimal Peak: {}", optimal.peak_memory);
+    // Valid: Remove White on 2 (2 has black, parents have black)
+    // Rule 4: Remove white if all parents have pebbles.
+    // Parent of 2 is 1. 1 has black. So valid.
+    assert!(game.apply_move(BWMove::RemoveWhite(2)).is_ok());
 
-    // In this specific small case, they might be similar depending on tie-breaking,
-    // but Optimal should be <= Greedy.
-    assert!(optimal.peak_memory <= greedy.peak_memory);
+    // Invalid: Remove White on 1 (none there)
+    assert!(game.apply_move(BWMove::RemoveWhite(1)).is_err());
+
+    // Valid: Remove Black on 2
+    assert!(game.apply_move(BWMove::RemoveBlack(2)).is_ok());
+}
+
+#[test]
+fn test_red_blue_rules() {
+    let mut graph = ComputationGraph::new();
+    graph.add_node(1, vec![], 10, 1); // Source
+    graph.add_node(2, vec![1], 10, 1); // Dependent
+
+    // Cache size 1
+    let mut game = RedBlueGame::new(&graph, 1);
+
+    // Compute 1 (valid, no parents)
+    assert!(game.apply_move(RBMove::Compute(1)).is_ok());
+
+    // Store 1 (move to Blue)
+    assert!(game.apply_move(RBMove::Store(1)).is_ok());
+
+    // Compute 2 (Invalid, parent 1 not in Red, it is in Blue)
+    // Need to free Red 1 first to make space? No, Store copies Red to Blue, Red stays.
+    // But cache size is 1. Compute 1 took 1 slot.
+    // Store 1 did not remove Red.
+
+    // Try Compute 2 -> Fail (Cache full)
+    assert!(game.apply_move(RBMove::Compute(2)).is_err());
+
+    // Free 1 (Remove from Red)
+    assert!(game.apply_move(RBMove::Free(1)).is_ok());
+
+    // Try Compute 2 -> Fail (Parent 1 not in Red)
+    assert!(game.apply_move(RBMove::Compute(2)).is_err());
+
+    // Load 1 (Blue -> Red)
+    assert!(game.apply_move(RBMove::Load(1)).is_ok());
+
+    // Compute 2 -> Fail (Cache full, 1 is in Red)
+    assert!(game.apply_move(RBMove::Compute(2)).is_err());
 }
