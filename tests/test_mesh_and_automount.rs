@@ -2,7 +2,7 @@
 
 use std::path::PathBuf;
 use std::time::Duration;
-use tokio::time::timeout;
+// use tokio::time::timeout;
 
 #[cfg(test)]
 mod test_mesh_discovery {
@@ -52,7 +52,7 @@ mod test_mesh_discovery {
         let reconnect_interval = Duration::from_secs(30);
 
         // Mock test - actual implementation needs proper setup
-        assert!(reconnect_interval.as_secs() == 30);
+        assert_eq!(reconnect_interval.as_secs(), 30);
     }
 
     #[tokio::test]
@@ -161,9 +161,24 @@ mod test_auto_mount {
     #[tokio::test]
     async fn test_auto_mount_permission_handling() {
         // Test auto-mount handles permission errors gracefully
-        let mount_point = PathBuf::from("/root/cannot-create");
+        // Note: checking absolute /root path usually fails in tests unless root
+        // We use a safe assumption that we cannot write to a read-only or root-owned location if we are user.
+        // But in docker environment, we might be root.
 
-        // Attempting to create in /root should fail (no permissions)
+        let mount_point = if unsafe { libc::geteuid() } != 0 {
+             PathBuf::from("/root/cannot-create")
+        } else {
+             // If we are root, we need another way to simulate failure.
+             // Maybe creating a directory with 000 permissions and trying to create subdir?
+             let temp_dir = TempDir::new().unwrap();
+             let restricted = temp_dir.path().join("restricted");
+             std::fs::create_dir(&restricted).unwrap();
+             use std::os::unix::fs::PermissionsExt;
+             std::fs::set_permissions(&restricted, std::fs::Permissions::from_mode(0o500)).unwrap();
+             restricted.join("should-fail")
+        };
+
+        // Attempting to create should fail (no permissions)
         let result = std::fs::create_dir_all(&mount_point);
         assert!(result.is_err());
 
@@ -175,6 +190,7 @@ mod test_auto_mount {
 #[cfg(test)]
 mod test_integration {
     use super::*;
+    use tempfile::TempDir;
 
     #[tokio::test]
     async fn test_server_starts_with_ipv6_and_quic() {

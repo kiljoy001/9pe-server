@@ -76,6 +76,12 @@ impl BindAddress {
         }
     }
 
+    /// Resolve bind address string directly (convenience helper)
+    pub fn resolve(interface: Option<&str>, port: u16) -> Result<String> {
+        let bind = Self::from_interface(interface)?;
+        Ok(bind.to_bind_string(port))
+    }
+
     /// Check if this is an IPv6 address (including dual-stack)
     pub fn is_ipv6(&self) -> bool {
         matches!(self, Self::Any | Self::Ipv6Any | Self::Specific(IpAddr::V6(_)))
