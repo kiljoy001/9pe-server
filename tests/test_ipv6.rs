@@ -1,13 +1,16 @@
-//! IPv6 functionality tests for recent changes
+//! IPv6 functionality tests
 
 use anyhow::Result;
+use ninep_server::network::BindAddress;
 
 #[cfg(test)]
 mod test_ipv6 {
     use super::*;
 
-    // Import the resolve_bind_address function from main.rs
-    // Note: This will require refactoring main.rs to expose this function
+    // Wrapper to match expected signature from legacy tests
+    fn resolve_bind_address(interface: Option<&str>, port: u16) -> Result<String> {
+        BindAddress::resolve(interface, port)
+    }
 
     #[test]
     fn test_ipv6_default_binding() {
@@ -66,13 +69,13 @@ mod test_ipv6 {
         assert_eq!(addr, "127.0.0.1:5640", "Direct IPv4 should pass through");
 
         let addr = resolve_bind_address(Some("::1"), 5640).unwrap();
-        assert_eq!(addr, "::1:5640", "Direct IPv6 should pass through");
+        assert_eq!(addr, "[::1]:5640", "Direct IPv6 should pass through"); // Note: BindAddress normalizes to brackets for IPv6
 
         let addr = resolve_bind_address(Some("192.168.1.1"), 5640).unwrap();
         assert_eq!(addr, "192.168.1.1:5640", "Direct IPv4 should pass through");
 
         let addr = resolve_bind_address(Some("2001:db8::1"), 5640).unwrap();
-        assert_eq!(addr, "2001:db8::1:5640", "Direct IPv6 should pass through");
+        assert_eq!(addr, "[2001:db8::1]:5640", "Direct IPv6 should pass through");
     }
 
     #[test]
@@ -80,45 +83,5 @@ mod test_ipv6 {
         // Test unknown interface names fall back to IPv6 dual-stack
         let addr = resolve_bind_address(Some("unknown"), 5640).unwrap();
         assert_eq!(addr, "[::]:5640", "Unknown interface should use IPv6 dual-stack");
-    }
-
-    #[test]
-    fn test_mesh_ipv6_listening() {
-        // Test that mesh network listens on IPv6
-        // This would require refactoring mesh.rs to make testable
-        // For now this is a placeholder
-    }
-
-    #[test]
-    fn test_metrics_ipv6_binding() {
-        // Test that metrics server uses IPv6 dual-stack
-        // This would require refactoring metrics.rs to make testable
-        // For now this is a placeholder
-    }
-}
-
-// Helper function to be extracted from main.rs
-fn resolve_bind_address(interface: Option<&str>, port: u16) -> Result<String> {
-    use tracing::warn;
-
-    match interface {
-        None => Ok(format!("[::]:{}", port)), // IPv6 any address (also accepts IPv4)
-        Some(iface) => {
-            if iface.parse::<std::net::IpAddr>().is_ok() {
-                Ok(format!("{}:{}", iface, port))
-            } else {
-                match iface {
-                    "lo" | "localhost" => Ok(format!("[::1]:{}", port)), // IPv6 loopback
-                    "lo4" | "localhost4" => Ok(format!("127.0.0.1:{}", port)),
-                    "any" | "all" => Ok(format!("[::]:{}", port)), // IPv6 dual-stack
-                    "any4" | "all4" => Ok(format!("0.0.0.0:{}", port)),
-                    "any6" | "all6" => Ok(format!("[::]:{}", port)),
-                    _ => {
-                        warn!("Interface '{}' not recognized, using IPv6 dual-stack", iface);
-                        Ok(format!("[::]:{}", port))
-                    }
-                }
-            }
-        }
     }
 }
