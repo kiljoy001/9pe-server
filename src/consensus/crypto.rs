@@ -3,10 +3,14 @@
 //! Provides cryptographic security for distributed work coordination,
 //! including signatures, key management, and secure communication.
 
-use anyhow::Result;
+use anyhow::{Result, Context};
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
 use async_trait::async_trait;
+use ed25519_dalek::{Signer, Verifier, SigningKey, VerifyingKey};
+use sha2::{Sha256, Digest};
+use rand::rngs::OsRng;
+use rand::RngCore;
 
 /// Cryptographic provider trait for consensus operations
 #[async_trait]
@@ -62,70 +66,36 @@ pub struct SharedSecret {
 
 /// Ed25519-based cryptographic provider
 pub struct Ed25519Provider {
-    private_key: PrivateKey,
-    public_key: PublicKey,
+    keypair: SigningKey,
 }
 
 impl Ed25519Provider {
     pub fn new() -> Result<Self> {
-        // In a real implementation, we'd use ed25519-dalek or similar
-        // For now, mock implementation
-        let private_key = PrivateKey {
-            algorithm: "Ed25519".to_string(),
-            key_data: vec![0u8; 32], // Mock private key
-        };
-
-        let public_key = PublicKey {
-            algorithm: "Ed25519".to_string(),
-            key_data: vec![1u8; 32], // Mock public key
-        };
-
-        Ok(Self {
-            private_key,
-            public_key,
-        })
+        let mut csprng = OsRng;
+        let mut bytes = [0u8; 32];
+        csprng.fill_bytes(&mut bytes);
+        let keypair = SigningKey::from_bytes(&bytes);
+        Ok(Self { keypair })
     }
 
     pub fn from_seed(seed: &[u8]) -> Result<Self> {
         if seed.len() != 32 {
             anyhow::bail!("Ed25519 seed must be 32 bytes");
         }
-
-        // In real implementation, derive keypair from seed
-        let mut private_key_data = vec![0u8; 32];
-        private_key_data.copy_from_slice(seed);
-
-        let private_key = PrivateKey {
-            algorithm: "Ed25519".to_string(),
-            key_data: private_key_data,
-        };
-
-        // Derive public key from private key
-        let mut public_key_data = vec![0u8; 32];
-        public_key_data[0] = seed[0]; // Mock derivation
-
-        let public_key = PublicKey {
-            algorithm: "Ed25519".to_string(),
-            key_data: public_key_data,
-        };
-
-        Ok(Self {
-            private_key,
-            public_key,
-        })
+        let mut bytes = [0u8; 32];
+        bytes.copy_from_slice(seed);
+        let keypair = SigningKey::from_bytes(&bytes);
+        Ok(Self { keypair })
     }
 }
 
 #[async_trait]
 impl CryptoProvider for Ed25519Provider {
     async fn sign(&self, data: &[u8]) -> Result<Signature> {
-        // Mock signature generation
-        let mut signature_data = vec![0u8; 64];
-        signature_data[0] = data.len() as u8; // Simple mock
-
+        let signature = self.keypair.sign(data);
         Ok(Signature {
             algorithm: "Ed25519".to_string(),
-            data: signature_data,
+            data: signature.to_vec(),
         })
     }
 
@@ -134,49 +104,74 @@ impl CryptoProvider for Ed25519Provider {
             return Ok(false);
         }
 
-        // Mock verification - in real implementation, use ed25519-dalek
-        Ok(signature.data.len() == 64 && !signature.data.iter().all(|&b| b == 0))
+        if public_key.key_data.len() != 32 {
+            return Ok(false);
+        }
+
+        let mut key_bytes = [0u8; 32];
+        key_bytes.copy_from_slice(&public_key.key_data);
+
+        let verifying_key = VerifyingKey::from_bytes(&key_bytes)
+            .map_err(|e| anyhow::anyhow!("Invalid public key: {}", e))?;
+
+        if signature.data.len() != 64 {
+            return Ok(false);
+        }
+
+        let mut sig_bytes = [0u8; 64];
+        sig_bytes.copy_from_slice(&signature.data);
+        let sig = ed25519_dalek::Signature::from_bytes(&sig_bytes);
+
+        Ok(verifying_key.verify(data, &sig).is_ok())
     }
 
     fn get_public_key(&self) -> PublicKey {
-        self.public_key.clone()
+        PublicKey {
+            algorithm: "Ed25519".to_string(),
+            key_data: self.keypair.verifying_key().to_bytes().to_vec(),
+        }
     }
 
     async fn generate_keypair(&self) -> Result<(PublicKey, PrivateKey)> {
-        // Generate new random keypair
-        let private_key = PrivateKey {
-            algorithm: "Ed25519".to_string(),
-            key_data: (0..32).map(|_| rand::random::<u8>()).collect(),
-        };
+        let mut csprng = OsRng;
+        let mut bytes = [0u8; 32];
+        csprng.fill_bytes(&mut bytes);
+        let keypair = SigningKey::from_bytes(&bytes);
 
         let public_key = PublicKey {
             algorithm: "Ed25519".to_string(),
-            key_data: (0..32).map(|_| rand::random::<u8>()).collect(),
+            key_data: keypair.verifying_key().to_bytes().to_vec(),
+        };
+
+        let private_key = PrivateKey {
+            algorithm: "Ed25519".to_string(),
+            key_data: keypair.to_bytes().to_vec(),
         };
 
         Ok((public_key, private_key))
     }
 
     async fn encrypt(&self, data: &[u8], _recipient_key: &PublicKey) -> Result<Vec<u8>> {
-        // Mock encryption - in real implementation, use X25519 + ChaCha20Poly1305
+        // Placeholder: encryption requires X25519 conversion or different keys
+        // For consensus signatures, encryption might be separate.
+        // We'll keep the mock XOR for now as Ed25519 is for signatures.
+        // Real implementation would use Diffie-Hellman.
         let mut encrypted = data.to_vec();
         for byte in &mut encrypted {
-            *byte ^= 0xAA; // Simple XOR for demo
+            *byte ^= 0xAA;
         }
         Ok(encrypted)
     }
 
     async fn decrypt(&self, encrypted_data: &[u8]) -> Result<Vec<u8>> {
-        // Mock decryption
         let mut decrypted = encrypted_data.to_vec();
         for byte in &mut decrypted {
-            *byte ^= 0xAA; // Reverse XOR
+            *byte ^= 0xAA;
         }
         Ok(decrypted)
     }
 
     async fn derive_shared_secret(&self, _other_public_key: &PublicKey) -> Result<SharedSecret> {
-        // Mock shared secret derivation
         Ok(SharedSecret {
             data: vec![0xFFu8; 32],
         })
@@ -319,6 +314,9 @@ pub enum ComputationProof {
         input_hash: Vec<u8>,
         output_hash: Vec<u8>,
         steps: u64,
+        nonce: u64,
+        hash: Vec<u8>,
+        difficulty: u32,
     },
     /// Zero-knowledge proof (placeholder)
     ZkProof {
@@ -345,10 +343,18 @@ impl WorkProof {
         let output_hash = sha256_hash(output_data);
         let result_hash = sha256_hash(output_data);
 
+        // Mock proof of work elements
+        let nonce = 0;
+        let difficulty = 1;
+        let hash = result_hash.clone();
+
         let computation_proof = ComputationProof::HashProof {
             input_hash,
             output_hash,
             steps: computation_steps,
+            nonce,
+            hash,
+            difficulty,
         };
 
         // Sign the proof
@@ -404,13 +410,7 @@ impl WorkProof {
 
 // Helper function for SHA-256 hashing
 fn sha256_hash(data: &[u8]) -> Vec<u8> {
-    // In real implementation, use sha2 crate
-    // For now, simple mock hash
-    let mut hash = vec![0u8; 32];
-    hash[0] = data.len() as u8;
-    if !data.is_empty() {
-        hash[1] = data[0];
-        hash[31] = data[data.len() - 1];
-    }
-    hash
+    let mut hasher = Sha256::new();
+    hasher.update(data);
+    hasher.finalize().to_vec()
 }

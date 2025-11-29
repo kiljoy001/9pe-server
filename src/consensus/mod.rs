@@ -262,3 +262,4 @@ pub struct HardwareSpec {
     pub requires_gpu: bool,
     pub gpu_compute_capability: Option<f32>,
 }
+pub mod ollama_worker;

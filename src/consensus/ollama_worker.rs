@@ -8,25 +8,32 @@ use serde::{Serialize, Deserialize};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::process::Command;
 use tracing::{debug, info, warn, error};
+use std::sync::Arc;
 
 use super::work_distribution::{JobRequest, JobRequirements, NodeCapabilities, PartialResult};
-use super::crypto::{WorkProof, ComputationProof, Signature};
+use super::crypto::{WorkProof, ComputationProof, Signature, CryptoProvider, Ed25519Provider};
 
 /// Ollama worker executes LLM inference tasks
 pub struct OllamaWorker {
     node_id: String,
     ollama_url: String,
     capabilities: OllamaCapabilities,
+    crypto: Arc<dyn CryptoProvider>,
 }
 
 impl OllamaWorker {
     pub fn new(node_id: String, ollama_url: Option<String>) -> Self {
         let ollama_url = ollama_url.unwrap_or_else(|| "http://localhost:11434".to_string());
 
+        // Initialize crypto provider (mock/ephemeral for worker now)
+        // Ideally should load from disk or be passed in.
+        let crypto = Arc::new(Ed25519Provider::new().expect("Failed to initialize crypto"));
+
         Self {
             node_id,
             ollama_url,
             capabilities: OllamaCapabilities::default(),
+            crypto,
         }
     }
 
@@ -37,11 +44,13 @@ impl OllamaWorker {
         // Check if Ollama is running
         let available = self.check_ollama_available().await?;
         if !available {
-            anyhow::bail!("Ollama server not available at {}", self.ollama_url);
+            warn!("Ollama server not available at {}. Worker will run with limited capabilities.", self.ollama_url);
         }
 
         // Detect available models
-        self.capabilities.available_models = self.list_available_models().await?;
+        if available {
+            self.capabilities.available_models = self.list_available_models().await?;
+        }
 
         // Detect GPU capabilities
         self.capabilities.has_gpu = self.detect_gpu().await;
@@ -79,20 +88,14 @@ impl OllamaWorker {
 
         // Create proof of work
         let result_hash = self.hash_result(&result_data);
-        let proof = WorkProof {
-            work_id: job.id.clone(),
-            result_hash: result_hash.clone(),
-            computation_proof: ComputationProof::HashProof {
-                nonce: 0,
-                hash: result_hash,
-                difficulty: 1,
-            },
-            node_signature: Signature {
-                r: vec![0; 32],  // TODO: Implement actual signature
-                s: vec![0; 32],
-            },
-            timestamp: SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs(),
-        };
+
+        let proof = WorkProof::create(
+            job.id.clone(),
+            &job.input_data, // Input data for hash
+            &result_data,    // Output data for hash
+            response.eval_count.unwrap_or(0),
+            self.crypto.as_ref()
+        ).await?;
 
         Ok(PartialResult {
             job_id: job.id.clone(),
@@ -222,12 +225,10 @@ impl OllamaWorker {
     }
 
     fn hash_result(&self, data: &[u8]) -> Vec<u8> {
-        use std::collections::hash_map::DefaultHasher;
-        use std::hash::{Hash, Hasher};
-
-        let mut hasher = DefaultHasher::new();
-        data.hash(&mut hasher);
-        hasher.finish().to_le_bytes().to_vec()
+        use sha2::{Sha256, Digest};
+        let mut hasher = Sha256::new();
+        hasher.update(data);
+        hasher.finalize().to_vec()
     }
 }
 
