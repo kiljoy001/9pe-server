@@ -51,11 +51,12 @@ impl SyclDeviceInfo {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SyclError {
     Success = 0,
-    DeviceNotFound = 1,
-    OutOfMemory = 2,
-    InvalidKernel = 3,
-    InvalidBuffer = 4,
-    RuntimeError = 5,
+    InvalidDevice = 1,
+    InvalidQueue = 2,
+    InvalidBuffer = 3,
+    ExecutionFailed = 4,
+    OutOfMemory = 5,
+    InvalidHandle = 6,
 }
 
 impl SyclError {
@@ -88,11 +89,12 @@ impl std::fmt::Display for SyclError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             SyclError::Success => write!(f, "Success"),
-            SyclError::DeviceNotFound => write!(f, "Device not found"),
-            SyclError::OutOfMemory => write!(f, "Out of memory"),
-            SyclError::InvalidKernel => write!(f, "Invalid kernel"),
+            SyclError::InvalidDevice => write!(f, "Invalid device"),
+            SyclError::InvalidQueue => write!(f, "Invalid queue"),
             SyclError::InvalidBuffer => write!(f, "Invalid buffer"),
-            SyclError::RuntimeError => write!(f, "Runtime error"),
+            SyclError::ExecutionFailed => write!(f, "Execution failed"),
+            SyclError::OutOfMemory => write!(f, "Out of memory"),
+            SyclError::InvalidHandle => write!(f, "Invalid handle"),
         }
     }
 }
@@ -125,23 +127,27 @@ impl std::fmt::Display for SyclBackend {
 // External C functions from SYCL wrapper
 extern "C" {
     // Device management
-    pub fn sycl_discover_devices(
-        device_info: *mut SyclDeviceInfo,
-        device_count: *mut usize,
-    ) -> SyclError;
+    pub fn sycl_discover_devices() -> SyclError;
+
+    pub fn sycl_get_device_count(count: *mut u32) -> SyclError;
 
     pub fn sycl_get_device(device_index: u32, device: *mut SyclDevice) -> SyclError;
 
-    pub fn sycl_get_device_backend(device: SyclDevice, backend: *mut SyclBackend) -> SyclError;
+    pub fn sycl_get_device_info(
+        device: SyclDevice,
+        name: *mut c_char,
+        name_size: usize,
+        backend: *mut i32,
+    ) -> SyclError;
 
-    pub fn sycl_release_device(device: SyclDevice);
+    pub fn sycl_release_device(device: SyclDevice) -> SyclError;
 
     // Queue management
     pub fn sycl_create_queue(device: SyclDevice, queue: *mut SyclQueue) -> SyclError;
 
     pub fn sycl_queue_wait(queue: SyclQueue) -> SyclError;
 
-    pub fn sycl_release_queue(queue: SyclQueue);
+    pub fn sycl_release_queue(queue: SyclQueue) -> SyclError;
 
     // Buffer management
     pub fn sycl_create_buffer(
@@ -150,26 +156,36 @@ extern "C" {
         buffer: *mut SyclBuffer,
     ) -> SyclError;
 
-    pub fn sycl_write_buffer(
+    // FIXED: Now takes queue parameter
+    pub fn sycl_buffer_write(
         queue: SyclQueue,
         buffer: SyclBuffer,
         data: *const c_void,
-        size_bytes: usize,
         offset: usize,
+        size_bytes: usize,
     ) -> SyclError;
 
-    pub fn sycl_read_buffer(
+    pub fn sycl_buffer_read(
         queue: SyclQueue,
         buffer: SyclBuffer,
         data: *mut c_void,
-        size_bytes: usize,
         offset: usize,
+        size_bytes: usize,
     ) -> SyclError;
 
-    pub fn sycl_release_buffer(buffer: SyclBuffer);
+    pub fn sycl_release_buffer(buffer: SyclBuffer) -> SyclError;
 
-    // Standard AI kernels
-    pub fn sycl_matmul_f32(
+    // Event management
+    pub fn sycl_release_event(event: SyclEvent) -> SyclError;
+
+    pub fn sycl_get_kernel_time(
+        event: SyclEvent,
+        start_ns: *mut u64,
+        end_ns: *mut u64,
+    ) -> SyclError;
+
+    // Compute operations (async, return event)
+    pub fn sycl_matmul_f32_async(
         queue: SyclQueue,
         buffer_a: SyclBuffer,
         buffer_b: SyclBuffer,
@@ -177,114 +193,116 @@ extern "C" {
         m: u32,
         n: u32,
         k: u32,
+        event: *mut SyclEvent,
     ) -> SyclError;
 
-    pub fn sycl_vector_add_f32(
+    pub fn sycl_ternary_matmul_async(
         queue: SyclQueue,
         buffer_a: SyclBuffer,
         buffer_b: SyclBuffer,
         buffer_c: SyclBuffer,
-        length: usize,
+        m: u32,
+        n: u32,
+        k: u32,
+        event: *mut SyclEvent,
     ) -> SyclError;
 
-    pub fn sycl_relu_f32(
-        queue: SyclQueue,
-        buffer_in: SyclBuffer,
-        buffer_out: SyclBuffer,
-        length: usize,
+    // Error handling
+    pub fn sycl_get_last_error() -> *const c_char;
+
+    pub fn sycl_clear_error();
+
+    // Handle management
+    pub fn sycl_cleanup_unused_handles() -> SyclError;
+
+    pub fn sycl_get_active_handle_count(
+        devices: *mut u32,
+        queues: *mut u32,
+        buffers: *mut u32,
+        events: *mut u32,
     ) -> SyclError;
+}
 
-    pub fn sycl_conv2d_f32(
-        queue: SyclQueue,
-        input: SyclBuffer,
-        kernel: SyclBuffer,
-        output: SyclBuffer,
-        batch: u32,
-        in_channels: u32,
-        out_channels: u32,
-        height: u32,
-        width: u32,
-        kernel_h: u32,
-        kernel_w: u32,
-        stride: u32,
-        padding: u32,
-    ) -> SyclError;
-
-    // Custom kernel compilation
-    pub fn sycl_compile_kernel(
-        device: SyclDevice,
-        source: *const c_char,
-        kernel_name: *const c_char,
-        kernel: *mut SyclKernel,
-    ) -> SyclError;
-
-    pub fn sycl_set_kernel_arg_buffer(
-        kernel: SyclKernel,
-        arg_index: u32,
-        buffer: SyclBuffer,
-    ) -> SyclError;
-
-    pub fn sycl_set_kernel_arg_scalar(
-        kernel: SyclKernel,
-        arg_index: u32,
-        value: *const c_void,
-        size: usize,
-    ) -> SyclError;
-
-    pub fn sycl_execute_kernel(
-        queue: SyclQueue,
-        kernel: SyclKernel,
-        global_work_size: *const usize,
-        local_work_size: *const usize,
-        work_dim: u32,
-    ) -> SyclError;
-
-    pub fn sycl_release_kernel(kernel: SyclKernel);
-
-    // Profiling and diagnostics
-    pub fn sycl_get_kernel_time(event: SyclEvent, nanoseconds: *mut u64) -> SyclError;
-
-    pub fn sycl_get_device_utilization(device: SyclDevice, utilization: *mut f32) -> SyclError;
+/// Helper to get the last error as a Rust String
+pub fn get_last_error_message() -> Option<String> {
+    unsafe {
+        let ptr = sycl_get_last_error();
+        if ptr.is_null() {
+            None
+        } else {
+            CStr::from_ptr(ptr).to_str().ok().map(|s| s.to_string())
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::ffi::CString;
 
     #[test]
     fn test_discover_devices() {
-        let mut devices = vec![
-            SyclDeviceInfo {
-                name: [0; 256],
-                vendor: [0; 128],
-                compute_units: 0,
-                global_memory_size: 0,
-                local_memory_size: 0,
-                max_work_group_size: 0,
-                is_gpu: false,
-                is_cpu: false,
-                supports_fp64: false,
-                supports_fp16: false,
-            };
-            16
-        ];
-
-        let mut count: usize = 16;
-
         unsafe {
-            let err = sycl_discover_devices(devices.as_mut_ptr(), &mut count as *mut usize);
+            let err = sycl_discover_devices();
+            println!("Device discovery result: {:?}", err);
+
+            let mut count: u32 = 0;
+            let err = sycl_get_device_count(&mut count);
             println!("Discovered {} SYCL devices (error: {:?})", count, err);
 
             for i in 0..count {
-                println!(
-                    "Device {}: {} ({}) - {} CUs, {} GB memory",
-                    i,
-                    devices[i].name_str(),
-                    devices[i].vendor_str(),
-                    devices[i].compute_units,
-                    devices[i].global_memory_size / (1024 * 1024 * 1024)
+                let mut device: SyclDevice = std::ptr::null_mut();
+                let err = sycl_get_device(i, &mut device);
+                if err != SyclError::Success {
+                    println!("Failed to get device {}: {:?}", i, err);
+                    continue;
+                }
+
+                let mut name = vec![0i8; 256];
+                let mut backend: i32 = 0;
+                let err = sycl_get_device_info(
+                    device,
+                    name.as_mut_ptr(),
+                    name.len(),
+                    &mut backend,
                 );
+
+                if err == SyclError::Success {
+                    let name_str = CStr::from_ptr(name.as_ptr())
+                        .to_str()
+                        .unwrap_or("Unknown");
+                    println!("Device {}: {} (backend: {})", i, name_str, backend);
+                }
+
+                sycl_release_device(device);
             }
+        }
+    }
+
+    #[test]
+    fn test_error_handling() {
+        unsafe {
+            sycl_clear_error();
+
+            // Should have no error initially
+            assert!(sycl_get_last_error().is_null());
+
+            // Trigger an error by passing null
+            let err = sycl_create_buffer(
+                std::ptr::null_mut(),
+                1024,
+                std::ptr::null_mut(),
+            );
+
+            assert_ne!(err, SyclError::Success);
+
+            if let Some(msg) = get_last_error_message() {
+                println!("Error message: {}", msg);
+                assert!(!msg.is_empty());
+            }
+
+            sycl_clear_error();
+            assert!(sycl_get_last_error().is_null());
         }
     }
 }

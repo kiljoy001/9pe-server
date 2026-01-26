@@ -6,13 +6,21 @@ use std::sync::Arc;
 use tracing::{debug, error, info, warn};
 
 use crate::auto_mount::AutoMountDaemon;
-use crate::compute_control::{register_compute_control, ComputeManager};
-use crate::gpu::{discover_gpus, synthetic::register_gpu_controls, GpuInfo, GpuRuntime};
 use crate::network::NetworkConfig;
-use crate::settrans::VirtualSettransSystem;
-use crate::synth::SyntheticFilesystem;
 use crate::transport::{ConnectionListener, TransportFactory, TransportType};
+
+#[cfg(feature = "gpu")]
+use crate::compute_control::{register_compute_control, ComputeManager};
+#[cfg(feature = "gpu")]
+use crate::gpu::{discover_gpus, synthetic::register_gpu_controls, GpuInfo, GpuRuntime};
+
+#[cfg(feature = "translators")]
+use crate::settrans::VirtualSettransSystem;
+#[cfg(feature = "translators")]
 use crate::wasm::ThreadSafeTranslatorRegistry;
+
+#[cfg(feature = "synthetic")]
+use crate::synth::SyntheticFilesystem;
 
 pub mod builder;
 pub mod handler;

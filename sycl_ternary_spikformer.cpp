@@ -87,9 +87,12 @@ int sycl_ternary_attention(
             auto k_acc = k_buf.get_access<sycl::access::mode::read>(h);
             auto attn_acc = attn_buf.get_access<sycl::access::mode::write>(h);
             
-            h.parallel_for(sycl::range<4>(batch_size, num_heads, seq_len, seq_len),
-                          [=](sycl::id<4> idx) {
-                int b = idx[0], head = idx[1], i = idx[2], j = idx[3];
+            h.parallel_for(sycl::range<3>(batch_size * num_heads, seq_len, seq_len),
+                          [=](sycl::id<3> idx) {
+                int bh = idx[0];
+                int b = bh / num_heads;
+                int head = bh % num_heads;
+                int i = idx[1], j = idx[2];
                 
                 int score = 0;
                 for (int d = 0; d < head_dim; d++) {
@@ -109,9 +112,12 @@ int sycl_ternary_attention(
             auto v_acc = v_buf.get_access<sycl::access::mode::read>(h);
             auto output_acc = output_buf.get_access<sycl::access::mode::write>(h);
             
-            h.parallel_for(sycl::range<4>(batch_size, num_heads, seq_len, head_dim),
-                          [=](sycl::id<4> idx) {
-                int b = idx[0], head = idx[1], i = idx[2], d = idx[3];
+            h.parallel_for(sycl::range<3>(batch_size * num_heads, seq_len, head_dim),
+                          [=](sycl::id<3> idx) {
+                int bh = idx[0];
+                int b = bh / num_heads;
+                int head = bh % num_heads;
+                int i = idx[1], d = idx[2];
                 
                 int sum = 0;
                 for (int j = 0; j < seq_len; j++) {

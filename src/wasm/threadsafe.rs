@@ -23,9 +23,10 @@ use wasmtime_wasi::WasiCtxBuilder;
 use crate::gpu::{get_device_state, register_device_state, DeviceState};
 use crate::sycl::ffi::{
     sycl_create_buffer, sycl_create_queue, sycl_discover_devices, sycl_get_device,
-    sycl_get_device_backend, sycl_matmul_f32, sycl_queue_wait, sycl_read_buffer,
-    sycl_release_buffer, sycl_release_device, sycl_release_queue, sycl_vector_add_f32,
-    sycl_write_buffer, SyclBackend, SyclBuffer, SyclDevice, SyclDeviceInfo, SyclError, SyclQueue,
+    sycl_get_device_count, sycl_buffer_read, sycl_buffer_write, sycl_get_device_info,
+    sycl_matmul_f32_async, sycl_queue_wait, sycl_release_buffer, sycl_release_device,
+    sycl_release_event, sycl_release_queue, SyclBackend, SyclBuffer, SyclDevice,
+    SyclDeviceInfo, SyclError, SyclEvent, SyclQueue,
 };
 
 /// Store data for WASM instances
@@ -961,45 +962,48 @@ impl SystemTranslator {
                 )?;
 
                 check_sycl(
-                    sycl_write_buffer(
+                    sycl_buffer_write(
                         queue,
                         buf_a,
                         f32_slice_as_bytes(&a).as_ptr() as *const c_void,
-                        byte_len,
                         0,
+                        byte_len,
                     ),
                     "write buffer a",
                 )?;
                 check_sycl(
-                    sycl_write_buffer(
+                    sycl_buffer_write(
                         queue,
                         buf_b,
                         f32_slice_as_bytes(&b).as_ptr() as *const c_void,
-                        byte_len,
                         0,
+                        byte_len,
                     ),
                     "write buffer b",
                 )?;
 
-                check_sycl(
-                    sycl_vector_add_f32(queue, buf_a, buf_b, buf_c, a.len()),
-                    "sycl_vector_add_f32",
-                )?;
+                // TODO: Implement sycl_vector_add_f32 in SYCL FFI
+                // For now, use CPU fallback
+                return Err(anyhow::anyhow!(
+                    "GPU vector_add not yet implemented, use CPU fallback"
+                ));
 
-                check_sycl(sycl_queue_wait(queue), "sycl_queue_wait")?;
-
-                check_sycl(
-                    sycl_read_buffer(
-                        queue,
-                        buf_c,
-                        result.as_mut_ptr() as *mut c_void,
-                        byte_len,
-                        0,
-                    ),
-                    "read buffer c",
-                )?;
-
-                Ok(())
+                // Note: Code below is unreachable due to early return above
+                // Keeping for reference when vector_add is implemented
+                // check_sycl(sycl_queue_wait(queue), "sycl_queue_wait")?;
+                //
+                // check_sycl(
+                //     sycl_buffer_read(
+                //         queue,
+                //         buf_c,
+                //         result.as_mut_ptr() as *mut c_void,
+                //         byte_len,
+                //         0,
+                //     ),
+                //     "read buffer c",
+                // )?;
+                //
+                // Ok(())
             })();
 
             if !buf_c.is_null() {
@@ -1111,40 +1115,47 @@ impl SystemTranslator {
                 )?;
 
                 check_sycl(
-                    sycl_write_buffer(
+                    sycl_buffer_write(
                         queue,
                         buf_a,
                         f32_slice_as_bytes(&a).as_ptr() as *const c_void,
-                        bytes_a_usize,
                         0,
+                        bytes_a_usize,
                     ),
                     "write buffer a",
                 )?;
                 check_sycl(
-                    sycl_write_buffer(
+                    sycl_buffer_write(
                         queue,
                         buf_b,
                         f32_slice_as_bytes(&b).as_ptr() as *const c_void,
-                        bytes_b_usize,
                         0,
+                        bytes_b_usize,
                     ),
                     "write buffer b",
                 )?;
 
+                let mut event: SyclEvent = std::ptr::null_mut();
                 check_sycl(
-                    sycl_matmul_f32(queue, buf_a, buf_b, buf_c, m, n, k),
-                    "sycl_matmul_f32",
+                    sycl_matmul_f32_async(queue, buf_a, buf_b, buf_c, m, n, k, &mut event),
+                    "sycl_matmul_f32_async",
                 )?;
 
+                // Wait for completion (could also use event wait)
                 check_sycl(sycl_queue_wait(queue), "sycl_queue_wait")?;
 
+                // Clean up event
+                if !event.is_null() {
+                    sycl_release_event(event);
+                }
+
                 check_sycl(
-                    sycl_read_buffer(
+                    sycl_buffer_read(
                         queue,
                         buf_c,
                         result.as_mut_ptr() as *mut c_void,
-                        bytes_c_usize,
                         0,
+                        bytes_c_usize,
                     ),
                     "read buffer c",
                 )?;
@@ -1341,8 +1352,8 @@ fn query_sycl_devices() -> Result<Vec<DeviceInfo>> {
         32
     ];
 
-    let mut count = infos.len();
-    let err = unsafe { sycl_discover_devices(infos.as_mut_ptr(), &mut count as *mut usize) };
+    // Discover devices
+    let err = unsafe { sycl_discover_devices() };
     if err.is_err() {
         return Err(anyhow::anyhow!(
             "Failed to enumerate SYCL devices: {:?}",
@@ -1350,7 +1361,14 @@ fn query_sycl_devices() -> Result<Vec<DeviceInfo>> {
         ));
     }
 
-    infos.truncate(count);
+    // Get device count
+    let mut count: u32 = 0;
+    let err = unsafe { sycl_get_device_count(&mut count as *mut u32) };
+    if err.is_err() {
+        return Err(anyhow::anyhow!("Failed to get device count: {:?}", err));
+    }
+
+    infos.truncate(count as usize);
 
     let mut devices = Vec::with_capacity(infos.len());
     for (index, info) in infos.into_iter().enumerate() {
@@ -1361,8 +1379,17 @@ fn query_sycl_devices() -> Result<Vec<DeviceInfo>> {
             if sycl_get_device(index as u32, &mut device as *mut SyclDevice).is_ok()
                 && !device.is_null()
             {
-                let mut backend = SyclBackend::CPU;
-                if sycl_get_device_backend(device, &mut backend as *mut SyclBackend).is_ok() {
+                let mut name_buf = [0i8; 256];
+                let mut backend_int: i32 = 0;
+                if sycl_get_device_info(
+                    device,
+                    name_buf.as_mut_ptr(),
+                    256,
+                    &mut backend_int as *mut i32,
+                )
+                .is_ok()
+                {
+                    let backend: SyclBackend = std::mem::transmute(backend_int);
                     backend_label = backend.to_string();
                 }
                 sycl_release_device(device);

@@ -41,7 +41,7 @@ int main() {
         }
         
         // Clean up
-        delete device;
+        sycl_release_device(device);
     }
     
     std::cout << "Device discovery test completed successfully!" << std::endl;

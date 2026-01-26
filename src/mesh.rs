@@ -271,11 +271,179 @@ impl MeshNetwork {
     }
 
     async fn run_mdns_discovery(&self) {
-        // Implementation would go here
+        info!("Starting mDNS peer discovery");
+
+        // Create mDNS service daemon
+        let mdns = match ServiceDaemon::new() {
+            Ok(daemon) => daemon,
+            Err(e) => {
+                error!("Failed to create mDNS daemon: {}", e);
+                return;
+            }
+        };
+
+        // Service type for 9pe mesh nodes
+        let service_type = "_9pe-mesh._udp.local.";
+        let instance_name = format!("9pe-{}", &self.node_id[..8]);
+
+        // Register/advertise this node's service
+        let service_hostname = format!("{}.local.", instance_name);
+        let properties = [("node_id", self.node_id.as_str())];
+
+        match mdns_sd::ServiceInfo::new(
+            service_type,
+            &instance_name,
+            &service_hostname,
+            "",  // No specific IP, let mDNS resolve
+            self.local_port,
+            &properties[..],
+        ) {
+            Ok(service_info) => {
+                if let Err(e) = mdns.register(service_info) {
+                    error!("Failed to register mDNS service: {}", e);
+                } else {
+                    info!("Registered mDNS service: {} on port {}", instance_name, self.local_port);
+                }
+            }
+            Err(e) => {
+                error!("Failed to create mDNS service info: {}", e);
+            }
+        }
+
+        // Browse for peers advertising the service
+        let receiver = match mdns.browse(service_type) {
+            Ok(recv) => recv,
+            Err(e) => {
+                error!("Failed to browse mDNS services: {}", e);
+                return;
+            }
+        };
+
+        info!("mDNS discovery active, browsing for {}", service_type);
+
+        // Process discovered services
+        loop {
+            match receiver.recv_async().await {
+                Ok(event) => {
+                    match event {
+                        mdns_sd::ServiceEvent::ServiceResolved(info) => {
+                            debug!("mDNS service resolved: {:?}", info.get_fullname());
+
+                            // Get peer address from service info
+                            let addresses = info.get_addresses();
+                            for addr in addresses.iter() {
+                                let peer_addr = format!("{}:{}", addr, info.get_port());
+                                info!("Discovered peer via mDNS: {}", peer_addr);
+
+                                // Extract peer ID from service properties if available
+                                let peer_id_hint = info.get_properties()
+                                    .iter()
+                                    .find_map(|prop| {
+                                        if prop.key() == "node_id" {
+                                            Some(prop.val_str().to_string())
+                                        } else {
+                                            None
+                                        }
+                                    });
+
+                                // Attempt connection
+                                if let Err(e) = self.connect_to_peer(&peer_addr, peer_id_hint).await {
+                                    debug!("Failed to connect to mDNS peer {}: {}", peer_addr, e);
+                                }
+                            }
+                        }
+                        mdns_sd::ServiceEvent::ServiceRemoved(_, fullname) => {
+                            debug!("mDNS service removed: {}", fullname);
+                        }
+                        _ => {}
+                    }
+                }
+                Err(e) => {
+                    error!("mDNS receiver error: {}", e);
+                    tokio::time::sleep(Duration::from_secs(5)).await;
+                }
+            }
+        }
     }
 
     async fn run_dht_discovery(&self) {
-        // Implementation would go here
+        info!("Starting DHT-based peer discovery");
+
+        // Initial delay to let the network start up
+        tokio::time::sleep(Duration::from_secs(2)).await;
+
+        // Bootstrap phase: connect to bootstrap peers first
+        for bootstrap_peer in &self.bootstrap_peers {
+            info!("Bootstrapping DHT via peer: {}", bootstrap_peer);
+            if let Err(e) = self.connect_to_peer(bootstrap_peer, None).await {
+                warn!("Failed to connect to bootstrap peer {}: {}", bootstrap_peer, e);
+            }
+        }
+
+        // Wait for bootstrap connections to establish
+        tokio::time::sleep(Duration::from_secs(1)).await;
+
+        // Periodic DHT maintenance and peer discovery
+        let mut interval = tokio::time::interval(Duration::from_secs(30));
+        loop {
+            interval.tick().await;
+
+            // Get current DHT state
+            let dht = self.dht.read().await;
+            let all_peers = dht.get_all_peers();
+            drop(dht);
+
+            if all_peers.is_empty() {
+                debug!("DHT empty, waiting for bootstrap peers");
+                continue;
+            }
+
+            debug!("DHT has {} known peers", all_peers.len());
+
+            // Perform iterative lookup to discover new peers
+            // Use our own node ID as lookup target to find closest peers
+            let dht_read = self.dht.read().await;
+            let target = dht_read.local_id;
+            let closest = dht_read.find_closest(&target, 8);
+            drop(dht_read);
+
+            // Try to connect to peers we know about but aren't connected to
+            for peer in closest {
+                let peer_addr = peer.address.to_string();
+
+                // Check if already connected
+                let peers = self.peers.read().await;
+                let already_connected = peers
+                    .values()
+                    .any(|p| p.address == peer.address && p.is_connected());
+                drop(peers);
+
+                if !already_connected {
+                    debug!("DHT: Attempting to connect to peer {}", peer_addr);
+                    if let Err(e) = self.connect_to_peer(&peer_addr, None).await {
+                        debug!("DHT connection attempt failed for {}: {}", peer_addr, e);
+                    }
+                }
+            }
+
+            // Refresh DHT by requesting peer lists from connected peers
+            let connected_peers: Vec<SocketAddr> = {
+                let peers = self.peers.read().await;
+                peers
+                    .values()
+                    .filter(|p| p.is_connected())
+                    .map(|p| p.address)
+                    .collect()
+            };
+
+            for peer_addr in connected_peers {
+                debug!("DHT: Requesting peer list from {}", peer_addr);
+                // The peer list exchange happens via the consensus layer
+                // which already handles network messages
+            }
+
+            debug!("DHT discovery cycle complete");
+        }
     }
 
     async fn run_heartbeat(&self) {

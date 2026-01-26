@@ -41,31 +41,51 @@
 //! - **Type Safety**: Comprehensive error types, async traits
 //! - **Testing**: Full test coverage with property-based testing
 
+// Core modules (always enabled)
 pub mod auth;
 pub mod auto_mount;
 pub mod cli;
 pub mod config;
-pub mod consensus;
 pub mod error;
 pub mod fuse_mount;
-pub mod gpu;
-pub mod mesh;
-pub mod namespace_manager;
 pub mod network;
 pub mod protocol;
 pub mod server;
-pub mod settrans;
 pub mod stats;
-pub mod sycl;
-pub mod synth;
 pub mod transport;
-
-// 9P.e Extension Control Modules (Everything is a File!)
-pub mod compute_control;
-pub mod consensus_control;
-pub mod mesh_control;
 pub mod util;
+
+// Consensus feature
+#[cfg(feature = "consensus")]
+pub mod consensus;
+#[cfg(feature = "consensus")]
+pub mod consensus_control;
+
+// Mesh networking feature
+#[cfg(feature = "mesh")]
+pub mod mesh;
+#[cfg(feature = "mesh")]
+pub mod mesh_control;
+#[cfg(feature = "mesh")]
+pub mod namespace_manager;
+
+// Translator/WASM feature
+#[cfg(feature = "translators")]
+pub mod settrans;
+#[cfg(feature = "translators")]
 pub mod wasm;
+
+// Synthetic files feature
+#[cfg(feature = "synthetic")]
+pub mod synth;
+
+// GPU feature
+#[cfg(feature = "gpu")]
+pub mod gpu;
+#[cfg(feature = "gpu")]
+pub mod sycl;
+#[cfg(feature = "gpu")]
+pub mod compute_control;
 
 // Re-export commonly used types for convenience
 pub use error::{Result, ServerError};

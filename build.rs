@@ -5,8 +5,35 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 fn main() {
+    // Only build SYCL if gpu feature is enabled
+    #[cfg(not(feature = "gpu"))]
+    {
+        println!("cargo:warning=Skipping SYCL build (gpu feature disabled)");
+        return;
+    }
+
+    #[cfg(feature = "gpu")]
+    {
     println!("cargo:rerun-if-changed=sycl_wrapper/sycl_ffi.cpp");
     println!("cargo:rerun-if-changed=sycl_wrapper/sycl_ffi.hpp");
+
+    // Check for Intel oneAPI pre-built library first
+    let intel_lib = PathBuf::from("libsycl_ffi.so");
+    let has_intel_oneapi = intel_lib.exists() &&
+        PathBuf::from("/opt/intel/oneapi/compiler").exists();
+
+    if has_intel_oneapi {
+        println!("cargo:warning=Using pre-built Intel oneAPI SYCL library");
+        println!("cargo:rustc-link-search=native={}", env::current_dir().unwrap().display());
+        println!("cargo:rustc-link-lib=dylib=sycl_ffi");
+        println!("cargo:rustc-link-search=native=/opt/intel/oneapi/compiler/latest/lib");
+        println!("cargo:rustc-link-search=native=/opt/intel/oneapi/mkl/latest/lib");
+        println!("cargo:rustc-link-arg=-Wl,-rpath=/opt/intel/oneapi/compiler/latest/lib");
+        println!("cargo:rustc-link-arg=-Wl,-rpath=/opt/intel/oneapi/mkl/latest/lib");
+        println!("cargo:rustc-link-lib=stdc++");
+        println!("cargo:warning=Intel oneAPI SYCL library linked successfully");
+        return;
+    }
 
     // Check if AdaptiveCpp (acpp) compiler is available
     let acpp_available = Command::new("acpp").arg("--version").output().is_ok()
@@ -51,7 +78,7 @@ fn main() {
         .arg("-fPIC") // Position independent code for shared library
         .arg("-O3") // Optimize for performance
         .arg("-std=c++17")
-        .arg(sycl_wrapper_dir.join("sycl_ffi.cpp"))
+        .arg("sycl_ffi.cpp")
         .arg("-o")
         .arg(out_dir.join("sycl_ffi.o"))
         .output()
@@ -98,6 +125,7 @@ fn main() {
     println!("cargo:rustc-link-lib=dylib=acpp-common");
 
     println!("cargo:warning=SYCL wrapper compiled successfully with AdaptiveCpp");
+    } // End of #[cfg(feature = "gpu")] block
 }
 
 fn create_stub_library() {
