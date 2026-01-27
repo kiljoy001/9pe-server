@@ -41,6 +41,8 @@ rcgen = "0.12"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 base64 = "0.22"
+serde_cbor = "0.11"
+sled = "0.34"
 
 # Network utilities
 if-addrs = "0.10"

@@ -6,6 +6,8 @@ use std::sync::Arc;
 use tracing::{debug, error, info, warn};
 
 use crate::auto_mount::AutoMountDaemon;
+use crate::dht::SovereignDht;
+use crate::identity::{NodePermissions, SovereignIdentity};
 use crate::network::NetworkConfig;
 use crate::transport::{ConnectionListener, TransportFactory, TransportType};
 
@@ -39,6 +41,8 @@ pub struct Server {
     synth_fs: Arc<SyntheticFilesystem>,
     compute_manager: Arc<ComputeManager>,
     gpu_infos: Vec<GpuInfo>,
+    sovereign_identity: Arc<SovereignIdentity>,
+    dht: Arc<SovereignDht>,
     #[allow(dead_code)]
     namespace_manager: Arc<crate::namespace_manager::NamespaceManager>,
     #[allow(dead_code)]
@@ -63,6 +67,7 @@ pub struct ServerConfig {
     pub metrics_port: u16,
     pub translator_directory: PathBuf,
     pub settrans_directory: PathBuf,
+    pub dht_store_path: PathBuf,
     pub auto_mount_enabled: bool,
     pub consensus_config: Option<crate::config::ConsensusConfig>,
     pub node_id: String,
@@ -93,6 +98,14 @@ impl Server {
 
         // Create session manager
         let session_manager = Arc::new(SessionManager::new());
+
+        // Sovereign identity + DHT storage
+        let permissions = NodePermissions::owner_defaults();
+        let sovereign_identity = Arc::new(SovereignIdentity::generate_with_permissions(permissions)?);
+        let dht = Arc::new(
+            SovereignDht::new_with_store(Arc::clone(&sovereign_identity), &config.dht_store_path)
+                .await?,
+        );
 
         // Initialize synthetic filesystem for virtual directories
         let synth_fs = Arc::new(SyntheticFilesystem::new());
@@ -213,7 +226,8 @@ impl Server {
             };
 
             let mesh = Arc::new(crate::mesh::MeshNetwork::new(
-                config.node_id.clone(),
+                Arc::clone(&sovereign_identity),
+                Arc::clone(&dht),
                 config.mesh_port,
                 bootstrap_peers,
             ));
@@ -224,6 +238,10 @@ impl Server {
                 error!("Failed to start mesh network: {}", e);
                 None
             } else {
+                let listen_addr = std::net::SocketAddr::from(([0, 0, 0, 0], config.mesh_port));
+                if let Err(e) = dht.register_self(listen_addr).await {
+                    warn!("Failed to register node in DHT: {}", e);
+                }
                 info!(
                     "Mesh network started successfully on port {}",
                     config.mesh_port
@@ -315,6 +333,8 @@ impl Server {
             synth_fs,
             compute_manager,
             gpu_infos,
+            sovereign_identity,
+            dht,
             namespace_manager,
             auto_mount_daemon,
             consensus_coordinator,
@@ -357,6 +377,7 @@ impl Server {
                     let translator_registry = Arc::clone(&self.translator_registry);
                     let settrans_system = Arc::clone(&self.settrans_system);
                     let synth_fs = Arc::clone(&self.synth_fs);
+                    let dht = Arc::clone(&self.dht);
 
                     // Spawn handler task
                     tokio::spawn(async move {
@@ -368,6 +389,7 @@ impl Server {
                             translator_registry,
                             settrans_system,
                             synth_fs,
+                            dht,
                         )
                         .await
                         {
@@ -392,6 +414,7 @@ impl Server {
         translator_registry: Arc<ThreadSafeTranslatorRegistry>,
         settrans_system: Arc<VirtualSettransSystem>,
         synth_fs: Arc<SyntheticFilesystem>,
+        dht: Arc<SovereignDht>,
     ) -> Result<()> {
         let peer = connection.peer_addr()?;
         info!("New {} connection from {}", connection.protocol(), peer);
@@ -406,6 +429,7 @@ impl Server {
             translator_registry,
             settrans_system,
             synth_fs,
+            Some(dht),
         )?;
 
         use tokio::io::{AsyncReadExt, AsyncWriteExt};

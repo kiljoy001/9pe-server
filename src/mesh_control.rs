@@ -232,7 +232,9 @@ mod tests {
     #[tokio::test]
     async fn test_mesh_control_registration() {
         let synth = SyntheticFilesystem::new();
-        let mesh = Arc::new(MeshNetwork::new("test-node".to_string(), 9650, vec![]));
+        let identity = Arc::new(crate::identity::SovereignIdentity::generate().unwrap());
+        let dht = Arc::new(crate::dht::SovereignDht::new(identity.clone()));
+        let mesh = Arc::new(MeshNetwork::new(identity, dht, 9650, vec![]));
 
         register_mesh_control(&synth, mesh)
             .await

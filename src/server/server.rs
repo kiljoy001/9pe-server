@@ -28,7 +28,7 @@ impl Server {
         
         // 3️⃣ Discover GPUs via SYCL wrapper
         let gpu_infos = discover_gpus()?;
-        
+
         // 4️⃣ Create GPU runtimes for each discovered device
         let gpu_runtimes: Vec<std::sync::Arc<GpuRuntime>> = gpu_infos
             .iter()
@@ -38,10 +38,19 @@ impl Server {
             })
             .collect();
         
-        // 5️⃣ Register GPU synthetic files (info, vram_* etc.)
+        // 5️⃣ Create translator registry
+        let translator_registry = Arc::new(ThreadSafeTranslatorRegistry::new(
+            PathBuf::from("/usr/local/lib/9pe/translators")
+        ));
+        // Attempt to scan and load translators (non-fatal if missing)
+        if let Err(e) = translator_registry.scan_and_load().await {
+            warn!("Warning: Failed to load translators: {}", e);
+        }
+        
+        // 6️⃣ Register GPU synthetic files (info, vram_* etc.)
         register_gpu_controls(&synth_fs, &gpu_infos, &gpu_runtimes).await?;
         
-        // 6️⃣ Create compute manager and register compute control files
+        // 7️⃣ Create compute manager and register compute control files
         let compute_mgr = Arc::new(ComputeManager::with_runtimes(gpu_runtimes.clone()));
         register_compute_control(&synth_fs, compute_mgr.clone(), translator_registry.clone()).await?;
         
@@ -74,6 +83,7 @@ impl Server {
             metrics_port: 9090,
             translator_directory: std::path::PathBuf::from(".9pe/translators"),
             settrans_directory: std::path::PathBuf::from(".9pe/settrans"),
+            dht_store_path: std::path::PathBuf::from(".9pe/dht"),
             auto_mount_enabled: true,
             consensus_config: None,
             auth_config: crate::auth::AuthConfig::default(),
@@ -87,11 +97,36 @@ impl Server {
         &self.address
     }
     
-    /// Run the server (placeholder implementation)
+    /// Run the server and listen for incoming connections
     pub async fn run(&self) -> Result<()> {
-        println!("Server running on {}", self.address());
-        // In a real implementation, this would start the actual server
-        Ok(())
+        info!("Starting 9P.e server on {}", self.address());
+        
+        // Create transport based on configuration
+        let transport = crate::transport::TransportFactory::create(self.config.transport.clone())?;
+        let listener = transport.listen(&self.address()).await
+            .context("Failed to bind to server address")?;
+        
+        info!("Server listening on {}", self.address());
+        
+        // Accept connections in a loop
+        loop {
+            match listener.accept().await {
+                Ok(connection) => {
+                    let synth_fs = Arc::clone(&self.synth_fs);
+                    let compute_mgr = Arc::clone(&self.compute_mgr);
+                    
+                    tokio::spawn(async move {
+                        if let Err(e) = handle_connection(connection, synth_fs, compute_mgr).await {
+                            error!("Connection handler error: {}", e);
+                        }
+                    });
+                }
+                Err(e) => {
+                    error!("Failed to accept connection: {}", e);
+                    // Continue accepting connections despite individual failures
+                }
+            }
+        }
     }
 }
 

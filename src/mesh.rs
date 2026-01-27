@@ -1,6 +1,7 @@
 //! Mesh networking for peer-to-peer communication
 //!
-//! Automatic peer discovery using mDNS + QUIC mesh protocol
+//! Automatic peer discovery using mDNS + QUIC mesh protocol with
+//! sovereign identity and DHT-based peer discovery.
 
 use anyhow::{anyhow, Context, Result};
 use mdns_sd::ServiceDaemon;
@@ -16,6 +17,10 @@ use tracing::{debug, error, info, warn};
 use quinn::{Connection as QuinnConnection, Endpoint, RecvStream, SendStream, ServerConfig};
 use rustls::{Certificate, PrivateKey, ServerConfig as RustlsServerConfig};
 
+// Sovereign identity imports
+use crate::identity::{NodeId, NodePermissions, SovereignIdentity, WorkReceipt};
+use crate::dht::SovereignDht;
+
 /// Mesh network coordinator with DHT and mDNS discovery
 pub struct MeshNetwork {
     #[allow(dead_code)]
@@ -24,24 +29,31 @@ pub struct MeshNetwork {
     peers: Arc<RwLock<HashMap<String, PeerConnection>>>,
     bootstrap_peers: Vec<String>,
     mdns_daemon: Option<ServiceDaemon>,
-    dht: Arc<RwLock<KademliaTable>>,
+    dht: Arc<SovereignDht>, // Use our sovereign DHT instead of KademliaTable
     endpoint: Arc<RwLock<Option<Endpoint>>>, // QUIC endpoint
     namespace_manager: Arc<Mutex<Option<Arc<dyn crate::namespace_manager::MeshMessageHandler>>>>,
     start_time: std::time::Instant,
+    sovereign_identity: Arc<SovereignIdentity>, // Our sovereign identity
 }
 
 impl MeshNetwork {
-    pub fn new(node_id: String, local_port: u16, bootstrap_peers: Vec<String>) -> Self {
+    pub fn new(
+        sovereign_identity: Arc<SovereignIdentity>,
+        dht: Arc<SovereignDht>,
+        local_port: u16, 
+        bootstrap_peers: Vec<String>
+    ) -> Self {
         Self {
-            node_id: node_id.clone(),
+            node_id: sovereign_identity.node_id.as_str().to_string(),
             local_port,
             peers: Arc::new(RwLock::new(HashMap::new())),
             bootstrap_peers,
             mdns_daemon: None,
-            dht: Arc::new(RwLock::new(KademliaTable::new(&node_id))),
+            dht,
             endpoint: Arc::new(RwLock::new(None)),
             namespace_manager: Arc::new(Mutex::new(None)),
             start_time: std::time::Instant::now(),
+            sovereign_identity,
         }
     }
 
@@ -113,16 +125,12 @@ impl MeshNetwork {
         Ok(())
     }
 
-    /// Create QUIC endpoint with self-signed certificate
+    /// Create QUIC endpoint with sovereign identity certificate
     async fn create_quic_endpoint(&self, addr: SocketAddr) -> Result<Endpoint> {
-        // Generate self-signed certificate
-        let cert = self.generate_certificate()?;
-
-        let cert_der = cert
-            .serialize_der()
-            .map_err(|e| anyhow::anyhow!("Failed to serialize certificate: {}", e))?;
-        let private_key_der = cert.serialize_private_key_der();
-
+        // Use our sovereign identity's certificate
+        let cert_der = self.sovereign_identity.certificate.clone();
+        let private_key_der = self.sovereign_identity.private_key_der.clone();
+        
         // Create rustls certificate and private key
         let cert_chain = vec![Certificate(cert_der)];
         let private_key = PrivateKey(private_key_der);
@@ -144,7 +152,8 @@ impl MeshNetwork {
         Ok(endpoint)
     }
 
-    /// Generate self-signed certificate for QUIC
+    /// Generate self-signed certificate for QUIC (deprecated - use sovereign identity)
+    #[deprecated(note = "Use sovereign identity certificate instead")]
     fn generate_certificate(&self) -> Result<rcgen::Certificate> {
         let mut params = rcgen::CertificateParams::new(vec![self.node_id.clone()]);
         params.distinguished_name = rcgen::DistinguishedName::new();
@@ -205,16 +214,50 @@ impl MeshNetwork {
         let message = self.receive_message_quic(recv_stream).await?;
 
         match message {
-            MeshMessage::Handshake { node_id, version } => {
+            MeshMessage::Handshake {
+                node_id,
+                version,
+                ed25519_public_key,
+                p256_public_key,
+                certificate_der,
+                permissions,
+            } => {
                 info!(
                     "Peer {} connected from {} (version {})",
                     node_id, peer_addr, version
                 );
 
+                let node_id_wrapped = NodeId::new(node_id.clone());
+                if let Some(record) = self.dht.lookup_node(&node_id_wrapped).await {
+                    if record.public_key != ed25519_public_key
+                        || record.p256_public_key != p256_public_key
+                        || record.certificate_der != certificate_der
+                        || record.permissions != permissions
+                    {
+                        connecting.close(0u32.into(), b"dht-mismatch");
+                        return Err(anyhow!("Handshake keys mismatch for peer {}", node_id));
+                    }
+                } else {
+                    self.dht
+                        .upsert_peer_record(
+                            node_id_wrapped,
+                            ed25519_public_key.clone(),
+                            p256_public_key.clone(),
+                            certificate_der.clone(),
+                            Some(peer_addr),
+                            permissions.clone(),
+                        )
+                        .await?;
+                }
+
                 // Send handshake response
                 let response = MeshMessage::HandshakeAck {
                     node_id: self.node_id.clone(),
                     version: 1,
+                    ed25519_public_key: self.sovereign_identity.ed25519_public.to_bytes().to_vec(),
+                    p256_public_key: self.sovereign_identity.p256_public_key_bytes(),
+                    certificate_der: self.sovereign_identity.certificate.clone(),
+                    permissions: self.sovereign_identity.permissions.clone(),
                 };
 
                 // Create new stream for sending response
@@ -717,12 +760,23 @@ impl MeshNetwork {
         let handshake = MeshMessage::Handshake {
             node_id: self.node_id.clone(),
             version: 1,
+            ed25519_public_key: self.sovereign_identity.ed25519_public.to_bytes().to_vec(),
+            p256_public_key: self.sovereign_identity.p256_public_key_bytes(),
+            certificate_der: self.sovereign_identity.certificate.clone(),
+            permissions: self.sovereign_identity.permissions.clone(),
         };
 
         Self::send_message_quic_static(send_stream, &handshake).await?;
 
         match Self::receive_message_quic_static(recv_stream).await? {
-            MeshMessage::HandshakeAck { node_id, .. } => {
+            MeshMessage::HandshakeAck {
+                node_id,
+                ed25519_public_key,
+                p256_public_key,
+                certificate_der,
+                permissions,
+                ..
+            } => {
                 if let Some(expected) = expected_peer {
                     if expected != node_id {
                         connection.close(0u32.into(), b"peer-id-mismatch");
@@ -732,6 +786,29 @@ impl MeshNetwork {
                             node_id
                         ));
                     }
+                }
+
+                let node_id_wrapped = NodeId::new(node_id.clone());
+                if let Some(record) = self.dht.lookup_node(&node_id_wrapped).await {
+                    if record.public_key != ed25519_public_key
+                        || record.p256_public_key != p256_public_key
+                        || record.certificate_der != certificate_der
+                        || record.permissions != permissions
+                    {
+                        connection.close(0u32.into(), b"dht-mismatch");
+                        return Err(anyhow!("Handshake keys mismatch for peer {}", node_id));
+                    }
+                } else {
+                    self.dht
+                        .upsert_peer_record(
+                            node_id_wrapped,
+                            ed25519_public_key,
+                            p256_public_key,
+                            certificate_der,
+                            Some(addr),
+                            permissions,
+                        )
+                        .await?;
                 }
 
                 self.register_peer_connection(node_id.clone(), addr, connection)
@@ -753,10 +830,18 @@ pub enum MeshMessage {
     Handshake {
         node_id: String,
         version: u32,
+        ed25519_public_key: Vec<u8>,
+        p256_public_key: Vec<u8>,
+        certificate_der: Vec<u8>,
+        permissions: NodePermissions,
     },
     HandshakeAck {
         node_id: String,
         version: u32,
+        ed25519_public_key: Vec<u8>,
+        p256_public_key: Vec<u8>,
+        certificate_der: Vec<u8>,
+        permissions: NodePermissions,
     },
     Ping,
     Pong,

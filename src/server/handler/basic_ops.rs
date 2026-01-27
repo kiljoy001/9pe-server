@@ -12,6 +12,7 @@ use std::sync::Arc;
 use tracing::{debug, warn};
 
 use super::connection_state::{ConnectionState, FileHandle};
+use super::auth::{decode_auth_response, encode_auth_challenge};
 
 /// Handler for basic 9P operations
 pub struct BasicOpsHandler {
@@ -264,6 +265,19 @@ impl BasicOpsHandler {
             }
         };
 
+        if let Some(challenge) = self.connection_state.get_auth_challenge(fid).await {
+            let data = encode_auth_challenge(&challenge)?;
+            let start = offset as usize;
+            let end = (start + count as usize).min(data.len());
+            let slice = if start < data.len() { &data[start..end] } else { &[] };
+            return Ok(NinePeeMessage::Read {
+                fid,
+                offset,
+                count: slice.len() as u32,
+                data: slice.to_vec(),
+            });
+        }
+
         let file_path = self
             .root
             .join(handle.path.strip_prefix("/").unwrap_or(&handle.path));
@@ -356,6 +370,21 @@ impl BasicOpsHandler {
                 });
             }
         };
+
+        if self.connection_state.get_auth_challenge(fid).await.is_some() {
+            let response = decode_auth_response(&data)?;
+            if let Err(e) = self.connection_state.submit_auth_response(fid, response).await {
+                return Ok(NinePeeMessage::Error {
+                    ename: format!("Auth failed: {}", e),
+                    errno: 13, // EACCES
+                });
+            }
+            return Ok(NinePeeMessage::Write {
+                fid,
+                offset,
+                data,
+            });
+        }
 
         let file_path = self
             .root

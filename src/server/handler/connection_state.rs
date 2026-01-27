@@ -4,6 +4,14 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
+use rand::rngs::OsRng;
+use rand::RngCore;
+
+use crate::dht::SovereignDht;
+use crate::identity::{NodeId, NodePermissions};
+
+use super::auth::{AuthChallenge, AuthResponse, verify_auth_response};
+
 /// File handle information
 #[derive(Debug, Clone)]
 pub struct FileHandle {
@@ -23,6 +31,15 @@ pub struct ConnectionState {
 
     /// Next available fid
     next_fid: Arc<RwLock<u32>>,
+
+    /// Active auth sessions keyed by auth fid
+    auth_sessions: Arc<RwLock<HashMap<u32, AuthSession>>>,
+
+    /// Latest authenticated permissions
+    auth_permissions: Arc<RwLock<Option<NodePermissions>>>,
+
+    /// Optional DHT reference for auth verification
+    dht: Arc<RwLock<Option<Arc<SovereignDht>>>>,
 }
 
 impl Default for ConnectionState {
@@ -37,6 +54,9 @@ impl ConnectionState {
         Self {
             fids: Arc::new(RwLock::new(HashMap::new())),
             next_fid: Arc::new(RwLock::new(1)),
+            auth_sessions: Arc::new(RwLock::new(HashMap::new())),
+            auth_permissions: Arc::new(RwLock::new(None)),
+            dht: Arc::new(RwLock::new(None)),
         }
     }
 
@@ -73,4 +93,92 @@ impl ConnectionState {
         *next += 1;
         fid
     }
+
+    pub async fn create_auth_session(
+        &self,
+        afid: u32,
+        server_node_id: String,
+        required_scope: Option<String>,
+    ) -> AuthChallenge {
+        let mut nonce = [0u8; 32];
+        OsRng.fill_bytes(&mut nonce);
+        let challenge = AuthChallenge {
+            nonce,
+            server_node_id,
+            required_scope,
+        };
+
+        let mut sessions = self.auth_sessions.write().await;
+        sessions.insert(
+            afid,
+            AuthSession {
+                challenge: challenge.clone(),
+                verified: false,
+            },
+        );
+        challenge
+    }
+
+    pub async fn get_auth_challenge(&self, afid: u32) -> Option<AuthChallenge> {
+        let sessions = self.auth_sessions.read().await;
+        sessions.get(&afid).map(|s| s.challenge.clone())
+    }
+
+    pub async fn submit_auth_response(
+        &self,
+        afid: u32,
+        response: AuthResponse,
+    ) -> Result<NodePermissions, anyhow::Error> {
+        let mut sessions = self.auth_sessions.write().await;
+        let session = sessions
+            .get_mut(&afid)
+            .ok_or_else(|| anyhow::anyhow!("Unknown auth fid"))?;
+
+        let permissions = verify_auth_response(&session.challenge, &response)?;
+
+        if let Some(dht) = self.dht.read().await.as_ref() {
+            let node_id = NodeId::new(response.node_id.clone());
+            if let Some(record) = dht.lookup_node(&node_id).await {
+                if record.public_key != response.ed25519_pub.to_vec()
+                    || record.p256_public_key != response.p256_pub
+                    || record.certificate_der != response.cert_der
+                    || record.permissions != permissions
+                {
+                    anyhow::bail!("Auth response does not match DHT record");
+                }
+            } else {
+                dht.upsert_peer_record(
+                    node_id,
+                    response.ed25519_pub.to_vec(),
+                    response.p256_pub.clone(),
+                    response.cert_der.clone(),
+                    None,
+                    permissions.clone(),
+                )
+                .await?;
+            }
+        }
+        session.verified = true;
+
+        let mut auth_permissions = self.auth_permissions.write().await;
+        *auth_permissions = Some(permissions.clone());
+
+        Ok(permissions)
+    }
+
+    pub async fn auth_permissions(&self) -> Option<NodePermissions> {
+        let auth_permissions = self.auth_permissions.read().await;
+        auth_permissions.clone()
+    }
+
+    pub async fn set_dht(&self, dht: Arc<SovereignDht>) {
+        let mut slot = self.dht.write().await;
+        *slot = Some(dht);
+    }
+}
+
+#[derive(Debug, Clone)]
+struct AuthSession {
+    challenge: AuthChallenge,
+    verified: bool,
 }

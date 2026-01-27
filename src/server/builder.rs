@@ -147,6 +147,7 @@ impl ServerBuilder {
             settrans_directory: self
                 .settrans_directory
                 .unwrap_or_else(|| ninep_home.join("settrans")),
+            dht_store_path: ninep_home.join("dht"),
             auto_mount_enabled: self.auto_mount_enabled,
             consensus_config,
             node_id,
