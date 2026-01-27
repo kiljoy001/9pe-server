@@ -115,7 +115,7 @@ impl AutoMountDaemon {
             anyhow::bail!("address cannot be empty");
         }
 
-        // Split off transport type if provided (host:port@transport)
+        // Split off transport type if provided (host:port@transport[#node_id])
         let (host_port, transport_str) = match trimmed.split_once('@') {
             Some((hp, transport)) => (hp, Some(transport)),
             None => (trimmed, None),
@@ -133,11 +133,20 @@ impl AutoMountDaemon {
             .parse()
             .map_err(|_| anyhow::anyhow!("invalid port value"))?;
 
-        let transport = match transport_str.map(|s| s.to_ascii_lowercase()) {
-            Some(ref t) if t == "quic" => TransportType::Quic { server_name: None },
-            Some(ref t) if t.is_empty() || t == "tcp" => TransportType::Tcp,
-            None => TransportType::Tcp,
-            Some(other) => {
+        let (transport_name, node_id) = match transport_str {
+            Some(t) => match t.split_once('#') {
+                Some((name, node)) => (name, Some(node)),
+                None => (t, None),
+            },
+            None => ("", None),
+        };
+
+        let transport = match transport_name.to_ascii_lowercase().as_str() {
+            "quic" => TransportType::Quic {
+                server_name: node_id.map(|s| s.to_string()),
+            },
+            "" | "tcp" => TransportType::Tcp,
+            other => {
                 warn!("Unknown transport '{}', defaulting to TCP", other);
                 TransportType::Tcp
             }
@@ -620,6 +629,21 @@ mod tests {
         let (addr, port, _transport) = result.unwrap();
         assert_eq!(addr, "192.168.1.1");
         assert_eq!(port, 5640);
+
+        let result = AutoMountDaemon::parse_node_address("10.0.0.1:7000@quic");
+        assert!(result.is_ok());
+        let (_, _, transport) = result.unwrap();
+        assert!(matches!(transport, TransportType::Quic { server_name: None }));
+
+        let result = AutoMountDaemon::parse_node_address("10.0.0.2:7001@quic#node-abc");
+        assert!(result.is_ok());
+        let (_, _, transport) = result.unwrap();
+        assert!(matches!(
+            transport,
+            TransportType::Quic {
+                server_name: Some(ref name)
+            } if name == "node-abc"
+        ));
     }
 
     #[test]
