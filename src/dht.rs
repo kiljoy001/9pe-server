@@ -276,6 +276,7 @@ impl SovereignDht {
 mod tests {
     use super::*;
     use std::net::SocketAddr;
+    use tempfile::tempdir;
     
     #[tokio::test]
     async fn test_sovereign_dht_registration() {
@@ -312,5 +313,28 @@ mod tests {
         let compute_nodes = dht.find_nodes_with_service("compute").await;
         assert_eq!(compute_nodes.len(), 1);
         assert_eq!(compute_nodes[0].node_id, identity.node_id);
+    }
+
+    #[tokio::test]
+    async fn test_dht_persistence_roundtrip() {
+        let temp_dir = tempdir().expect("tempdir");
+        let identity = Arc::new(SovereignIdentity::generate().expect("Failed to generate identity"));
+        let dht = SovereignDht::new_with_store(identity.clone(), temp_dir.path())
+            .await
+            .expect("create dht");
+
+        let addr: SocketAddr = "127.0.0.1:9001".parse().unwrap();
+        dht.register_self(addr).await.expect("register self");
+
+        let reloaded = SovereignDht::new_with_store(identity.clone(), temp_dir.path())
+            .await
+            .expect("reload dht");
+
+        let record = reloaded.lookup_node(&identity.node_id).await;
+        assert!(record.is_some());
+        let record = record.unwrap();
+        assert_eq!(record.public_key, identity.ed25519_public.to_bytes().to_vec());
+        assert_eq!(record.p256_public_key, identity.p256_public_key_bytes());
+        assert_eq!(record.certificate_der, identity.certificate);
     }
 }

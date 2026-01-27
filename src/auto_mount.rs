@@ -17,7 +17,9 @@ use tokio::time::interval;
 use tracing::{debug, error, info, warn};
 
 use crate::consensus::ConsensusCoordinator;
-use crate::transport::{TransportFactory, TransportType};
+use crate::dht::SovereignDht;
+use crate::identity::{NodePermissions, SovereignIdentity};
+use crate::transport::{QuicClient, TransportFactory, TransportType};
 
 /// Auto-mount daemon managing individual server mounts
 /// Runs transparently - no user configuration needed
@@ -459,21 +461,38 @@ impl AutoMountDaemon {
             transport_type, address, port
         );
 
-        let transport =
-            TransportFactory::create(transport_type).context("Failed to create transport")?;
-
         let addr = format!("{}:{}", address, port)
             .parse()
             .context("Invalid server address")?;
 
-        match transport.connect(addr).await {
-            Ok(_connection) => {
-                debug!("Connection test successful to {}:{}", address, port);
+        match transport_type {
+            TransportType::Quic { server_name: Some(node_id) } => {
+                let home = std::env::var("HOME").unwrap_or_else(|_| ".".to_string());
+                let dht_path = std::path::PathBuf::from(&home).join(".9pe/dht");
+
+                let identity = Arc::new(SovereignIdentity::generate_with_permissions(
+                    NodePermissions::owner_defaults(),
+                )?);
+                let dht = Arc::new(SovereignDht::new_with_store(identity, dht_path).await?);
+
+                let mut client = QuicClient::new()?;
+                client.connect_with_dht(addr, &node_id, dht).await?;
+                debug!("DHT-pinned QUIC connection successful to {}:{}", address, port);
                 Ok(())
             }
-            Err(e) => {
-                error!("Connection test failed: {}", e);
-                anyhow::bail!("Connection test failed: {}", e)
+            _ => {
+                let transport =
+                    TransportFactory::create(transport_type).context("Failed to create transport")?;
+                match transport.connect(addr).await {
+                    Ok(_connection) => {
+                        debug!("Connection test successful to {}:{}", address, port);
+                        Ok(())
+                    }
+                    Err(e) => {
+                        error!("Connection test failed: {}", e);
+                        anyhow::bail!("Connection test failed: {}", e)
+                    }
+                }
             }
         }
     }
