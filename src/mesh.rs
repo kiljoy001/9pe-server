@@ -295,12 +295,17 @@ impl MeshNetwork {
                     .context("Failed to open QUIC stream for pong")?;
                 self.send_message_quic(send_stream, &MeshMessage::Pong).await?;
             }
-            MeshMessage::PeerList { peers } => {
-                for peer in peers {
-                    if let Err(e) = self.connect_to_peer(&peer, None).await {
-                        debug!("Failed to connect to peer from list {}: {}", peer, e);
-                    }
-                }
+            MeshMessage::PeerListRequest => {
+                let peers = self.collect_peer_summaries().await;
+                let (send_stream, _) = connecting
+                    .open_bi()
+                    .await
+                    .context("Failed to open QUIC stream for peer list")?;
+                self.send_message_quic(send_stream, &MeshMessage::PeerListResponse { peers })
+                    .await?;
+            }
+            MeshMessage::PeerListResponse { peers } => {
+                self.connect_from_peer_list(peers).await;
             }
             _ => {
                 warn!("Expected handshake, got {:?}", message);
@@ -554,18 +559,24 @@ impl MeshNetwork {
                     }
                 }
                 _ = peerlist_interval.tick() => {
-                    let peer_list: Vec<String> = {
+                    let peer_ids: Vec<String> = {
                         let peers = self.peers.read().await;
                         peers
-                            .values()
-                            .filter(|peer| peer.is_connected())
-                            .map(|peer| peer.address.to_string())
+                            .iter()
+                            .filter_map(|(peer_id, peer)| {
+                                if peer.is_connected() {
+                                    Some(peer_id.clone())
+                                } else {
+                                    None
+                                }
+                            })
                             .collect()
                     };
 
-                    if !peer_list.is_empty() {
-                        let msg = MeshMessage::PeerList { peers: peer_list };
-                        let _ = self.broadcast_message(msg).await;
+                    for peer_id in peer_ids {
+                        let _ = self
+                            .send_message_to_peer(&peer_id, MeshMessage::PeerListRequest)
+                            .await;
                     }
                 }
             }
@@ -737,12 +748,13 @@ impl MeshNetwork {
             MeshMessage::Pong => {
                 debug!("Received pong from {}", peer_id);
             }
-            MeshMessage::PeerList { peers } => {
-                for peer in peers {
-                    if let Err(e) = self.connect_to_peer(&peer, None).await {
-                        debug!("Failed to connect to peer from list {}: {}", peer, e);
-                    }
-                }
+            MeshMessage::PeerListRequest => {
+                let peers = self.collect_peer_summaries().await;
+                self.send_message_to_peer(peer_id, MeshMessage::PeerListResponse { peers })
+                    .await?;
+            }
+            MeshMessage::PeerListResponse { peers } => {
+                self.connect_from_peer_list(peers).await;
             }
             other => {
                 self.handle_message(peer_id, other).await?;
@@ -750,6 +762,48 @@ impl MeshNetwork {
         }
 
         Ok(())
+    }
+
+    async fn collect_peer_summaries(&self) -> Vec<MeshPeerSummary> {
+        let peers = self.peers.read().await;
+        peers
+            .iter()
+            .filter_map(|(peer_id, peer)| {
+                if peer.is_connected() {
+                    Some(MeshPeerSummary {
+                        node_id: peer_id.clone(),
+                        address: peer.address,
+                    })
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
+    async fn connect_from_peer_list(&self, peers: Vec<MeshPeerSummary>) {
+        for peer in peers {
+            if peer.node_id == self.node_id {
+                continue;
+            }
+
+            let already_connected = {
+                let peers_map = self.peers.read().await;
+                peers_map
+                    .get(&peer.node_id)
+                    .map(|p| p.is_connected())
+                    .unwrap_or(false)
+            };
+
+            if already_connected {
+                continue;
+            }
+
+            let addr = peer.address.to_string();
+            if let Err(e) = self.connect_to_peer(&addr, Some(peer.node_id.clone())).await {
+                debug!("Failed to connect to peer {} at {}: {}", peer.node_id, addr, e);
+            }
+        }
     }
 
     async fn register_peer_connection(
@@ -997,8 +1051,9 @@ pub enum MeshMessage {
     },
     Ping,
     Pong,
-    PeerList {
-        peers: Vec<String>,
+    PeerListRequest,
+    PeerListResponse {
+        peers: Vec<MeshPeerSummary>,
     },
     ConsensusBlock {
         block_data: Vec<u8>,
@@ -1023,6 +1078,12 @@ pub enum MeshMessage {
         approved: bool,
         message: String,
     },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MeshPeerSummary {
+    pub node_id: String,
+    pub address: SocketAddr,
 }
 
 struct PeerConnection {
