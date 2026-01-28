@@ -17,6 +17,10 @@ use tracing::{debug, error, info, warn};
 use quinn::{Connection as QuinnConnection, Endpoint, RecvStream, SendStream, ServerConfig};
 use rustls::{Certificate, PrivateKey, ServerConfig as RustlsServerConfig};
 
+const MESH_FRAME_MAGIC: [u8; 4] = *b"9PMH";
+const MESH_FRAME_VERSION: u16 = 1;
+const MESH_MAX_MESSAGE_SIZE: u32 = 1024 * 1024;
+
 // Sovereign identity imports
 use crate::identity::{NodeId, NodePermissions, SovereignIdentity, WorkReceipt};
 use crate::dht::SovereignDht;
@@ -674,6 +678,11 @@ impl MeshNetwork {
     async fn send_message_quic_static(mut stream: SendStream, message: &MeshMessage) -> Result<()> {
         let data = bincode::serialize(message)?;
         let size = data.len() as u32;
+        if size > MESH_MAX_MESSAGE_SIZE {
+            anyhow::bail!("Mesh message too large: {}", size);
+        }
+        stream.write_all(&MESH_FRAME_MAGIC).await?;
+        stream.write_all(&MESH_FRAME_VERSION.to_le_bytes()).await?;
         stream.write_all(&size.to_le_bytes()).await?;
         stream.write_all(&data).await?;
         stream.finish().await?;
@@ -685,11 +694,24 @@ impl MeshNetwork {
     }
 
     async fn receive_message_quic_static(mut stream: RecvStream) -> Result<MeshMessage> {
+        let mut magic = [0u8; 4];
+        stream.read_exact(&mut magic).await?;
+        if magic != MESH_FRAME_MAGIC {
+            anyhow::bail!("Invalid mesh frame magic");
+        }
+
+        let mut version_buf = [0u8; 2];
+        stream.read_exact(&mut version_buf).await?;
+        let version = u16::from_le_bytes(version_buf);
+        if version != MESH_FRAME_VERSION {
+            anyhow::bail!("Unsupported mesh frame version: {}", version);
+        }
+
         let mut size_buf = [0u8; 4];
         stream.read_exact(&mut size_buf).await?;
         let msg_size = u32::from_le_bytes(size_buf);
 
-        if msg_size > 1024 * 1024 {
+        if msg_size > MESH_MAX_MESSAGE_SIZE {
             anyhow::bail!("Message too large: {}", msg_size);
         }
 
