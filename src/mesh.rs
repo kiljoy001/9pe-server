@@ -34,9 +34,14 @@ pub struct MeshNetwork {
     namespace_manager: Arc<Mutex<Option<Arc<dyn crate::namespace_manager::MeshMessageHandler>>>>,
     start_time: std::time::Instant,
     sovereign_identity: Arc<SovereignIdentity>, // Our sovereign identity
+    peer_timeout: Duration,
 }
 
 impl MeshNetwork {
+    pub fn with_peer_timeout(mut self, timeout: Duration) -> Self {
+        self.peer_timeout = timeout;
+        self
+    }
     pub fn new(
         sovereign_identity: Arc<SovereignIdentity>,
         dht: Arc<SovereignDht>,
@@ -54,6 +59,7 @@ impl MeshNetwork {
             namespace_manager: Arc::new(Mutex::new(None)),
             start_time: std::time::Instant::now(),
             sovereign_identity,
+            peer_timeout: Duration::from_secs(90),
         }
     }
 
@@ -534,6 +540,7 @@ impl MeshNetwork {
     async fn run_heartbeat(&self) {
         let mut heartbeat_interval = tokio::time::interval(Duration::from_secs(10));
         let mut peerlist_interval = tokio::time::interval(Duration::from_secs(60));
+        let mut eviction_interval = tokio::time::interval(Duration::from_secs(30));
 
         loop {
             tokio::select! {
@@ -578,6 +585,9 @@ impl MeshNetwork {
                             .send_message_to_peer(&peer_id, MeshMessage::PeerListRequest)
                             .await;
                     }
+                }
+                _ = eviction_interval.tick() => {
+                    self.evict_stale_peers().await;
                 }
             }
         }
@@ -802,6 +812,31 @@ impl MeshNetwork {
             let addr = peer.address.to_string();
             if let Err(e) = self.connect_to_peer(&addr, Some(peer.node_id.clone())).await {
                 debug!("Failed to connect to peer {} at {}: {}", peer.node_id, addr, e);
+            }
+        }
+    }
+
+    async fn evict_stale_peers(&self) {
+        let now = std::time::Instant::now();
+        let mut peers = self.peers.write().await;
+        let timeout = self.peer_timeout;
+        let stale_ids: Vec<String> = peers
+            .iter()
+            .filter_map(|(peer_id, peer)| {
+                if peer.is_connected() && now.duration_since(peer.last_seen) > timeout {
+                    Some(peer_id.clone())
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        for peer_id in stale_ids {
+            if let Some(mut peer) = peers.remove(&peer_id) {
+                if let Some(conn) = peer.quic_connection.take() {
+                    conn.close(0u32.into(), b"heartbeat-timeout");
+                }
+                info!("Evicted stale mesh peer {}", peer_id);
             }
         }
     }
