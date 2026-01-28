@@ -3,6 +3,7 @@
 use anyhow::{Context, Result};
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::time::Duration;
 use tracing::{debug, error, info, warn};
 
 use crate::auto_mount::AutoMountDaemon;
@@ -121,6 +122,7 @@ impl Server {
         if let Err(e) = dht.start_networking(dht_listen, Vec::new()).await {
             warn!("Failed to start DHT networking: {}", e);
         }
+        dht.start_maintenance(Duration::from_secs(60));
 
         // Initialize synthetic filesystem for virtual directories
         let synth_fs = Arc::new(SyntheticFilesystem::new());
