@@ -271,7 +271,36 @@ impl MeshNetwork {
                 self.register_peer_connection(node_id.clone(), peer_addr, connecting)
                     .await;
 
+                let connection = {
+                    let peers = self.peers.read().await;
+                    peers
+                        .get(&node_id)
+                        .and_then(|peer| peer.quic_connection.clone())
+                };
+
+                if let Some(connection) = connection {
+                    let self_clone = Arc::clone(&self);
+                    let peer_id = node_id.clone();
+                    tokio::spawn(async move {
+                        self_clone.listen_for_peer_messages(peer_id, connection).await;
+                    });
+                }
+
                 info!("Peer {} connected successfully via QUIC", node_id);
+            }
+            MeshMessage::Ping => {
+                let (send_stream, _) = connecting
+                    .open_bi()
+                    .await
+                    .context("Failed to open QUIC stream for pong")?;
+                self.send_message_quic(send_stream, &MeshMessage::Pong).await?;
+            }
+            MeshMessage::PeerList { peers } => {
+                for peer in peers {
+                    if let Err(e) = self.connect_to_peer(&peer, None).await {
+                        debug!("Failed to connect to peer from list {}: {}", peer, e);
+                    }
+                }
             }
             _ => {
                 warn!("Expected handshake, got {:?}", message);
@@ -416,10 +445,20 @@ impl MeshNetwork {
         tokio::time::sleep(Duration::from_secs(2)).await;
 
         // Bootstrap phase: connect to bootstrap peers first
+        let mut bootstrap_addrs = Vec::new();
         for bootstrap_peer in &self.bootstrap_peers {
             info!("Bootstrapping DHT via peer: {}", bootstrap_peer);
+            if let Ok(addr) = bootstrap_peer.parse::<SocketAddr>() {
+                bootstrap_addrs.push(addr);
+            }
             if let Err(e) = self.connect_to_peer(bootstrap_peer, None).await {
                 warn!("Failed to connect to bootstrap peer {}: {}", bootstrap_peer, e);
+            }
+        }
+
+        if !bootstrap_addrs.is_empty() {
+            if let Err(e) = self.dht.bootstrap(&bootstrap_addrs).await {
+                warn!("DHT bootstrap failed: {}", e);
             }
         }
 
@@ -432,9 +471,7 @@ impl MeshNetwork {
             interval.tick().await;
 
             // Get current DHT state
-            let dht = self.dht.read().await;
-            let all_peers = dht.get_all_peers();
-            drop(dht);
+            let all_peers = self.dht.get_all_peers().await;
 
             if all_peers.is_empty() {
                 debug!("DHT empty, waiting for bootstrap peers");
@@ -443,25 +480,25 @@ impl MeshNetwork {
 
             debug!("DHT has {} known peers", all_peers.len());
 
-            // Perform iterative lookup to discover new peers
-            // Use our own node ID as lookup target to find closest peers
-            let dht_read = self.dht.read().await;
-            let target = dht_read.local_id;
-            let closest = dht_read.find_closest(&target, 8);
-            drop(dht_read);
-
             // Try to connect to peers we know about but aren't connected to
-            for peer in closest {
-                let peer_addr = peer.address.to_string();
+            for peer in all_peers {
+                if peer.node_id.as_str() == self.node_id {
+                    continue;
+                }
+
+                if peer.network_addr.port() == 0 {
+                    continue;
+                }
 
                 // Check if already connected
                 let peers = self.peers.read().await;
                 let already_connected = peers
                     .values()
-                    .any(|p| p.address == peer.address && p.is_connected());
+                    .any(|p| p.address == peer.network_addr && p.is_connected());
                 drop(peers);
 
                 if !already_connected {
+                    let peer_addr = peer.network_addr.to_string();
                     debug!("DHT: Attempting to connect to peer {}", peer_addr);
                     if let Err(e) = self.connect_to_peer(&peer_addr, None).await {
                         debug!("DHT connection attempt failed for {}: {}", peer_addr, e);
@@ -490,7 +527,49 @@ impl MeshNetwork {
     }
 
     async fn run_heartbeat(&self) {
-        // Implementation would go here
+        let mut heartbeat_interval = tokio::time::interval(Duration::from_secs(10));
+        let mut peerlist_interval = tokio::time::interval(Duration::from_secs(60));
+
+        loop {
+            tokio::select! {
+                _ = heartbeat_interval.tick() => {
+                    let peer_ids: Vec<String> = {
+                        let peers = self.peers.read().await;
+                        peers
+                            .iter()
+                            .filter_map(|(peer_id, peer)| {
+                                if peer.is_connected() {
+                                    Some(peer_id.clone())
+                                } else {
+                                    None
+                                }
+                            })
+                            .collect()
+                    };
+
+                    for peer_id in peer_ids {
+                        if let Err(e) = self.send_message_to_peer(&peer_id, MeshMessage::Ping).await {
+                            debug!("Heartbeat ping failed for {}: {}", peer_id, e);
+                        }
+                    }
+                }
+                _ = peerlist_interval.tick() => {
+                    let peer_list: Vec<String> = {
+                        let peers = self.peers.read().await;
+                        peers
+                            .values()
+                            .filter(|peer| peer.is_connected())
+                            .map(|peer| peer.address.to_string())
+                            .collect()
+                    };
+
+                    if !peer_list.is_empty() {
+                        let msg = MeshMessage::PeerList { peers: peer_list };
+                        let _ = self.broadcast_message(msg).await;
+                    }
+                }
+            }
+        }
     }
 
     #[allow(dead_code)]
@@ -622,6 +701,57 @@ impl MeshNetwork {
         self.send_message_quic(send_stream, &message).await
     }
 
+    async fn listen_for_peer_messages(&self, peer_id: String, connection: QuinnConnection) {
+        loop {
+            match connection.accept_bi().await {
+                Ok((_send, recv)) => match self.receive_message_quic(recv).await {
+                    Ok(message) => {
+                        if let Err(e) = self.handle_peer_message(&peer_id, message).await {
+                            debug!("Mesh message handling failed for {}: {}", peer_id, e);
+                        }
+                    }
+                    Err(e) => {
+                        debug!("Failed to read mesh message from {}: {}", peer_id, e);
+                    }
+                },
+                Err(e) => {
+                    debug!("Peer {} stream accept failed: {}", peer_id, e);
+                    break;
+                }
+            }
+        }
+    }
+
+    async fn handle_peer_message(&self, peer_id: &str, message: MeshMessage) -> Result<()> {
+        {
+            let mut peers = self.peers.write().await;
+            if let Some(peer) = peers.get_mut(peer_id) {
+                peer.last_seen = std::time::Instant::now();
+            }
+        }
+
+        match message {
+            MeshMessage::Ping => {
+                self.send_message_to_peer(peer_id, MeshMessage::Pong).await?;
+            }
+            MeshMessage::Pong => {
+                debug!("Received pong from {}", peer_id);
+            }
+            MeshMessage::PeerList { peers } => {
+                for peer in peers {
+                    if let Err(e) = self.connect_to_peer(&peer, None).await {
+                        debug!("Failed to connect to peer from list {}: {}", peer, e);
+                    }
+                }
+            }
+            other => {
+                self.handle_message(peer_id, other).await?;
+            }
+        }
+
+        Ok(())
+    }
+
     async fn register_peer_connection(
         &self,
         node_id: String,
@@ -635,8 +765,10 @@ impl MeshNetwork {
             peers.insert(node_id.clone(), peer_conn);
         }
 
-        let mut dht = self.dht.write().await;
-        dht.add_peer(KademliaTable::hash_node(&node_id), addr);
+        let _ = self
+            .dht
+            .update_peer_address(&NodeId::new(node_id), addr)
+            .await;
     }
 
     /// Broadcast a message to all connected peers
@@ -727,12 +859,18 @@ impl MeshNetwork {
     }
 
     pub async fn get_dht_routing_table(&self) -> Vec<([u8; 32], String)> {
+        use sha2::{Digest, Sha256};
+
         self.dht
-            .read()
-            .await
             .get_all_peers()
+            .await
             .into_iter()
-            .map(|peer| (peer.id, peer.address.to_string()))
+            .map(|record| {
+                let mut hasher = Sha256::new();
+                hasher.update(record.node_id.as_str().as_bytes());
+                let hash: [u8; 32] = hasher.finalize().into();
+                (hash, record.network_addr.to_string())
+            })
             .collect()
     }
 
@@ -813,6 +951,20 @@ impl MeshNetwork {
 
                 self.register_peer_connection(node_id.clone(), addr, connection)
                     .await;
+
+                let connection = {
+                    let peers = self.peers.read().await;
+                    peers
+                        .get(&node_id)
+                        .and_then(|peer| peer.quic_connection.clone())
+                };
+                if let Some(connection) = connection {
+                    let self_clone = Arc::clone(&self);
+                    let peer_id = node_id.clone();
+                    tokio::spawn(async move {
+                        self_clone.listen_for_peer_messages(peer_id, connection).await;
+                    });
+                }
 
                 info!("Handshake complete with peer {} at {}", node_id, addr);
                 Ok(())
@@ -939,84 +1091,4 @@ pub struct MeshStatus {
     pub mdns_enabled: bool,
     pub dht_enabled: bool,
     pub uptime_seconds: u64,
-}
-
-/// Kademlia DHT for distributed peer discovery
-struct KademliaTable {
-    local_id: [u8; 32],              // SHA-256 of node_id
-    buckets: Vec<Vec<KademliaPeer>>, // 256 k-buckets
-}
-
-#[derive(Clone, Debug)]
-struct KademliaPeer {
-    id: [u8; 32],
-    address: SocketAddr,
-    last_seen: std::time::Instant,
-}
-
-impl KademliaTable {
-    fn new(node_id: &str) -> Self {
-        Self {
-            local_id: Self::hash_node(node_id),
-            buckets: vec![Vec::new(); 256],
-        }
-    }
-
-    fn add_peer(&mut self, id: [u8; 32], address: SocketAddr) {
-        let index = self.bucket_index(&id);
-        let bucket = &mut self.buckets[index];
-
-        if let Some(existing) = bucket.iter_mut().find(|peer| peer.id == id) {
-            existing.address = address;
-            existing.last_seen = std::time::Instant::now();
-        } else {
-            bucket.push(KademliaPeer {
-                id,
-                address,
-                last_seen: std::time::Instant::now(),
-            });
-        }
-    }
-
-    fn bucket_index(&self, target: &[u8; 32]) -> usize {
-        for (byte_index, (l, r)) in self.local_id.iter().zip(target.iter()).enumerate() {
-            let diff = l ^ r;
-            if diff != 0 {
-                let leading = diff.leading_zeros() as usize;
-                return (byte_index * 8 + leading).min(255);
-            }
-        }
-        255
-    }
-
-    #[allow(dead_code)]
-    fn find_closest(&self, target: &[u8; 32], count: usize) -> Vec<KademliaPeer> {
-        let mut peers = self.get_all_peers();
-        peers.sort_by(|a, b| xor_distance(&a.id, target).cmp(&xor_distance(&b.id, target)));
-        peers.truncate(count);
-        peers
-    }
-
-    fn get_all_peers(&self) -> Vec<KademliaPeer> {
-        self.buckets
-            .iter()
-            .flat_map(|bucket| bucket.clone())
-            .collect()
-    }
-
-    fn hash_node(node_id: &str) -> [u8; 32] {
-        use sha2::{Digest, Sha256};
-        let mut hasher = Sha256::new();
-        hasher.update(node_id.as_bytes());
-        hasher.finalize().into()
-    }
-}
-
-#[allow(dead_code)]
-fn xor_distance(id: &[u8; 32], target: &[u8; 32]) -> [u8; 32] {
-    let mut distance = [0u8; 32];
-    for i in 0..32 {
-        distance[i] = id[i] ^ target[i];
-    }
-    distance
 }

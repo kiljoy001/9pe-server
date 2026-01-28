@@ -9,7 +9,7 @@ use crate::auto_mount::AutoMountDaemon;
 use crate::dht::SovereignDht;
 use crate::identity::{NodePermissions, SovereignIdentity};
 use crate::network::NetworkConfig;
-use crate::transport::{ConnectionListener, TransportFactory, TransportType};
+use crate::transport::{ConnectionListener, ServerTls, TransportFactory, TransportType};
 
 #[cfg(feature = "gpu")]
 use crate::compute_control::{register_compute_control, ComputeManager};
@@ -63,6 +63,7 @@ pub struct ServerConfig {
     pub worker_threads: Option<usize>,
     pub mesh_enabled: bool,
     pub mesh_port: u16,
+    pub dht_port: u16,
     pub metrics_enabled: bool,
     pub metrics_port: u16,
     pub translator_directory: PathBuf,
@@ -71,6 +72,7 @@ pub struct ServerConfig {
     pub auto_mount_enabled: bool,
     pub consensus_config: Option<crate::config::ConsensusConfig>,
     pub node_id: String,
+    pub node_name: Option<String>,
 }
 
 impl Server {
@@ -84,18 +86,6 @@ impl Server {
         // Log execution mode (user vs system)
         crate::util::log_execution_mode();
 
-        // Create transport
-        let transport = TransportFactory::create(config.transport.clone())?;
-
-        // Get socket address
-        let addr = config.network.socket_addr()?;
-
-        // Start listening
-        let listener = transport
-            .listen(addr)
-            .await
-            .context("Failed to start listener")?;
-
         // Create session manager
         let session_manager = Arc::new(SessionManager::new());
 
@@ -106,6 +96,31 @@ impl Server {
             SovereignDht::new_with_store(Arc::clone(&sovereign_identity), &config.dht_store_path)
                 .await?,
         );
+
+        // Create transport
+        let transport = TransportFactory::create(config.transport.clone())?;
+
+        // Get socket address
+        let addr = config.network.socket_addr()?;
+
+        let tls = match config.transport {
+            TransportType::Quic { .. } => Some(ServerTls {
+                cert: sovereign_identity.certificate.clone(),
+                key: sovereign_identity.private_key_der.clone(),
+            }),
+            _ => None,
+        };
+
+        // Start listening
+        let listener = transport
+            .listen(addr, tls)
+            .await
+            .context("Failed to start listener")?;
+
+        let dht_listen = std::net::SocketAddr::from(([0, 0, 0, 0], config.dht_port));
+        if let Err(e) = dht.start_networking(dht_listen, Vec::new()).await {
+            warn!("Failed to start DHT networking: {}", e);
+        }
 
         // Initialize synthetic filesystem for virtual directories
         let synth_fs = Arc::new(SyntheticFilesystem::new());
@@ -239,7 +254,10 @@ impl Server {
                 None
             } else {
                 let listen_addr = std::net::SocketAddr::from(([0, 0, 0, 0], config.mesh_port));
-                if let Err(e) = dht.register_self(listen_addr).await {
+                if let Err(e) = dht
+                    .register_self_with_name(listen_addr, config.node_name.clone())
+                    .await
+                {
                     warn!("Failed to register node in DHT: {}", e);
                 }
                 info!(
@@ -406,7 +424,7 @@ impl Server {
     }
 
     /// Handle a single connection with real 9P message processing
-    async fn handle_connection(
+    pub(crate) async fn handle_connection(
         mut connection: Box<dyn crate::transport::Connection>,
         root_path: std::path::PathBuf,
         max_message_size: u32,
@@ -460,7 +478,7 @@ impl Server {
             }
 
             // Deserialize 9P message
-            let message = match handler.deserialize_ninepee_message(message_buf).await {
+            let message = match handler.deserialize_ninep_message(message_buf).await {
                 Ok(msg) => msg,
                 Err(e) => {
                     error!("Failed to deserialize message: {}", e);
@@ -468,14 +486,14 @@ impl Server {
                 }
             };
 
-            debug!("Received message - deserializing as NinePeeMessage");
+            debug!("Received message - deserializing as NinePMessage");
 
             // Process message and get response
             let response = match handler.handle_message(message).await {
                 Ok(resp) => resp,
                 Err(e) => {
                     error!("Failed to handle message: {}", e);
-                    crate::protocol::NinePeeMessage::Error {
+                    crate::protocol::NinePMessage::Error {
                         ename: format!("Internal error: {}", e),
                         errno: 5, // EIO
                     }
@@ -542,7 +560,10 @@ impl Server {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::transport::TransportType;
+    use crate::transport::{ServerTls, TransportFactory, TransportType};
+    use crate::protocol::{MAX_MESSAGE_SIZE, NINEP_VERSION};
+    use tempfile::tempdir;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
     #[tokio::test]
     async fn test_server_builder() {
@@ -554,5 +575,87 @@ mod tests {
             .await;
 
         assert!(server.is_ok());
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn test_quic_connection_uses_real_handler() {
+        let identity = Arc::new(SovereignIdentity::generate().expect("identity"));
+        let dht_dir = tempdir().expect("dht dir");
+        let dht = Arc::new(
+            SovereignDht::new_with_store(Arc::clone(&identity), dht_dir.path())
+                .await
+                .expect("dht"),
+        );
+
+        let synth_fs = Arc::new(SyntheticFilesystem::new());
+        let translators_dir = tempdir().expect("translators");
+        let translator_registry = Arc::new(ThreadSafeTranslatorRegistry::new(
+            translators_dir.path().to_path_buf(),
+        ));
+        let settrans_system = Arc::new(
+            VirtualSettransSystem::new(Arc::clone(&synth_fs), Arc::clone(&translator_registry))
+                .await
+                .expect("settrans"),
+        );
+
+        let transport = TransportFactory::create(TransportType::Quic { server_name: None })
+            .expect("transport");
+        let addr: std::net::SocketAddr = "127.0.0.1:0".parse().unwrap();
+        let tls = ServerTls {
+            cert: identity.certificate.clone(),
+            key: identity.private_key_der.clone(),
+        };
+        let listener = transport.listen(addr, Some(tls)).await.expect("listen");
+        let local_addr = listener.local_addr().expect("local addr");
+
+        let session_mgr = Arc::new(SessionManager::new());
+        let root_path = PathBuf::from(".");
+        let max_message_size = MAX_MESSAGE_SIZE;
+
+        let server_task = tokio::spawn(async move {
+            let connection = listener.accept().await.expect("accept");
+            Server::handle_connection(
+                connection,
+                root_path,
+                max_message_size,
+                session_mgr,
+                translator_registry,
+                settrans_system,
+                synth_fs,
+                dht,
+            )
+            .await
+            .ok();
+        });
+
+        let client = TransportFactory::create(TransportType::Quic {
+            server_name: Some("localhost".to_string()),
+        })
+        .expect("client transport");
+        let mut connection = client.connect(local_addr).await.expect("connect");
+
+        let message = crate::protocol::NinePMessage::Version {
+            msize: MAX_MESSAGE_SIZE,
+            version: NINEP_VERSION.to_string(),
+        };
+        let data = bincode::serialize(&message).expect("serialize");
+        let size = (data.len() + 4) as u32;
+        let mut framed = size.to_le_bytes().to_vec();
+        framed.extend_from_slice(&data);
+        connection.write_all(&framed).await.expect("write");
+        connection.flush().await.expect("flush");
+
+        let mut size_buf = [0u8; 4];
+        connection.read_exact(&mut size_buf).await.expect("read header");
+        let resp_size = u32::from_le_bytes(size_buf);
+        let mut resp_buf = vec![0u8; (resp_size - 4) as usize];
+        connection.read_exact(&mut resp_buf).await.expect("read response");
+        let response: crate::protocol::NinePMessage =
+            bincode::deserialize(&resp_buf).expect("deserialize");
+
+        assert!(matches!(response, crate::protocol::NinePMessage::Version { .. }));
+
+        drop(connection);
+        let _ = tokio::time::timeout(Duration::from_secs(2), server_task).await;
     }
 }
