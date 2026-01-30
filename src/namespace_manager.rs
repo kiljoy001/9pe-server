@@ -137,6 +137,15 @@ pub struct NamespaceMetadata {
     /// Last activity timestamp for liveness tracking
     pub last_activity: DateTime<Utc>,
 
+    /// Agregore: MIME type hint for the namespace root (e.g., "text/html" or "application/wasm")
+    pub mime_type: Option<String>,
+
+    /// Agregore: Index file to serve when root is requested (e.g., "index.html")
+    pub index_file: Option<String>,
+
+    /// Agregore: CORS policy for web access (default: "*")
+    pub cors_policy: Option<String>,
+
     /// Additional custom metadata
     pub custom: HashMap<String, String>,
 }
@@ -150,7 +159,7 @@ pub struct NamespaceManager {
     synth_fs: Arc<SyntheticFilesystem>,
 
     /// Consensus DAG for global agreement
-    consensus: Option<Arc<BoundedGhostdag>>,
+    consensus: Option<Arc<crate::consensus::ConsensusCoordinator>>,
 
     /// This server's signing key (for signing system namespaces)
     system_keypair: SigningKey,
@@ -182,6 +191,11 @@ impl NamespaceManager {
     /// Set mesh network for distributed communication
     pub fn with_mesh_network(mut self, mesh: Arc<MeshNetwork>) -> Self {
         self.mesh_network = Some(mesh);
+        self
+    }
+
+    pub fn with_consensus(mut self, consensus: Arc<crate::consensus::ConsensusCoordinator>) -> Self {
+        self.consensus = Some(consensus);
         self
     }
 
@@ -354,6 +368,9 @@ impl NamespaceManager {
             participants: vec![owner_pubkey_hex.clone()], // Owner is first participant
             access_requests: Vec::new(),                  // No pending requests initially
             last_activity: created_at,
+            mime_type: None,
+            index_file: None,
+            cors_policy: None,
             custom: HashMap::new(),
         };
 
@@ -393,7 +410,7 @@ impl NamespaceManager {
 
     async fn persist_claim(&self, mut claim: NamespaceClaim) -> Result<NamespaceClaim> {
         if let Some(ref consensus) = self.consensus {
-            use crate::consensus::Block;
+            use crate::consensus::GhostdagBlock as Block;
             use std::time::{SystemTime, UNIX_EPOCH};
 
             let op = NamespaceOp::RegisterNamespace {
@@ -411,16 +428,30 @@ impl NamespaceManager {
             let operations = vec![op];
             let block_signature = self.sign_namespace_block(&block_id, timestamp, &operations)?;
 
-            let block = Block {
-                id: block_id.clone(),
-                parents: vec![],
-                operations,
+            let data = bincode::serialize(&operations).unwrap();
+
+            let block = crate::consensus::GhostdagBlock {
+                hash: [0u8; 32],
+                parent_hashes: vec![],
+                blue_score: 0,
+                red_score: 0,
+                selected_parent: None,
+
                 timestamp,
-                creator: hex::encode(self.system_keypair.verifying_key().as_bytes()),
-                signature: block_signature,
-                state: BlockState::Pending,
-                ghost_weight: 1,
-                height: 0,
+                data,
+                author: {
+                    let mut bytes = [0u8; 32];
+                    bytes.copy_from_slice(self.system_keypair.verifying_key().as_bytes());
+                    bytes
+                },
+                signature: {
+                    let mut bytes = [0u8; 64];
+                    bytes.copy_from_slice(&block_signature);
+                    bytes
+                },
+                pow_nonce: 0,
+                pow_context: 0,
+                pow_difficulty: 0,
             };
 
             consensus.add_block(block).await?;
@@ -528,6 +559,9 @@ impl NamespaceManager {
             participants: vec![request.pubkey.clone()],
             access_requests: Vec::new(),
             last_activity: created_at,
+            mime_type: request.mime_type,
+            index_file: request.index_file,
+            cors_policy: request.cors_policy,
             custom: HashMap::new(),
         };
 
@@ -582,7 +616,7 @@ impl NamespaceManager {
 
     async fn delete_claim(&self, path: &str, owner_pubkey: &[u8; 32]) -> Result<()> {
         if let Some(ref consensus) = self.consensus {
-            use crate::consensus::Block;
+            use crate::consensus::GhostdagBlock as Block;
             use std::time::{SystemTime, UNIX_EPOCH};
 
             let op = NamespaceOp::Delete {
@@ -598,16 +632,30 @@ impl NamespaceManager {
             let operations = vec![op];
             let block_signature = self.sign_namespace_block(&block_id, timestamp, &operations)?;
 
-            let block = Block {
-                id: block_id.clone(),
-                parents: vec![],
-                operations,
+            let data = bincode::serialize(&operations).unwrap();
+
+            let block = crate::consensus::GhostdagBlock {
+                hash: [0u8; 32],
+                parent_hashes: vec![],
+                blue_score: 0,
+                red_score: 0,
+                selected_parent: None,
+
                 timestamp,
-                creator: hex::encode(self.system_keypair.verifying_key().as_bytes()),
-                signature: block_signature,
-                state: BlockState::Pending,
-                ghost_weight: 1,
-                height: 0,
+                data,
+                author: {
+                    let mut bytes = [0u8; 32];
+                    bytes.copy_from_slice(self.system_keypair.verifying_key().as_bytes());
+                    bytes
+                },
+                signature: {
+                    let mut bytes = [0u8; 64];
+                    bytes.copy_from_slice(&block_signature);
+                    bytes
+                },
+                pow_nonce: 0,
+                pow_context: 0,
+                pow_difficulty: 0,
             };
 
             consensus.add_block(block).await?;
@@ -1160,6 +1208,12 @@ struct RegisterNamespaceRequest {
     created_at: Option<i64>,
     #[serde(default)]
     expires_at: Option<i64>,
+    #[serde(default)]
+    mime_type: Option<String>,
+    #[serde(default)]
+    index_file: Option<String>,
+    #[serde(default)]
+    cors_policy: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
