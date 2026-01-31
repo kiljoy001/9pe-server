@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>9P.e Remote DOM - GPU Canvas Bridge</title>
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #1a1b1e; color: #c1c2c5; padding: 2rem; max-width: 1200px; margin: 0 auto; }
+        h1 { color: #228be6; }
+        h2 { color: #74c0fc; font-size: 1.2rem; margin-top: 2rem; }
+        .controls { display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
+        .control-group { display: flex; flex-direction: column; gap: 0.5rem; }
+        button { background: #228be6; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; transition: background 0.2s; }
+        button:hover { background: #1c7ed6; }
+        button.secondary { background: #495057; }
+        button.secondary:hover { background: #343a40; }
+        #canvas-container { border: 2px solid #373a40; border-radius: 8px; padding: 1rem; margin-top: 1rem; background: #25262b; }
+        #gpu-canvas { max-width: 100%; height: auto; border: 1px solid #495057; display: block; image-rendering: pixelated; }
+        #canvas-view { border: 2px solid #373a40; border-radius: 8px; padding: 1rem; min-height: 150px; margin-top: 1rem; background: #25262b; }
+        #status-indicator { padding: 0.5rem 1rem; background: #495057; border-radius: 4px; display: inline-block; }
+        #log { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #868e96; margin-top: 1rem; height: 150px; overflow-y: auto; background: #25262b; padding: 0.75rem; border-radius: 4px; border: 1px solid #373a40; }
+        .info { color: #74c0fc; margin-top: 0.5rem; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <h1>🎨 9P.e Remote DOM - GPU Canvas</h1>
+    <div id="status-indicator">Status: Initializing...</div>
+
+    <h2>GPU Canvas Controls</h2>
+    <div class="control-group">
+        <div class="controls">
+            <button id="btn-render-test">Render Test Pattern</button>
+            <button id="btn-render-gradient">Render Gradient</button>
+            <button id="btn-clear-canvas">Clear Canvas</button>
+            <button id="btn-refresh-canvas" class="secondary">🔄 Refresh Image</button>
+        </div>
+        <p class="info">GPU-rendered content via SYCL (Intel oneAPI / AdaptiveCpp)</p>
+    </div>
+
+    <div id="canvas-container">
+        <img id="gpu-canvas" alt="GPU Canvas Output" />
+    </div>
+
+    <h2>Gemini Protocol Browser</h2>
+    <div class="control-group">
+        <div class="controls">
+            <button id="btn-gemini-home">geminiprotocol.net</button>
+            <button id="btn-gemini-spec">Gemini Spec</button>
+            <button id="btn-gemini-stations">Gemini Stations</button>
+            <input type="text" id="gemini-url" placeholder="gemini://..." style="flex: 1; padding: 0.5rem; background: #2c2e33; border: 1px solid #495057; color: #c1c2c5; border-radius: 4px;" />
+            <button id="btn-gemini-go" class="secondary">Go</button>
+        </div>
+        <p class="info">Browse Gemini capsules - server-side rendering for Mothra browser</p>
+    </div>
+
+    <div id="gemini-view" style="border: 2px solid #373a40; border-radius: 8px; padding: 1rem; margin-top: 1rem; background: white; color: black; min-height: 400px; max-height: 600px; overflow-y: auto;">
+        <p style="color: #868e96;">Click a Gemini URL above to browse...</p>
+    </div>
+
+    <h2>Agregore Bridge</h2>
+    <div class="controls">
+        <button id="btn-fetch" class="secondary">Trigger Agregore Fetch</button>
+        <button id="btn-click" class="secondary">Test Sync Click</button>
+    </div>
+
+    <div id="canvas-view">
+        <div id="main">Waiting for events...</div>
+    </div>
+
+    <h2>Event Log</h2>
+    <div id="log"></div>
+
+    <script>
+        const log = (msg) => {
+            const el = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            el.innerHTML += `<span style="color:#495057">[${timestamp}]</span> ${msg}<br>`;
+            el.scrollTop = el.scrollHeight;
+        };
+
+        const updateStatus = (status, color = '#74c0fc') => {
+            const el = document.getElementById('status-indicator');
+            el.textContent = `Status: ${status}`;
+            el.style.background = color;
+        };
+
+        // 1. Initial Context Load
+        fetch('/n/v8/session/context', {
+            method: 'POST',
+            body: 'console.log("Remote DOM Context Loaded")'
+        }).then(() => {
+            log("✅ V8 Context Initialized");
+            updateStatus("Connected", '#228be6');
+        });
+
+        // 2. Poll for DOM Diffs
+        async function pollDiffs() {
+            try {
+                const r = await fetch('/n/v8/session/diff');
+                const text = await r.text();
+                if (text) {
+                    const diffs = text.split('\n').filter(l => l.trim());
+                    diffs.forEach(applyDiff);
+                }
+            } catch (e) { console.error(e); }
+            setTimeout(pollDiffs, 1000);
+        }
+
+        function applyDiff(json) {
+            try {
+                const diff = JSON.parse(json);
+                if (diff.action === 'replace') {
+                    document.querySelector(diff.target).innerHTML = diff.html;
+                } else if (diff.action === 'appendChild') {
+                    const el = document.createElement('div');
+                    el.innerHTML = diff.html;
+                    document.querySelector(diff.target).appendChild(el.firstChild);
+                } else if (diff.action === 'setAttribute') {
+                    document.querySelector(diff.target).setAttribute(diff.attr, diff.value);
+                } else if (diff.action === 'log') {
+                    log(diff.message);
+                }
+            } catch (e) {
+                console.error('Failed to apply diff:', e);
+            }
+        }
+
+        // 3. Canvas rendering controls
+        const canvasImg = document.getElementById('gpu-canvas');
+
+        function refreshCanvas() {
+            const timestamp = new Date().getTime();
+            canvasImg.src = `/n/v8/session/canvas.png?t=${timestamp}`;
+            log("🖼️  Canvas refreshed");
+        }
+
+        document.getElementById('btn-render-test').onclick = () => {
+            fetch('/n/v8/session/events', {
+                method: 'POST',
+                body: JSON.stringify({ action: "render_test" })
+            }).then(() => {
+                log("🎨 Rendering test pattern on GPU...");
+                setTimeout(refreshCanvas, 500);
+            });
+        };
+
+        document.getElementById('btn-render-gradient').onclick = () => {
+            fetch('/n/v8/session/events', {
+                method: 'POST',
+                body: JSON.stringify({ action: "render_gradient" })
+            }).then(() => {
+                log("🌈 Rendering gradient on GPU...");
+                setTimeout(refreshCanvas, 500);
+            });
+        };
+
+        document.getElementById('btn-clear-canvas').onclick = () => {
+            fetch('/n/v8/session/events', {
+                method: 'POST',
+                body: JSON.stringify({ action: "clear_canvas" })
+            }).then(() => {
+                log("🗑️  Clearing canvas...");
+                setTimeout(refreshCanvas, 500);
+            });
+        };
+
+        document.getElementById('btn-refresh-canvas').onclick = refreshCanvas;
+
+        // 4. Gemini browser
+        const geminiView = document.getElementById('gemini-view');
+        const geminiUrlInput = document.getElementById('gemini-url');
+
+        async function loadGeminiUrl(url) {
+            log(`🌐 Loading ${url}...`);
+            updateStatus(`Fetching ${url}`, '#495057');
+
+            // Convert gemini:// URL to HTTP gateway path
+            // gemini://geminiprotocol.net/page -> /n/gemini/geminiprotocol.net/page/body.html
+            const geminiUrl = url.replace('gemini://', '');
+            const parts = geminiUrl.split('/');
+            const host = parts[0];
+            const path = parts.slice(1).join('/') || '';
+            const httpUrl = `/n/gemini/${host}/${path}/body.html`;
+
+            try {
+                const response = await fetch(httpUrl);
+                const html = await response.text();
+                geminiView.innerHTML = html;
+                log(`✅ Loaded ${url}`);
+                updateStatus('Connected', '#228be6');
+            } catch (e) {
+                geminiView.innerHTML = `<p style="color: #fa5252;">Error loading ${url}: ${e.message}</p>`;
+                log(`❌ Error: ${e.message}`);
+                updateStatus('Error', '#fa5252');
+            }
+        }
+
+        document.getElementById('btn-gemini-home').onclick = () => {
+            loadGeminiUrl('gemini://geminiprotocol.net');
+        };
+
+        document.getElementById('btn-gemini-spec').onclick = () => {
+            loadGeminiUrl('gemini://gemini.circumlunar.space/docs/specification.gmi');
+        };
+
+        document.getElementById('btn-gemini-stations').onclick = () => {
+            loadGeminiUrl('gemini://geminispace.info');
+        };
+
+        document.getElementById('btn-gemini-go').onclick = () => {
+            const url = geminiUrlInput.value.trim();
+            if (url) {
+                loadGeminiUrl(url);
+            }
+        };
+
+        geminiUrlInput.onkeypress = (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('btn-gemini-go').click();
+            }
+        };
+
+        // 5. Agregore bridge events
+        document.getElementById('btn-fetch').onclick = () => {
+            fetch('/n/v8/session/events', {
+                method: 'POST',
+                body: JSON.stringify({ action: "fetch", url: "gemini://example.com" })
+            });
+            log("📡 Dispatched Agregore Fetch event");
+        };
+
+        document.getElementById('btn-click').onclick = () => {
+            fetch('/n/v8/session/events', {
+                method: 'POST',
+                body: JSON.stringify({ type: "click", target: "#status-indicator" })
+            });
+            log("🖱️  Dispatched Click event");
+        };
+
+        // Initialize
+        pollDiffs();
+        setTimeout(() => {
+            log("💡 Click 'Render Test Pattern' to see GPU rendering");
+            refreshCanvas();
+        }, 1000);
+    </script>
+</body>
+</html>
