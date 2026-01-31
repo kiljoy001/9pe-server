@@ -55,6 +55,21 @@
         <p style="color: #868e96;">Click a Gemini URL above to browse...</p>
     </div>
 
+    <h2>Hypercore Protocol Browser</h2>
+    <div class="control-group">
+        <div class="controls">
+            <input type="text" id="hyper-key" placeholder="Hypercore public key..." style="flex: 1; padding: 0.5rem; background: #2c2e33; border: 1px solid #495057; color: #c1c2c5; border-radius: 4px;" />
+            <button id="btn-hyper-open">Open Feed</button>
+            <button id="btn-hyper-info" class="secondary">Info</button>
+            <button id="btn-hyper-list" class="secondary">List</button>
+        </div>
+        <p class="info">Browse Hypercore feeds - distributed append-only logs</p>
+    </div>
+
+    <div id="hyper-view" style="border: 2px solid #373a40; border-radius: 8px; padding: 1rem; margin-top: 1rem; background: #25262b; color: #c1c2c5; min-height: 200px; max-height: 400px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem;">
+        <p style="color: #868e96;">Enter a Hypercore public key and click "Open Feed"...</p>
+    </div>
+
     <h2>Agregore Bridge</h2>
     <div class="controls">
         <button id="btn-fetch" class="secondary">Trigger Agregore Fetch</button>
@@ -218,7 +233,108 @@
             }
         };
 
-        // 5. Agregore bridge events
+        // 5. Hypercore browser
+        const hyperView = document.getElementById('hyper-view');
+        const hyperKeyInput = document.getElementById('hyper-key');
+        let currentHyperKey = '';
+
+        async function openHyperFeed(key) {
+            if (!key) return;
+            currentHyperKey = key;
+            log(`📦 Opening Hypercore feed: ${key.substring(0, 16)}...`);
+            updateStatus(`Opening feed ${key.substring(0, 12)}...`, '#495057');
+
+            try {
+                // Create directory to open/initialize the feed
+                const response = await fetch(`/n/hyper/${key}/info`);
+                if (response.ok) {
+                    const info = await response.text();
+                    hyperView.innerHTML = `<h3>Feed: ${key.substring(0, 32)}...</h3><pre>${info}</pre>`;
+                    log(`✅ Feed opened successfully`);
+                    updateStatus('Connected', '#228be6');
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (e) {
+                hyperView.innerHTML = `<p style="color: #fa5252;">Error opening feed: ${e.message}</p>`;
+                log(`❌ Error: ${e.message}`);
+                updateStatus('Error', '#fa5252');
+            }
+        }
+
+        async function loadHyperInfo() {
+            if (!currentHyperKey) {
+                hyperView.innerHTML = '<p style="color: #fa5252;">No feed opened. Enter a key and click "Open Feed" first.</p>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/n/hyper/${currentHyperKey}/info`);
+                const info = await response.text();
+                hyperView.innerHTML = `<h3>Feed Info</h3><pre>${info}</pre>`;
+                log(`ℹ️ Loaded feed info`);
+            } catch (e) {
+                hyperView.innerHTML = `<p style="color: #fa5252;">Error loading info: ${e.message}</p>`;
+                log(`❌ Error: ${e.message}`);
+            }
+        }
+
+        async function listHyperFeed() {
+            if (!currentHyperKey) {
+                hyperView.innerHTML = '<p style="color: #fa5252;">No feed opened. Enter a key and click "Open Feed" first.</p>';
+                return;
+            }
+
+            try {
+                log(`📋 Listing feed entries...`);
+
+                // Read the directory to get entry count
+                const info = await fetch(`/n/hyper/${currentHyperKey}/info`);
+                const infoText = await info.text();
+
+                // Try reading first few entries
+                let html = `<h3>Feed Entries</h3><div style="color: #868e96;">Feed: ${currentHyperKey.substring(0, 32)}...</div><hr style="border-color: #495057; margin: 0.5rem 0;">`;
+
+                for (let i = 0; i < 10; i++) {
+                    try {
+                        const response = await fetch(`/n/hyper/${currentHyperKey}/${i}`);
+                        if (response.ok) {
+                            const data = await response.text();
+                            const preview = data.substring(0, 100) + (data.length > 100 ? '...' : '');
+                            html += `<div style="margin: 0.5rem 0; padding: 0.5rem; background: #1a1b1e; border-left: 2px solid #228be6;"><strong>Entry ${i}:</strong> ${preview}</div>`;
+                        } else {
+                            break; // No more entries
+                        }
+                    } catch (e) {
+                        break;
+                    }
+                }
+
+                hyperView.innerHTML = html;
+                log(`✅ Listed feed entries`);
+            } catch (e) {
+                hyperView.innerHTML = `<p style="color: #fa5252;">Error listing feed: ${e.message}</p>`;
+                log(`❌ Error: ${e.message}`);
+            }
+        }
+
+        document.getElementById('btn-hyper-open').onclick = () => {
+            const key = hyperKeyInput.value.trim();
+            if (key) {
+                openHyperFeed(key);
+            }
+        };
+
+        document.getElementById('btn-hyper-info').onclick = loadHyperInfo;
+        document.getElementById('btn-hyper-list').onclick = listHyperFeed;
+
+        hyperKeyInput.onkeypress = (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('btn-hyper-open').click();
+            }
+        };
+
+        // 6. Agregore bridge events
         document.getElementById('btn-fetch').onclick = () => {
             fetch('/n/v8/session/events', {
                 method: 'POST',
