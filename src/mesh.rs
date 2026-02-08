@@ -26,6 +26,7 @@ use crate::identity::{NodeId, NodePermissions, SovereignIdentity, WorkReceipt};
 use crate::dht::SovereignDht;
 
 /// Mesh network coordinator with DHT and mDNS discovery
+#[derive(Clone)]
 pub struct MeshNetwork {
     #[allow(dead_code)]
     node_id: String,
@@ -39,6 +40,9 @@ pub struct MeshNetwork {
     start_time: std::time::Instant,
     sovereign_identity: Arc<SovereignIdentity>, // Our sovereign identity
     peer_timeout: Duration,
+    service_discovery: Vec<String>, // Services to discover and connect to
+    /// Fog router for distributed job execution
+    fog_router: Arc<RwLock<Option<Arc<crate::fog::DefaultFogRouter>>>>,
 }
 
 impl MeshNetwork {
@@ -49,8 +53,9 @@ impl MeshNetwork {
     pub fn new(
         sovereign_identity: Arc<SovereignIdentity>,
         dht: Arc<SovereignDht>,
-        local_port: u16, 
-        bootstrap_peers: Vec<String>
+        local_port: u16,
+        bootstrap_peers: Vec<String>,
+        service_discovery: Vec<String>,
     ) -> Self {
         Self {
             node_id: sovereign_identity.node_id.as_str().to_string(),
@@ -64,7 +69,21 @@ impl MeshNetwork {
             start_time: std::time::Instant::now(),
             sovereign_identity,
             peer_timeout: Duration::from_secs(90),
+            service_discovery,
+            fog_router: Arc::new(RwLock::new(None)),
         }
+    }
+
+    /// Set the fog router for distributed job execution
+    pub async fn set_fog_router(&self, router: Arc<crate::fog::DefaultFogRouter>) {
+        let mut guard = self.fog_router.write().await;
+        *guard = Some(router);
+        info!("Fog router configured for mesh network");
+    }
+
+    /// Get the fog router if configured
+    pub async fn fog_router(&self) -> Option<Arc<crate::fog::DefaultFogRouter>> {
+        self.fog_router.read().await.clone()
     }
 
     /// Set namespace manager for handling namespace messages
@@ -194,7 +213,7 @@ impl MeshNetwork {
                     let peer_addr = connecting.remote_address();
                     debug!("Incoming QUIC mesh connection from {}", peer_addr);
 
-                    let self_clone = Arc::clone(&self);
+                    let self_clone = self.clone();
                     tokio::spawn(async move {
                         if let Err(e) = self_clone.handle_incoming_connection(connecting).await {
                             debug!("QUIC mesh connection error from {}: {}", peer_addr, e);
@@ -289,7 +308,7 @@ impl MeshNetwork {
                 };
 
                 if let Some(connection) = connection {
-                    let self_clone = Arc::clone(&self);
+                    let self_clone = self.clone();
                     let peer_id = node_id.clone();
                     tokio::spawn(async move {
                         self_clone.listen_for_peer_messages(peer_id, connection).await;
@@ -298,32 +317,17 @@ impl MeshNetwork {
 
                 info!("Peer {} connected successfully via QUIC", node_id);
             }
-            MeshMessage::Ping => {
-                let (send_stream, _) = connecting
-                    .open_bi()
-                    .await
-                    .context("Failed to open QUIC stream for pong")?;
-                self.send_message_quic(send_stream, &MeshMessage::Pong).await?;
-            }
-            MeshMessage::PeerListRequest => {
-                let peers = self.collect_peer_summaries().await;
-                let (send_stream, _) = connecting
-                    .open_bi()
-                    .await
-                    .context("Failed to open QUIC stream for peer list")?;
-                self.send_message_quic(send_stream, &MeshMessage::PeerListResponse { peers })
-                    .await?;
-            }
-            MeshMessage::PeerListResponse { peers } => {
-                self.connect_from_peer_list(peers).await;
-            }
-            _ => {
-                warn!("Expected handshake, got {:?}", message);
+            other => {
+                warn!("Expected handshake as first message, got {:?}", other);
+                connecting.close(0u32.into(), b"handshake-required");
             }
         }
 
         Ok(())
     }
+
+    /// Maximum bootstrap connection attempts before giving up on a peer
+    const MAX_BOOTSTRAP_RETRIES: u32 = 10;
 
     async fn connect_to_bootstrap_peers(self: Arc<Self>) {
         let bootstrap_peers = self.bootstrap_peers.clone();
@@ -339,19 +343,31 @@ impl MeshNetwork {
                 };
 
                 let mut backoff = Duration::from_secs(1);
-                loop {
+                let mut attempts = 0u32;
+
+                while attempts < Self::MAX_BOOTSTRAP_RETRIES {
+                    attempts += 1;
                     match network.try_connect(addr, None).await {
-                        Ok(_) => return,
+                        Ok(_) => {
+                            info!("Connected to bootstrap peer {} after {} attempts", addr, attempts);
+                            return;
+                        }
                         Err(e) => {
-                            debug!(
-                                "Failed to connect to bootstrap peer {}: {} (retrying in {:?})",
-                                addr, e, backoff
-                            );
+                            if attempts < Self::MAX_BOOTSTRAP_RETRIES {
+                                debug!(
+                                    "Failed to connect to bootstrap peer {} (attempt {}/{}): {} (retrying in {:?})",
+                                    addr, attempts, Self::MAX_BOOTSTRAP_RETRIES, e, backoff
+                                );
+                                tokio::time::sleep(backoff).await;
+                                backoff = std::cmp::min(backoff * 2, Duration::from_secs(60));
+                            } else {
+                                warn!(
+                                    "Failed to connect to bootstrap peer {} after {} attempts: {}",
+                                    addr, attempts, e
+                                );
+                            }
                         }
                     }
-
-                    tokio::time::sleep(backoff).await;
-                    backoff = std::cmp::min(backoff * 2, Duration::from_secs(60));
                 }
             });
         }
@@ -537,6 +553,45 @@ impl MeshNetwork {
                 // which already handles network messages
             }
 
+            // Service-based discovery: find and connect to nodes advertising requested services
+            if !self.service_discovery.is_empty() {
+                for service_name in &self.service_discovery {
+                    debug!("DHT: Looking up nodes advertising service '{}'", service_name);
+                    let service_providers = self.dht.find_nodes_with_service(service_name).await;
+
+                    for provider in service_providers {
+                        if provider.node_id.as_str() == self.node_id {
+                            continue;
+                        }
+
+                        if provider.network_addr.port() == 0 {
+                            continue;
+                        }
+
+                        // Check if already connected
+                        let peers = self.peers.read().await;
+                        let already_connected = peers
+                            .values()
+                            .any(|p| p.address == provider.network_addr && p.is_connected());
+                        drop(peers);
+
+                        if !already_connected {
+                            let peer_addr = provider.network_addr.to_string();
+                            info!(
+                                "DHT: Connecting to service '{}' provider {} at {}",
+                                service_name, provider.node_id.as_str(), peer_addr
+                            );
+                            if let Err(e) = self.connect_to_peer(&peer_addr, None).await {
+                                debug!(
+                                    "DHT service discovery connection failed for {}: {}",
+                                    peer_addr, e
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+
             debug!("DHT discovery cycle complete");
         }
     }
@@ -664,6 +719,31 @@ impl MeshNetwork {
                     });
                 }
             }
+            MeshMessage::Fog { message: fog_msg } => {
+                debug!("Received fog message from {}: {:?}", from_peer, fog_msg.message_type());
+                // Forward to fog router if available
+                let router_guard = self.fog_router.read().await;
+                if let Some(ref router) = *router_guard {
+                    let router_clone = Arc::clone(router);
+                    let from_node = NodeId::new(from_peer.to_string());
+                    let self_clone = self.clone();
+                    let from_peer_clone = from_peer.to_string();
+                    drop(router_guard); // Release lock before spawning
+
+                    tokio::spawn(async move {
+                        match router_clone.handle_message(from_node.clone(), fog_msg).await {
+                            Ok(()) => {
+                                debug!("Fog message from {} handled successfully", from_peer_clone);
+                            }
+                            Err(e) => {
+                                warn!("Failed to handle fog message from {}: {}", from_peer_clone, e);
+                            }
+                        }
+                    });
+                } else {
+                    debug!("Fog message received but no fog router configured");
+                }
+            }
             _ => {
                 debug!("Received message from {}: {:?}", from_peer, message);
             }
@@ -724,15 +804,13 @@ impl MeshNetwork {
 
     /// Send a message to a specific peer
     pub async fn send_message_to_peer(&self, peer_id: &str, message: MeshMessage) -> Result<()> {
-        let peers = self.peers.read().await;
-        let peer = peers
-            .get(peer_id)
-            .ok_or_else(|| anyhow::anyhow!("Peer {} not found", peer_id))?;
-
-        let quic_conn = peer
-            .quic_connection
-            .as_ref()
-            .ok_or_else(|| anyhow::anyhow!("No QUIC connection to peer {}", peer_id))?;
+        let quic_conn = {
+            let peers = self.peers.read().await;
+            peers
+                .get(peer_id)
+                .and_then(|p| p.quic_connection.clone())
+                .ok_or_else(|| anyhow::anyhow!("Peer {} not connected", peer_id))?
+        };
 
         // Open a new bidirectional stream
         let (send_stream, _recv_stream) = quic_conn
@@ -742,6 +820,61 @@ impl MeshNetwork {
 
         // Send the message
         self.send_message_quic(send_stream, &message).await
+    }
+
+    /// Send a fog message to a specific peer
+    pub async fn send_fog_message(&self, peer_id: &str, fog_msg: crate::fog::FogMessage) -> Result<()> {
+        self.send_message_to_peer(peer_id, MeshMessage::Fog { message: fog_msg }).await
+    }
+
+    /// Create and configure the fog router for this mesh network
+    ///
+    /// This creates a DefaultFogRouter connected to this mesh network for
+    /// distributed job execution.
+    pub async fn create_fog_router(
+        self: &Arc<Self>,
+        compute_manager: Arc<crate::compute_control::ComputeManager>,
+    ) -> Result<Arc<crate::fog::DefaultFogRouter>> {
+        use crate::fog::{ComputeLocalExecutor, DefaultFogRouter};
+        use crate::fog::resources::ResourceRegistry;
+        use tokio::sync::mpsc;
+
+        // Create message channel for fog router to send messages
+        let (fog_tx, mut fog_rx) = mpsc::unbounded_channel::<(NodeId, crate::fog::FogMessage)>();
+
+        // Create local executor wrapping the compute manager
+        let local_executor = Arc::new(ComputeLocalExecutor::new(compute_manager));
+
+        // Create resource registry
+        let resources = Arc::new(ResourceRegistry::new());
+
+        // Create the fog router
+        let router = Arc::new(DefaultFogRouter::new(
+            NodeId::new(self.node_id.clone()),
+            resources,
+            fog_tx,
+            local_executor,
+        ));
+
+        // Store the router
+        self.set_fog_router(router.clone()).await;
+
+        // Start background task to send fog messages to peers
+        let mesh_clone = Arc::clone(self);
+        tokio::spawn(async move {
+            while let Some((target_node, fog_msg)) = fog_rx.recv().await {
+                let target_id = target_node.as_str().to_string();
+                if let Err(e) = mesh_clone.send_fog_message(&target_id, fog_msg).await {
+                    warn!("Failed to send fog message to {}: {}", target_id, e);
+                }
+            }
+        });
+
+        // Start router background tasks
+        router.start_background_tasks();
+
+        info!("Fog router created and connected to mesh network");
+        Ok(router)
     }
 
     async fn listen_for_peer_messages(&self, peer_id: String, connection: QuinnConnection) {
@@ -786,7 +919,11 @@ impl MeshNetwork {
                     .await?;
             }
             MeshMessage::PeerListResponse { peers } => {
-                self.connect_from_peer_list(peers).await;
+                let self_clone = self.clone();
+                let fut: std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send>> = Box::pin(async move {
+                    self_clone.connect_from_peer_list(peers).await;
+                });
+                tokio::spawn(fut);
             }
             other => {
                 self.handle_message(peer_id, other).await?;
@@ -840,25 +977,51 @@ impl MeshNetwork {
 
     async fn evict_stale_peers(&self) {
         let now = std::time::Instant::now();
-        let mut peers = self.peers.write().await;
         let timeout = self.peer_timeout;
-        let stale_ids: Vec<String> = peers
-            .iter()
-            .filter_map(|(peer_id, peer)| {
-                if peer.is_connected() && now.duration_since(peer.last_seen) > timeout {
-                    Some(peer_id.clone())
-                } else {
-                    None
-                }
-            })
-            .collect();
 
-        for peer_id in stale_ids {
-            if let Some(mut peer) = peers.remove(&peer_id) {
-                if let Some(conn) = peer.quic_connection.take() {
-                    conn.close(0u32.into(), b"heartbeat-timeout");
+        // Collect stale peer info before modifying
+        let stale_peers: Vec<(String, SocketAddr)> = {
+            let peers = self.peers.read().await;
+            peers
+                .iter()
+                .filter_map(|(peer_id, peer)| {
+                    // Check both heartbeat timeout AND closed connections
+                    let is_stale = now.duration_since(peer.last_seen) > timeout;
+                    let is_closed = peer.quic_connection.as_ref()
+                        .map(|c| c.close_reason().is_some())
+                        .unwrap_or(true);
+
+                    if is_stale || is_closed {
+                        Some((peer_id.clone(), peer.address))
+                    } else {
+                        None
+                    }
+                })
+                .collect()
+        };
+
+        if stale_peers.is_empty() {
+            return;
+        }
+
+        // Remove stale peers
+        {
+            let mut peers = self.peers.write().await;
+            for (peer_id, _) in &stale_peers {
+                if let Some(mut peer) = peers.remove(peer_id) {
+                    if let Some(conn) = peer.quic_connection.take() {
+                        conn.close(0u32.into(), b"heartbeat-timeout");
+                    }
+                    info!("Evicted stale mesh peer {}", peer_id);
                 }
-                info!("Evicted stale mesh peer {}", peer_id);
+            }
+        }
+
+        // Attempt reconnection to evicted peers (they might have recovered)
+        for (peer_id, addr) in stale_peers {
+            debug!("Attempting reconnection to evicted peer {} at {}", peer_id, addr);
+            if let Err(e) = self.try_connect(addr, Some(peer_id.clone())).await {
+                debug!("Reconnection to {} failed: {}", peer_id, e);
             }
         }
     }
@@ -985,7 +1148,44 @@ impl MeshNetwork {
             .collect()
     }
 
-    async fn try_connect(&self, addr: SocketAddr, expected_peer: Option<String>) -> Result<()> {
+    /// Maximum connection retry attempts before giving up
+    const MAX_CONNECT_RETRIES: u32 = 3;
+    /// Initial retry delay
+    const INITIAL_RETRY_DELAY: Duration = Duration::from_millis(500);
+
+    fn try_connect(&self, addr: SocketAddr, expected_peer: Option<String>) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<()>> + Send + '_>> {
+        let self_clone = self.clone();
+        Box::pin(async move {
+            self_clone.try_connect_with_retry(addr, expected_peer).await
+        })
+    }
+
+    async fn try_connect_with_retry(&self, addr: SocketAddr, expected_peer: Option<String>) -> Result<()> {
+        let mut last_error = None;
+        let mut delay = Self::INITIAL_RETRY_DELAY;
+
+        for attempt in 1..=Self::MAX_CONNECT_RETRIES {
+            match self.try_connect_inner(addr, expected_peer.clone()).await {
+                Ok(()) => return Ok(()),
+                Err(e) => {
+                    debug!(
+                        "Connection attempt {}/{} to {} failed: {}",
+                        attempt, Self::MAX_CONNECT_RETRIES, addr, e
+                    );
+                    last_error = Some(e);
+
+                    if attempt < Self::MAX_CONNECT_RETRIES {
+                        tokio::time::sleep(delay).await;
+                        delay = std::cmp::min(delay * 2, Duration::from_secs(5));
+                    }
+                }
+            }
+        }
+
+        Err(last_error.unwrap_or_else(|| anyhow!("Connection failed after {} attempts", Self::MAX_CONNECT_RETRIES)))
+    }
+
+    async fn try_connect_inner(&self, addr: SocketAddr, expected_peer: Option<String>) -> Result<()> {
         let endpoint = {
             let guard = self.endpoint.read().await;
             guard
@@ -1070,11 +1270,13 @@ impl MeshNetwork {
                         .and_then(|peer| peer.quic_connection.clone())
                 };
                 if let Some(connection) = connection {
-                    let self_clone = Arc::clone(&self);
+                    let self_clone = self.clone();
                     let peer_id = node_id.clone();
-                    tokio::spawn(async move {
-                        self_clone.listen_for_peer_messages(peer_id, connection).await;
+                    let connection_clone = connection.clone();
+                    let fut: std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send>> = Box::pin(async move {
+                        self_clone.listen_for_peer_messages(peer_id, connection_clone).await;
                     });
+                    tokio::spawn(fut);
                 }
 
                 info!("Handshake complete with peer {} at {}", node_id, addr);
@@ -1135,6 +1337,10 @@ pub enum MeshMessage {
         approved: bool,
         message: String,
     },
+    // Fog computing messages for distributed job execution
+    Fog {
+        message: crate::fog::FogMessage,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1171,7 +1377,13 @@ impl PeerConnection {
     }
 
     fn is_connected(&self) -> bool {
-        self.quic_connection.is_some()
+        match &self.quic_connection {
+            Some(conn) => {
+                // Check if the QUIC connection is still open
+                conn.close_reason().is_none()
+            }
+            None => false,
+        }
     }
 
     #[allow(dead_code)]

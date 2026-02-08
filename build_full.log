@@ -1,0 +1,365 @@
+warning: unexpected `cfg` condition value: `gpu`
+ --> build.rs:9:15
+  |
+9 |     #[cfg(not(feature = "gpu"))]
+  |               ^^^^^^^^^^^^^^^
+  |
+  = note: expected values for `feature` are: `base64`, `blake3`, `chacha20poly1305`, `default`, `ecc`, `ed25519-dalek`, `fuse`, `fuser`, `hkdf`, `hmac`, `k256`, `p256`, `quic`, `quinn`, `rcgen`, `reqwest`, `rustls`, `serde_arrays`, `sha2`, `translators`, `wasm`, `webpki-roots`, `x25519-dalek`, and `xmx`
+  = help: consider adding `gpu` as a feature in `Cargo.toml`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: `#[warn(unexpected_cfgs)]` on by default
+
+warning: unexpected `cfg` condition value: `gpu`
+  --> build.rs:15:11
+   |
+15 |     #[cfg(feature = "gpu")]
+   |           ^^^^^^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `base64`, `blake3`, `chacha20poly1305`, `default`, `ecc`, `ed25519-dalek`, `fuse`, `fuser`, `hkdf`, `hmac`, `k256`, `p256`, `quic`, `quinn`, `rcgen`, `reqwest`, `rustls`, `serde_arrays`, `sha2`, `translators`, `wasm`, `webpki-roots`, `x25519-dalek`, and `xmx`
+   = help: consider adding `gpu` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unused variable: `out_dir`
+   --> build.rs:176:9
+    |
+176 |     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+    |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_out_dir`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: function `try_build_intel_backend` is never used
+  --> build.rs:69:4
+   |
+69 | fn try_build_intel_backend() -> bool {
+   |    ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+
+warning: function `try_build_adaptive_backend` is never used
+   --> build.rs:132:4
+    |
+132 | fn try_build_adaptive_backend() -> bool {
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `create_stub_library` is never used
+   --> build.rs:214:4
+    |
+214 | fn create_stub_library() {
+    |    ^^^^^^^^^^^^^^^^^^^
+
+warning: function `locate_acpp_binary` is never used
+   --> build.rs:284:4
+    |
+284 | fn locate_acpp_binary(acpp_cmd: &str) -> Option<PathBuf> {
+    |    ^^^^^^^^^^^^^^^^^^
+
+warning: function `find_in_path` is never used
+   --> build.rs:297:4
+    |
+297 | fn find_in_path(bin: &str) -> Option<PathBuf> {
+    |    ^^^^^^^^^^^^
+
+warning: function `determine_runtime_dirs` is never used
+   --> build.rs:308:4
+    |
+308 | fn determine_runtime_dirs(acpp_cmd: &str) -> Vec<PathBuf> {
+    |    ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `runtime_lib_present` is never used
+   --> build.rs:347:4
+    |
+347 | fn runtime_lib_present(dir: &Path) -> bool {
+    |    ^^^^^^^^^^^^^^^^^^^
+
+warning: `ninepe-server` (build script) generated 10 warnings
+   Compiling ninepe-server v1.0.0 (/home/scott/Repo/9pe-server)
+warning: ninepe-server@1.0.0: Skipping SYCL build (gpu feature disabled)
+error[E0432]: unresolved import `crate::network`
+  --> src/server/mod.rs:12:12
+   |
+12 | use crate::network::NetworkConfig;
+   |            ^^^^^^^ could not find `network` in the crate root
+
+error[E0432]: unresolved import `crate::network`
+ --> src/server/builder.rs:7:12
+  |
+7 | use crate::network::NetworkConfig;
+  |            ^^^^^^^ could not find `network` in the crate root
+
+error[E0432]: unresolved imports `crate::consensus::BoundedGhostdag`, `crate::consensus::NamespaceOp`
+ --> src/server/handler/basic_ops.rs:3:24
+  |
+3 | use crate::consensus::{BoundedGhostdag, NamespaceOp};
+  |                        ^^^^^^^^^^^^^^^  ^^^^^^^^^^^ no `NamespaceOp` in `consensus`
+  |                        |
+  |                        no `BoundedGhostdag` in `consensus`
+  |                        help: a similar name exists in the module: `EnhancedGhostdag`
+
+error[E0432]: unresolved imports `crate::protocol::Qid`, `crate::protocol::Stat`
+ --> src/server/handler/basic_ops.rs:5:23
+  |
+5 | use crate::protocol::{Qid, Stat};
+  |                       ^^^  ^^^^ no `Stat` in `protocol`
+  |                       |
+  |                       no `Qid` in `protocol`
+  |                       help: a similar name exists in the module: `Fid`
+  |
+  = help: consider importing this variant instead:
+          crate::NinePMessage::Stat
+
+error[E0432]: unresolved import `crate::synth`
+ --> src/server/handler/ninep_extensions.rs:9:12
+  |
+9 | use crate::synth::SyntheticFilesystem;
+  |            ^^^^^ could not find `synth` in the crate root
+
+error[E0432]: unresolved import `crate::consensus::BoundedGhostdag`
+  --> src/server/handler/mod.rs:13:5
+   |
+13 | use crate::consensus::BoundedGhostdag;
+   |     ^^^^^^^^^^^^^^^^^^---------------
+   |     |                 |
+   |     |                 help: a similar name exists in the module: `EnhancedGhostdag`
+   |     no `BoundedGhostdag` in `consensus`
+
+error[E0432]: unresolved import `crate::synth`
+  --> src/server/handler/mod.rs:16:12
+   |
+16 | use crate::synth::SyntheticFilesystem;
+   |            ^^^^^ could not find `synth` in the crate root
+
+error[E0432]: unresolved import `crate::namespace_manager`
+   --> src/server/mod.rs:308:24
+    |
+308 |             use crate::namespace_manager::NamespaceManager;
+    |                        ^^^^^^^^^^^^^^^^^ could not find `namespace_manager` in the crate root
+
+error[E0432]: unresolved import `crate::namespace_manager`
+   --> src/server/mod.rs:337:24
+    |
+337 |             use crate::namespace_manager::MeshMessageHandler;
+    |                        ^^^^^^^^^^^^^^^^^ could not find `namespace_manager` in the crate root
+
+error[E0432]: unresolved import `wasmtime`
+  --> src/wasm/composition.rs:10:5
+   |
+10 | use wasmtime::*;
+   |     ^^^^^^^^ use of unresolved module or unlinked crate `wasmtime`
+   |
+   = help: if you wanted to use a crate named `wasmtime`, use `cargo add wasmtime` to add it to your `Cargo.toml`
+
+error[E0432]: unresolved import `wasmtime`
+  --> src/wasm/consensus_host.rs:11:5
+   |
+11 | use wasmtime::{Caller, Linker};
+   |     ^^^^^^^^ use of unresolved module or unlinked crate `wasmtime`
+   |
+   = help: if you wanted to use a crate named `wasmtime`, use `cargo add wasmtime` to add it to your `Cargo.toml`
+
+error[E0432]: unresolved import `wasmtime`
+  --> src/wasm/threadsafe.rs:19:5
+   |
+19 | use wasmtime::{Caller, Engine, Instance, Linker, Module, Store};
+   |     ^^^^^^^^ use of unresolved module or unlinked crate `wasmtime`
+   |
+   = help: if you wanted to use a crate named `wasmtime`, use `cargo add wasmtime` to add it to your `Cargo.toml`
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `wasmtime_wasi`
+  --> src/wasm/threadsafe.rs:20:5
+   |
+20 | use wasmtime_wasi::preview1::{self, WasiP1Ctx};
+   |     ^^^^^^^^^^^^^ use of unresolved module or unlinked crate `wasmtime_wasi`
+   |
+   = help: if you wanted to use a crate named `wasmtime_wasi`, use `cargo add wasmtime_wasi` to add it to your `Cargo.toml`
+
+error[E0432]: unresolved import `wasmtime_wasi`
+  --> src/wasm/threadsafe.rs:20:5
+   |
+20 | use wasmtime_wasi::preview1::{self, WasiP1Ctx};
+   |     ^^^^^^^^^^^^^ use of unresolved module or unlinked crate `wasmtime_wasi`
+   |
+   = help: if you wanted to use a crate named `wasmtime_wasi`, use `cargo add wasmtime_wasi` to add it to your `Cargo.toml`
+
+error[E0432]: unresolved import `wasmtime_wasi`
+  --> src/wasm/threadsafe.rs:21:5
+   |
+21 | use wasmtime_wasi::WasiCtxBuilder;
+   |     ^^^^^^^^^^^^^ use of unresolved module or unlinked crate `wasmtime_wasi`
+   |
+   = help: if you wanted to use a crate named `wasmtime_wasi`, use `cargo add wasmtime_wasi` to add it to your `Cargo.toml`
+
+error[E0433]: failed to resolve: could not find `sycl` in the crate root
+  --> src/wasm/threadsafe.rs:24:12
+   |
+24 | use crate::sycl::ffi::{
+   |            ^^^^ could not find `sycl` in the crate root
+
+error[E0432]: unresolved import `crate::gpu`
+  --> src/wasm/threadsafe.rs:23:12
+   |
+23 | use crate::gpu::{get_device_state, register_device_state, DeviceState};
+   |            ^^^ could not find `gpu` in the crate root
+
+error[E0432]: unresolved import `wasmtime`
+  --> src/wasm/translator.rs:10:5
+   |
+10 | use wasmtime::{Engine, Instance, Linker, Memory, Module, Store};
+   |     ^^^^^^^^ use of unresolved module or unlinked crate `wasmtime`
+   |
+   = help: if you wanted to use a crate named `wasmtime`, use `cargo add wasmtime` to add it to your `Cargo.toml`
+
+error[E0432]: unresolved import `wasmtime_wasi`
+  --> src/wasm/translator.rs:11:5
+   |
+11 | use wasmtime_wasi::{WasiCtx, WasiCtxBuilder};
+   |     ^^^^^^^^^^^^^ use of unresolved module or unlinked crate `wasmtime_wasi`
+   |
+   = help: if you wanted to use a crate named `wasmtime_wasi`, use `cargo add wasmtime_wasi` to add it to your `Cargo.toml`
+
+error[E0432]: unresolved import `crate::synth`
+  --> src/settrans.rs:14:12
+   |
+14 | use crate::synth::{ControlHandler, SyntheticFilesystem};
+   |            ^^^^^ could not find `synth` in the crate root
+
+error[E0432]: unresolved import `wasmtime_wasi`
+  --> src/wasm/composition.rs:11:5
+   |
+11 | use wasmtime_wasi::{WasiCtx, WasiCtxBuilder};
+   |     ^^^^^^^^^^^^^ use of unresolved module or unlinked crate `wasmtime_wasi`
+   |
+   = help: if you wanted to use a crate named `wasmtime_wasi`, use `cargo add wasmtime_wasi` to add it to your `Cargo.toml`
+
+warning: unexpected `cfg` condition value: `testing`
+ --> src/protocol.rs:8:7
+  |
+8 | #[cfg(feature = "testing")]
+  |       ^^^^^^^^^^^^^^^^^^^
+  |
+  = note: expected values for `feature` are: `base64`, `blake3`, `chacha20poly1305`, `default`, `ecc`, `ed25519-dalek`, `fuse`, `fuser`, `hkdf`, `hmac`, `k256`, `p256`, `quic`, `quinn`, `rcgen`, `reqwest`, `rustls`, `serde_arrays`, `sha2`, `translators`, `wasm`, `webpki-roots`, `x25519-dalek`, and `xmx`
+  = help: consider adding `testing` as a feature in `Cargo.toml`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: `#[warn(unexpected_cfgs)]` on by default
+
+warning: unexpected `cfg` condition value: `testing`
+  --> src/protocol.rs:28:12
+   |
+28 | #[cfg_attr(feature = "testing", derive(Arbitrary))]
+   |            ^^^^^^^^^^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `base64`, `blake3`, `chacha20poly1305`, `default`, `ecc`, `ed25519-dalek`, `fuse`, `fuser`, `hkdf`, `hmac`, `k256`, `p256`, `quic`, `quinn`, `rcgen`, `reqwest`, `rustls`, `serde_arrays`, `sha2`, `translators`, `wasm`, `webpki-roots`, `x25519-dalek`, and `xmx`
+   = help: consider adding `testing` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `testing`
+  --> src/consensus.rs:13:7
+   |
+13 | #[cfg(feature = "testing")]
+   |       ^^^^^^^^^^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `base64`, `blake3`, `chacha20poly1305`, `default`, `ecc`, `ed25519-dalek`, `fuse`, `fuser`, `hkdf`, `hmac`, `k256`, `p256`, `quic`, `quinn`, `rcgen`, `reqwest`, `rustls`, `serde_arrays`, `sha2`, `translators`, `wasm`, `webpki-roots`, `x25519-dalek`, and `xmx`
+   = help: consider adding `testing` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `testing`
+  --> src/consensus.rs:15:7
+   |
+15 | #[cfg(feature = "testing")]
+   |       ^^^^^^^^^^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `base64`, `blake3`, `chacha20poly1305`, `default`, `ecc`, `ed25519-dalek`, `fuse`, `fuser`, `hkdf`, `hmac`, `k256`, `p256`, `quic`, `quinn`, `rcgen`, `reqwest`, `rustls`, `serde_arrays`, `sha2`, `translators`, `wasm`, `webpki-roots`, `x25519-dalek`, and `xmx`
+   = help: consider adding `testing` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `testing`
+  --> src/consensus.rs:25:12
+   |
+25 | #[cfg_attr(feature = "testing", derive(Arbitrary))]
+   |            ^^^^^^^^^^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `base64`, `blake3`, `chacha20poly1305`, `default`, `ecc`, `ed25519-dalek`, `fuse`, `fuser`, `hkdf`, `hmac`, `k256`, `p256`, `quic`, `quinn`, `rcgen`, `reqwest`, `rustls`, `serde_arrays`, `sha2`, `translators`, `wasm`, `webpki-roots`, `x25519-dalek`, and `xmx`
+   = help: consider adding `testing` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `testing`
+  --> src/consensus.rs:55:7
+   |
+55 | #[cfg(feature = "testing")]
+   |       ^^^^^^^^^^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `base64`, `blake3`, `chacha20poly1305`, `default`, `ecc`, `ed25519-dalek`, `fuse`, `fuser`, `hkdf`, `hmac`, `k256`, `p256`, `quic`, `quinn`, `rcgen`, `reqwest`, `rustls`, `serde_arrays`, `sha2`, `translators`, `wasm`, `webpki-roots`, `x25519-dalek`, and `xmx`
+   = help: consider adding `testing` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unused import: `rustls::server::AllowAnyAuthenticatedClient`
+  --> src/transport.rs:10:5
+   |
+10 | use rustls::server::AllowAnyAuthenticatedClient;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `rustls::Error as RustlsError`
+  --> src/transport.rs:12:5
+   |
+12 | use rustls::Error as RustlsError;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `SystemTime`
+  --> src/transport.rs:17:27
+   |
+17 | use std::time::{Duration, SystemTime};
+   |                           ^^^^^^^^^^
+
+warning: unused import: `NistP256`
+  --> src/identity.rs:12:12
+   |
+12 | use p256::{NistP256, PublicKey as P256PublicKey, SecretKey as P256SecretKey};
+   |            ^^^^^^^^
+
+warning: ambiguous glob re-exports
+  --> src/lib.rs:56:9
+   |
+56 | pub use translators::*;
+   |         ^^^^^^^^^^^^^^ the name `TranslatorInfo` in the type namespace is first re-exported here
+...
+81 | pub use settrans::*;
+   |         ----------- but the name `TranslatorInfo` in the type namespace is also re-exported here
+   |
+   = note: `#[warn(ambiguous_glob_reexports)]` on by default
+
+warning: unexpected `cfg` condition value: `gpu`
+  --> src/server/mod.rs:15:7
+   |
+15 | #[cfg(feature = "gpu")]
+   |       ^^^^^^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `base64`, `blake3`, `chacha20poly1305`, `default`, `ecc`, `ed25519-dalek`, `fuse`, `fuser`, `hkdf`, `hmac`, `k256`, `p256`, `quic`, `quinn`, `rcgen`, `reqwest`, `rustls`, `serde_arrays`, `sha2`, `translators`, `wasm`, `webpki-roots`, `x25519-dalek`, and `xmx`
+   = help: consider adding `gpu` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `gpu`
+  --> src/server/mod.rs:17:7
+   |
+17 | #[cfg(feature = "gpu")]
+   |       ^^^^^^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `base64`, `blake3`, `chacha20poly1305`, `default`, `ecc`, `ed25519-dalek`, `fuse`, `fuser`, `hkdf`, `hmac`, `k256`, `p256`, `quic`, `quinn`, `rcgen`, `reqwest`, `rustls`, `serde_arrays`, `sha2`, `translators`, `wasm`, `webpki-roots`, `x25519-dalek`, and `xmx`
+   = help: consider adding `gpu` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `synthetic`
+  --> src/server/mod.rs:25:7
+   |
+25 | #[cfg(feature = "synthetic")]
+   |       ^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `base64`, `blake3`, `chacha20poly1305`, `default`, `ecc`, `ed25519-dalek`, `fuse`, `fuser`, `hkdf`, `hmac`, `k256`, `p256`, `quic`, `quinn`, `rcgen`, `reqwest`, `rustls`, `serde_arrays`, `sha2`, `translators`, `wasm`, `webpki-roots`, `x25519-dalek`, and `xmx`
+   = help: consider adding `synthetic` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+Some errors have detailed explanations: E0432, E0433.
+For more information about an error, try `rustc --explain E0432`.
+warning: `ninepe-server` (lib) generated 14 warnings
+warning: ninepe-server@1.0.0: Skipping SYCL build (gpu feature disabled)
+error: could not compile `ninepe-server` (lib) due to 21 previous errors; 14 warnings emitted

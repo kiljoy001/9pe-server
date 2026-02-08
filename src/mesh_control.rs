@@ -234,7 +234,7 @@ mod tests {
         let synth = SyntheticFilesystem::new();
         let identity = Arc::new(crate::identity::SovereignIdentity::generate().unwrap());
         let dht = Arc::new(crate::dht::SovereignDht::new(identity.clone()));
-        let mesh = Arc::new(MeshNetwork::new(identity, dht, 9650, vec![]));
+        let mesh = Arc::new(MeshNetwork::new(identity, dht, 9650, vec![], vec![]));
 
         register_mesh_control(&synth, mesh)
             .await

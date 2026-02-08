@@ -6,6 +6,21 @@ use crate::consensus::ConsensusCoordinator;
 use crate::synth::{ControlHandler, SyntheticFilesystem};
 use anyhow::Result;
 use std::path::PathBuf;
+use serde::Deserialize;
+
+#[derive(Deserialize)]
+struct DagInfo {
+    tips: Vec<String>,
+}
+
+#[derive(Deserialize)]
+struct PeerEntry { // Renamed to avoid confusion if needed, or keeping local
+    peer_id: String,
+    address: String,
+    blocks_ahead: u64,
+    latency_ms: u64,
+}
+
 use std::sync::Arc;
 
 /// Register consensus control files in the synthetic filesystem
@@ -135,7 +150,7 @@ impl ControlHandler for SubmitHandler {
         let tx: serde_json::Value = serde_json::from_str(&tx_data)?;
 
         // Submit to consensus
-        futures::executor::block_on(async { self.consensus.submit_transaction(tx).await })?;
+        futures::executor::block_on(async { self.consensus.submit_transaction(serde_json::to_vec(&tx)?).await })?;
 
         Ok(())
     }
@@ -153,15 +168,15 @@ impl ControlHandler for BlocksHandler {
         let mut output = String::from("Recent Blocks\n=============\n");
         for block in blocks {
             let parent_display = block
-                .parent_id
-                .as_ref()
-                .map(|p| p.chars().take(8).collect::<String>())
+                .parent_hashes
+                .first()
+                .map(|p| hex::encode(p).chars().take(8).collect::<String>())
                 .unwrap_or_else(|| "genesis".to_string());
 
             output.push_str(&format!(
-                "Block {} | Height: {} | Parent: {} | Timestamp: {}\n",
-                &block.block_id.chars().take(8).collect::<String>(),
-                block.height,
+                "Block {} | Blue Score: {} | Parent: {} | Timestamp: {}\n",
+                &hex::encode(block.hash).chars().take(8).collect::<String>(), // block_id
+                block.blue_score, // height
                 parent_display,
                 block.timestamp
             ));
@@ -182,23 +197,16 @@ struct DagHandler {
 
 impl ControlHandler for DagHandler {
     fn read(&self) -> Result<Vec<u8>> {
-        let dag_info = futures::executor::block_on(self.consensus.get_dag_structure());
+        let dag_info_val = futures::executor::block_on(self.consensus.get_dag_structure());
+        let dag_info: DagInfo = serde_json::from_value(dag_info_val)?;
 
         let output = format!(
             "DAG Structure\n\
              =============\n\
-             Total Vertices: {}\n\
-             Total Edges: {}\n\
              Tips: {}\n\
-             Orphans: {}\n\
-             Max Depth: {}\n\
              \n\
              Recent Tips:\n",
-            dag_info.total_vertices,
-            dag_info.total_edges,
-            dag_info.tips.len(),
-            dag_info.orphans,
-            dag_info.max_depth
+            dag_info.tips.len()
         );
 
         let mut output_bytes = output.into_bytes();
@@ -221,7 +229,9 @@ struct PeersHandler {
 
 impl ControlHandler for PeersHandler {
     fn read(&self) -> Result<Vec<u8>> {
-        let peers = futures::executor::block_on(self.consensus.get_network_peers());
+        let peers_val = futures::executor::block_on(self.consensus.get_network_peers());
+        // Since get_network_peers now returns Value, we can use it directly
+        let peers: Vec<PeerEntry> = serde_json::from_value(peers_val)?;
 
         let mut output = String::from("Consensus Peers\n===============\n");
         for peer in peers {

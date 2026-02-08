@@ -1,0 +1,269 @@
+
+running 69 tests
+test compatibility::tests::test_enhanced_message_detection ... ok
+test compatibility::tests::test_compatibility_session_creation ... ok
+test compatibility::tests::test_invalid_version_rejection ... ok
+test compatibility::tests::test_feature_availability ... ok
+test compatibility::tests::test_capability_mapper ... ok
+test compatibility::tests::test_version_negotiation_enhanced ... ok
+test compatibility::tests::test_legacy_version_translation ... ok
+test compatibility::tests::test_message_size_limits ... ok
+test compatibility::tests::test_version_negotiation_legacy ... ok
+test concurrency::tests::test_atomic_counter ... ok
+test concurrency::tests::test_atomic_counter_overflow ... ok
+test concurrency::tests::test_priority_ordering ... ok
+test concurrency::tests::test_lock_free_queue ... ok
+test concurrency::tests::test_task_creation ... ok
+test concurrency::tests::test_work_stealing_deque ... ok
+test concurrency::tests::test_deadlock_detector ... ok
+test consensus::tests::test_block_chain ... ok
+test consensus::tests::test_genesis_block ... ok
+test concurrency::tests::test_priority_rwlock ... ok
+test consensus::tests::test_ghostdag_creation ... ok
+test consensus::tests::test_memory_optimization ... ok
+test consensus::tests::test_vote_and_commit ... ok
+test crypto::tests::test_crypto_system_creation ... ok
+test crypto::tests::test_session_cleanup ... ok
+test crypto::tests::test_session_creation ... ok
+test crypto::tests::test_crypto_stats ... ok
+test consensus::tests::test_garbage_collection ... ok
+test memory::tests::test_memory_manager ... ok
+test memory::tests::test_basic_allocation ... ok
+test memory::tests::test_allocation_strategies ... ok
+test memory::tests::test_memory_pool_creation ... ok
+test memory::tests::test_memory_stats ... ok
+test memory::tests::test_out_of_memory ... ok
+test memory::tests::test_pool_growth ... ok
+test protocol::tests::test_legacy_compatibility ... ok
+test memory::tests::test_size_alignment ... ok
+test protocol::tests::test_connection_state ... ok
+test protocol::tests::test_message_serialization_roundtrip ... ok
+test crypto::tests::test_session_limits ... ok
+test protocol::tests::test_stream_messages ... ok
+test protocol::tests::test_write_read_message ... ok
+test rate_limiter::tests::test_allocation_guard ... ok
+test rate_limiter::tests::test_memory_limits ... ok
+test rate_limiter::tests::test_per_ip_limit ... ok
+test crypto::tests::test_message_size_limits ... ok
+test rate_limiter::tests::test_rate_limiting ... ok
+test synthetic::tests::test_generator_removal ... ok
+test synthetic::tests::test_parameter_update ... ok
+test synthetic::tests::test_force_refresh ... ok
+test synthetic::tests::test_content_caching ... ok
+test synthetic::tests::test_static_template_generation ... ok
+test synthetic::tests::test_synthetic_system_creation ... ok
+test synthetic::tests::test_register_generator ... ok
+test translators::tests::test_capability_enforcement ... ok
+test translators::tests::test_parent_child_relationship ... ok
+test translators::tests::test_message_passing ... ok
+test synthetic::tests::test_system_metrics_generator ... ok
+test synthetic::tests::test_system_limits ... ok
+test translators::tests::test_capability_management ... ok
+test translators::tests::test_spawn_translator ... ok
+test translators::tests::test_translator_system_creation ... ok
+test translators::tests::test_system_limits ... ok
+test translators::tests::test_translator_cleanup ... ok
+test transport::tests::test_quic_session_message_handling ... ok
+test transport::tests::test_message_size_validation ... ok
+test consensus::tests::test_pebbling_cache_bounds ... ok
+test crypto::tests::test_encrypt_decrypt_roundtrip ... ok
+test crypto::tests::test_replay_protection ... ok
+test concurrency::tests::test_priority_scheduler ... ok
+
+test result: ok. 69 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 8 tests
+test tests::test_adaptive_limits ... ok
+test tests::test_load_based_adaptation ... ok
+test tests::test_rate_limiting_enforcement ... ok
+test tests::test_reputation_decay ... ok
+test tests::test_reputation_levels ... ok
+test tests::test_statistics_tracking ... ok
+test tests::test_blacklist_whitelist ... ok
+test tests::test_concurrent_requests ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.00s
+
+
+running 7 tests
+test prop_atomic_counter_monotonic ... ok
+test shrinking_tests::prop_minimal_failing_case ... ok
+test prop_consensus_block_invariants ... ok
+test prop_write_message_safe_constructor ... ok
+test prop_message_size_bounds ... ok
+test prop_message_serialization_roundtrip ... ok
+test prop_message_sequence_processing ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.05s
+
+
+running 1 test
+test legacy_message_size_is_reasonable ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 6 tests
+test brutal_memory_fragmentation ... ok
+test brutal_protocol_fuzzing ... ok
+test brutal_message_bomb ... ok
+test brutal_crypto_race ... ok
+test brutal_concurrency_stress ... ok
+test brutal_consensus_fork_bomb ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s
+
+
+running 1 test
+test tests::test_basic_functionality ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 1 test
+test atomic_counter_increments ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 5 tests
+test tests::test_connection_stats ... ok
+test tests::test_connection_state_transitions ... ok
+test tests::test_invalid_state_transitions ... ok
+test tests::test_concurrent_session_management ... ok
+test tests::test_timeout_cleanup ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.15s
+
+
+running 1 test
+test crypto_system_has_session_capacity ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 1 test
+test tests::test_basic_functionality ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 1 test
+test fault_injection_placeholder ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 7 tests
+test formal_verification_tests::test_blocking_behavior ... ok
+test formal_verification_tests::test_invalid_tasklet_transitions ... ok
+test formal_verification_tests::test_failure_transitions ... ok
+test formal_verification_tests::test_valid_tasklet_transitions ... ok
+test ghostdag_formal_verification::test_ghostdag_blue_selection_invariant ... ok
+test ghostdag_formal_verification::test_ghostdag_anticone_size_bound ... ok
+test ghostdag_formal_verification::test_memory_optimization_bounds ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.23s
+
+
+running 6 tests
+test test_consensus_operations ... ok
+test test_k_parameter_enforcement ... ok
+test test_blue_red_classification ... ok
+test test_garbage_collection ... ok
+test test_space_optimization ... ok
+test test_streaming_window_bounds ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+
+running 9 tests
+test tests::test_buffer_refcounting ... ok
+test tests::test_buffer_splitting ... ok
+test tests::test_fragmentation_resistance ... ok
+test tests::test_pool_reuse ... ok
+test tests::test_zero_copy_buffer_basic ... ok
+test tests::test_pool_prewarm ... ok
+test tests::test_pool_size_classes ... ok
+test tests::test_concurrent_allocation ... ok
+test tests::test_memory_efficiency ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 1 test
+test default_pool_config_has_reasonable_limits ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 1 test
+test tests::test_basic_functionality ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 1 test
+test protocol_message_roundtrip_serialization ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 1 test
+test tests::test_basic_functionality ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 1 test
+test read_message_contains_payload ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 3 tests
+test test_quic_vs_tcp_benefits ... ok
+test test_quic_message_validation ... ok
+test test_rate_limiting_integration ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 2 tests
+test tests::test_priority_ordering ... ok
+test tests::test_queue_overflow ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 8 tests
+test prop_synthetic_file_bomb ... ok
+test prop_memory_exhaustion_protection ... FAILED
+test test_deadlock_attempt ... ok
+test prop_protocol_version_confusion ... ok
+test prop_translator_isolation_breach_attempt ... ok
+test test_concurrent_session_race ... ok
+test prop_consensus_fork_resistance ... ok
+test prop_message_serialization_adversarial has been running for over 60 seconds
+test prop_message_serialization_adversarial ... ok
+
+failures:
+
+---- prop_memory_exhaustion_protection stdout ----
+
+thread 'prop_memory_exhaustion_protection' panicked at /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quickcheck-1.0.3/src/tester.rs:165:28:
+[quickcheck] TEST FAILED. Arguments: ([])
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    prop_memory_exhaustion_protection
+
+test result: FAILED. 7 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 28568.89s
+

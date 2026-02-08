@@ -1,0 +1,789 @@
+warning: unused variable: `out_dir`
+   --> build.rs:176:9
+    |
+176 |     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+    |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_out_dir`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: `ninepe-server` (build script) generated 1 warning
+   Compiling ninepe-server v1.0.0 (/home/scott/Repo/9pe-server)
+warning: ninepe-server@1.0.0: Using pre-built Intel oneAPI SYCL library
+warning: ninepe-server@1.0.0: Using pre-built AdaptiveCpp SYCL library
+warning: ninepe-server@1.0.0: SYCL backends available: Intel oneAPI, AdaptiveCpp
+warning: ninepe-server@1.0.0: Both backends built as separate shared libraries
+warning: ninepe-server@1.0.0: Runtime will dynamically load appropriate backend per GPU
+warning: ninepe-server@1.0.0: No static linking - using dlopen via libloading crate
+error[E0433]: failed to resolve: could not find `connection_state` in `super`
+   --> src/server/handler/mod.rs:156:42
+    |
+156 |                 let auth_handle = super::connection_state::FileHandle {
+    |                                          ^^^^^^^^^^^^^^^^ could not find `connection_state` in `super`
+
+error[E0433]: failed to resolve: unresolved import
+  --> src/server/mod.rs:90:16
+   |
+90 |         crate::util::log_execution_mode();
+   |                ^^^^
+   |                |
+   |                unresolved import
+   |                help: a similar path exists: `tracing_subscriber::util`
+
+error[E0433]: failed to resolve: unresolved import
+   --> src/server/mod.rs:350:36
+    |
+350 |         let settrans_path = crate::util::get_settrans_directory();
+    |                                    ^^^^
+    |                                    |
+    |                                    unresolved import
+    |                                    help: a similar path exists: `tracing_subscriber::util`
+
+error[E0433]: failed to resolve: unresolved import
+  --> src/auto_mount.rs:95:28
+   |
+95 |         let n_dir = crate::util::get_n_directory();
+   |                            ^^^^
+   |                            |
+   |                            unresolved import
+   |                            help: a similar path exists: `tracing_subscriber::util`
+
+error[E0433]: failed to resolve: unresolved import
+   --> src/auto_mount.rs:101:29
+    |
+101 |         let n_path = crate::util::get_n_directory();
+    |                             ^^^^
+    |                             |
+    |                             unresolved import
+    |                             help: a similar path exists: `tracing_subscriber::util`
+
+error[E0433]: failed to resolve: unresolved import
+   --> src/auto_mount.rs:158:29
+    |
+158 |         let n_path = crate::util::get_n_directory();
+    |                             ^^^^
+    |                             |
+    |                             unresolved import
+    |                             help: a similar path exists: `tracing_subscriber::util`
+
+error[E0433]: failed to resolve: unresolved import
+   --> src/auto_mount.rs:319:33
+    |
+319 |             mount_point: crate::util::get_n_directory(),
+    |                                 ^^^^
+    |                                 |
+    |                                 unresolved import
+    |                                 help: a similar path exists: `tracing_subscriber::util`
+
+error[E0433]: failed to resolve: unresolved import
+   --> src/auto_mount.rs:372:44
+    |
+372 |                         let n_dir = crate::util::get_n_directory();
+    |                                            ^^^^
+    |                                            |
+    |                                            unresolved import
+    |                                            help: a similar path exists: `tracing_subscriber::util`
+
+error[E0425]: cannot find function `uniform64` in module `proptest::array`
+   --> src/consensus.rs:71:30
+    |
+ 71 |             proptest::array::uniform64(any::<u8>()),
+    |                              ^^^^^^^^^ help: a function with a similar name exists: `uniform14`
+    |
+   ::: /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/proptest-1.7.0/src/array.rs:195:1
+    |
+195 | small_array!(14 uniform14);
+    | -------------------------- similarly named function `uniform14` defined here
+
+error[E0433]: failed to resolve: could not find `PublicKey` in `consensus`
+   --> src/server/mod.rs:234:45
+    |
+234 |                     match crate::consensus::PublicKey::from_hex(
+    |                                             ^^^^^^^^^ could not find `PublicKey` in `consensus`
+    |
+help: consider importing one of these items
+    |
+  3 + use k256::PublicKey;
+    |
+  3 + use p256::PublicKey;
+    |
+  3 + use rcgen::PublicKey;
+    |
+  3 + use x25519_dalek::PublicKey;
+    |
+help: if you import `PublicKey`, refer to it directly
+    |
+234 -                     match crate::consensus::PublicKey::from_hex(
+234 +                     match PublicKey::from_hex(
+    |
+
+warning: unused import: `Context`
+ --> src/consensus/crypto.rs:1:14
+  |
+1 | use anyhow::{Context, Result};
+  |              ^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `RngCore`
+ --> src/consensus/crypto.rs:3:25
+  |
+3 | use rand::{rngs::OsRng, RngCore};
+  |                         ^^^^^^^
+
+warning: unused import: `rustls::server::AllowAnyAuthenticatedClient`
+  --> src/transport.rs:10:5
+   |
+10 | use rustls::server::AllowAnyAuthenticatedClient;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `rustls::Error as RustlsError`
+  --> src/transport.rs:12:5
+   |
+12 | use rustls::Error as RustlsError;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `SystemTime`
+  --> src/transport.rs:17:27
+   |
+17 | use std::time::{Duration, SystemTime};
+   |                           ^^^^^^^^^^
+
+warning: unused import: `NistP256`
+  --> src/identity.rs:12:12
+   |
+12 | use p256::{NistP256, PublicKey as P256PublicKey, SecretKey as P256SecretKey};
+   |            ^^^^^^^^
+
+warning: ambiguous glob re-exports
+   --> src/lib.rs:58:9
+    |
+ 58 | pub use protocol::*;
+    |         ^^^^^^^^^^^ the name `ProtocolError` in the type namespace is first re-exported here
+...
+137 | pub use error::*;
+    |         -------- but the name `ProtocolError` in the type namespace is also re-exported here
+    |
+    = note: `#[warn(ambiguous_glob_reexports)]` on by default
+
+warning: ambiguous glob re-exports
+  --> src/lib.rs:60:9
+   |
+60 | pub use translators::*;
+   |         ^^^^^^^^^^^^^^ the name `TranslatorInfo` in the type namespace is first re-exported here
+...
+89 | pub use settrans::*;
+   |         ----------- but the name `TranslatorInfo` in the type namespace is also re-exported here
+
+warning: unused import: `BoundedGhostdag`
+ --> src/server/handler/basic_ops.rs:3:24
+  |
+3 | use crate::consensus::{BoundedGhostdag, NamespaceOp};
+  |                        ^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::consensus::BoundedGhostdag`
+  --> src/server/handler/mod.rs:13:5
+   |
+13 | use crate::consensus::BoundedGhostdag;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: ambiguous glob re-exports
+   --> src/lib.rs:87:9
+    |
+ 87 | pub use server::*;
+    |         ^^^^^^^^^ the name `ServerConfig` in the type namespace is first re-exported here
+...
+128 | pub use config::*;
+    |         --------- but the name `ServerConfig` in the type namespace is also re-exported here
+
+warning: unused import: `BlockState`
+  --> src/namespace_manager.rs:10:17
+   |
+10 |     consensus::{BlockState, BoundedGhostdag, NamespaceOp},
+   |                 ^^^^^^^^^^
+
+warning: unused import: `crate::consensus::GhostdagBlock as Block`
+   --> src/namespace_manager.rs:396:17
+    |
+396 |             use crate::consensus::GhostdagBlock as Block;
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::consensus::GhostdagBlock as Block`
+   --> src/namespace_manager.rs:599:17
+    |
+599 |             use crate::consensus::GhostdagBlock as Block;
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `WorkReceipt`
+  --> src/mesh.rs:25:67
+   |
+25 | use crate::identity::{NodeId, NodePermissions, SovereignIdentity, WorkReceipt};
+   |                                                                   ^^^^^^^^^^^
+
+error[E0119]: conflicting implementations of trait `Clone` for type `MeshNetwork`
+  --> src/mesh.rs:30:10
+   |
+29 | #[derive(Clone)]
+   |          ----- first implementation here
+30 | #[derive(Clone)]
+   |          ^^^^^ conflicting implementation for `MeshNetwork`
+
+warning: unused variable: `tx`
+    --> src/consensus.rs:1226:44
+     |
+1226 |     pub async fn submit_transaction(&self, tx: Vec<u8>) -> anyhow::Result<()> {
+     |                                            ^^ help: if this is intentional, prefix it with an underscore: `_tx`
+     |
+     = note: `#[warn(unused_variables)]` on by default
+
+error[E0425]: cannot find function `configure_client_pinned` in this scope
+   --> src/transport.rs:325:29
+    |
+325 |         let client_config = configure_client_pinned(record.certificate_der)?;
+    |                             ^^^^^^^^^^^^^^^^^^^^^^^ help: a function with a similar name exists: `configure_client`
+...
+377 | fn configure_client() -> Result<ClientConfig, ProtocolError> {
+    | ------------------------------------------------------------ similarly named function `configure_client` defined here
+
+error[E0425]: cannot find function `configure_client_pinned` in this scope
+   --> src/transport.rs:343:29
+    |
+343 |         let client_config = configure_client_pinned(record.certificate_der)?;
+    |                             ^^^^^^^^^^^^^^^^^^^^^^^ help: a function with a similar name exists: `configure_client`
+...
+377 | fn configure_client() -> Result<ClientConfig, ProtocolError> {
+    | ------------------------------------------------------------ similarly named function `configure_client` defined here
+
+error[E0599]: no method named `upgrade` found for struct `libp2p::libp2p_tcp::Transport` in the current scope
+   --> src/dht.rs:209:14
+    |
+208 |           let transport = libp2p::tcp::tokio::Transport::new(libp2p::tcp::Config::default())
+    |  _________________________-
+209 | |             .upgrade(libp2p::core::upgrade::Version::V1)
+    | |             -^^^^^^^ method not found in `libp2p::libp2p_tcp::Transport<libp2p::libp2p_tcp::tokio::Tcp>`
+    | |_____________|
+    |
+    |
+   ::: /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libp2p-core-0.40.1/src/transport.rs:240:8
+    |
+240 |       fn upgrade(self, version: upgrade::Version) -> upgrade::Builder<Self>
+    |          ------- the method is available for `libp2p::libp2p_tcp::Transport<libp2p::libp2p_tcp::tokio::Tcp>` here
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: trait `Transport` which provides `upgrade` is implemented but not in scope; perhaps you want to import it
+    |
+  6 + use libp2p::Transport;
+    |
+
+error[E0061]: this function takes 1 argument but 2 arguments were supplied
+    --> src/server/mod.rs:223:40
+     |
+ 223 |             let coordinator = Arc::new(crate::consensus::ConsensusCoordinator::new(
+     |                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 224 |                 config.node_id.clone(),
+ 225 |                 crypto,
+     |                 ------ unexpected argument #2 of type `Arc<Ed25519Provider>`
+     |
+note: associated function defined here
+    --> src/consensus.rs:1169:12
+     |
+1169 |     pub fn new(node_id: String) -> Self {
+     |            ^^^
+help: remove the extra argument
+     |
+ 224 -                 config.node_id.clone(),
+ 225 -                 crypto,
+ 224 +                 config.node_id.clone(),
+     |
+
+error[E0277]: `()` is not a future
+   --> src/server/mod.rs:241:34
+    |
+241 | ...                   .await;
+    |                        ^^^^^ `()` is not a future
+    |
+    = help: the trait `futures::Future` is not implemented for `()`
+    = note: () must be a future or must implement `IntoFuture` to be awaited
+    = note: required for `()` to implement `std::future::IntoFuture`
+help: remove the `.await`
+    |
+241 -                                 .await;
+241 +                                 ;
+    |
+
+error[E0596]: cannot borrow data in an `Arc` as mutable
+   --> src/namespace_manager.rs:641:13
+    |
+641 |             consensus.add_block(block)?;
+    |             ^^^^^^^^^ cannot borrow as mutable
+    |
+    = help: trait `DerefMut` is required to modify through a dereference, but it is not implemented for `Arc<EnhancedGhostdag>`
+
+error[E0599]: no function or associated item named `generate` found for struct `ed25519_dalek::SigningKey` in the current scope
+   --> src/consensus/crypto.rs:16:35
+    |
+ 16 |         let keypair = SigningKey::generate(&mut csprng);
+    |                                   ^^^^^^^^ function or associated item not found in `ed25519_dalek::SigningKey`
+    |
+note: if you're trying to build a new `ed25519_dalek::SigningKey` consider using one of the following associated functions:
+      ed25519_dalek::SigningKey::from_bytes
+      ed25519_dalek::SigningKey::from_keypair_bytes
+   --> /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ed25519-dalek-2.2.0/src/signing.rs:104:5
+    |
+104 |     pub fn from_bytes(secret_key: &SecretKey) -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+138 |     pub fn from_keypair_bytes(bytes: &[u8; 64]) -> Result<SigningKey, SignatureError> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `accept` found for struct `Connecting` in the current scope
+   --> src/transport.rs:199:53
+    |
+199 |                     let connection = match incoming.accept().await {
+    |                                                     ^^^^^^ method not found in `Connecting`
+    |
+    = help: items from traits can only be used if the trait is implemented and in scope
+note: `ConnectionListener` defines an item `accept`, perhaps you need to implement it
+   --> src/transport.rs:46:1
+    |
+ 46 | pub trait ConnectionListener: Send + Sync {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `extend` found for struct `RootCertStore` in the current scope
+   --> src/transport.rs:379:11
+    |
+379 |     roots.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
+    |           ^^^^^^ method not found in `RootCertStore`
+    |
+help: one of the expressions' fields has a method of the same name
+    |
+379 |     roots.roots.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
+    |           ++++++
+
+error[E0308]: mismatched types
+   --> src/transport.rs:381:62
+    |
+381 |     let client_config = ClientConfig::with_root_certificates(Arc::new(roots))
+    |                         ------------------------------------ ^^^^^^^^^^^^^^^ expected `RootCertStore`, found `Arc<RootCertStore>`
+    |                         |
+    |                         arguments to this function are incorrect
+    |
+    = note: expected struct `RootCertStore`
+               found struct `Arc<RootCertStore>`
+note: associated function defined here
+   --> /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quinn-proto-0.10.6/src/config.rs:824:12
+    |
+824 |     pub fn with_root_certificates(roots: rustls::RootCertStore) -> Self {
+    |            ^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `map_err` found for struct `quinn::ClientConfig` in the current scope
+   --> src/transport.rs:382:10
+    |
+381 |       let client_config = ClientConfig::with_root_certificates(Arc::new(roots))
+    |  _________________________-
+382 | |         .map_err(|e| ProtocolError::InvalidMessage(format!("TLS config error: {}", e)))?;
+    | |         -^^^^^^^ method not found in `quinn::ClientConfig`
+    | |_________|
+    |
+
+error[E0277]: `StaticSecret` doesn't implement `std::fmt::Debug`
+  --> src/identity.rs:49:5
+   |
+35 | #[derive(Debug, Clone)]
+   |          ----- in this derive macro expansion
+...
+49 |     pub x25519_key: StaticSecret,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `std::fmt::Debug` is not implemented for `StaticSecret`
+
+error[E0599]: no function or associated item named `generate` found for struct `ed25519_dalek::SigningKey` in the current scope
+   --> src/identity.rs:74:39
+    |
+ 74 |         let ed25519_key = SigningKey::generate(&mut OsRng);
+    |                                       ^^^^^^^^ function or associated item not found in `ed25519_dalek::SigningKey`
+    |
+note: if you're trying to build a new `ed25519_dalek::SigningKey` consider using one of the following associated functions:
+      ed25519_dalek::SigningKey::from_bytes
+      ed25519_dalek::SigningKey::from_keypair_bytes
+   --> /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ed25519-dalek-2.2.0/src/signing.rs:104:5
+    |
+104 |     pub fn from_bytes(secret_key: &SecretKey) -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+138 |     pub fn from_keypair_bytes(bytes: &[u8; 64]) -> Result<SigningKey, SignatureError> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no function or associated item named `from_secret_key` found for struct `p256::elliptic_curve::PublicKey` in the current scope
+   --> src/identity.rs:79:42
+    |
+ 79 |         let p256_public = P256PublicKey::from_secret_key(&p256_key);
+    |                                          ^^^^^^^^^^^^^^^ function or associated item not found in `p256::elliptic_curve::PublicKey<NistP256>`
+    |
+note: if you're trying to build a new `p256::elliptic_curve::PublicKey<NistP256>` consider using one of the following associated functions:
+      p256::elliptic_curve::PublicKey::<C>::from_affine
+      p256::elliptic_curve::PublicKey::<C>::from_secret_scalar
+      p256::elliptic_curve::PublicKey::<C>::from_sec1_bytes
+   --> /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/elliptic-curve-0.13.8/src/public_key.rs:102:5
+    |
+102 |       pub fn from_affine(point: AffinePoint<C>) -> Result<Self> {
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+112 |       pub fn from_secret_scalar(scalar: &NonZeroScalar<C>) -> Self {
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+126 | /     pub fn from_sec1_bytes(bytes: &[u8]) -> Result<Self>
+127 | |     where
+128 | |         FieldBytesSize<C>: ModulusSize,
+129 | |         AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+    | |________________________________________________________________^
+help: there is an associated function `from_secret_scalar` with a similar name
+    |
+ 79 -         let p256_public = P256PublicKey::from_secret_key(&p256_key);
+ 79 +         let p256_public = P256PublicKey::from_secret_scalar(&p256_key);
+    |
+
+error[E0308]: mismatched types
+   --> src/dht.rs:426:40
+    |
+426 |                 PeerId::from_multihash(multihash).ok()
+    |                 ---------------------- ^^^^^^^^^ expected `Multihash<64>`, found `PeerId`
+    |                 |
+    |                 arguments to this function are incorrect
+    |
+    = note: expected struct `Multihash<64>`
+               found struct `PeerId`
+note: associated function defined here
+   --> /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libp2p-identity-0.2.13/src/peer_id.rs:94:12
+    |
+ 94 |     pub fn from_multihash(multihash: Multihash) -> Result<PeerId, Multihash> {
+    |            ^^^^^^^^^^^^^^
+help: call `Into::into` on this expression to convert `PeerId` into `Multihash<64>`
+    |
+426 |                 PeerId::from_multihash(multihash.into()).ok()
+    |                                                 +++++++
+
+error[E0277]: the `?` operator can only be applied to values that implement `std::ops::Try`
+  --> src/server/handler/auth.rs:67:21
+   |
+67 |     let signature = Signature::from_bytes(&response.signature)?;
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `?` operator cannot be applied to type `Signature`
+   |
+   = help: the trait `std::ops::Try` is not implemented for `Signature`
+
+error[E0277]: the trait bound `WasiCtx: WasiSnapshotPreview1` is not satisfied
+   --> src/wasm/threadsafe.rs:303:9
+    |
+303 |         wasmtime_wasi::p1::wasi_snapshot_preview1::add_to_linker(&mut linker, |data: &mut StoreData| &mut data.wasi)?;
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `WasiSnapshotPreview1` is not implemented for `WasiCtx`
+    |
+    = help: the trait `WasiSnapshotPreview1` is implemented for `WasiP1Ctx`
+note: required by a bound in `wasmtime_wasi::p1::wasi_snapshot_preview1::add_to_linker`
+   --> /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wasmtime-wasi-41.0.1/src/p1.rs:803:1
+    |
+803 | / wiggle::from_witx!({
+804 | |     witx: ["witx/p1/wasi_snapshot_preview1.witx"],
+805 | |     async: {
+806 | |         wasi_snapshot_preview1::{
+...   |
+814 | |     errors: { errno => trappable Error },
+815 | | });
+    | |__^ required by this bound in `add_to_linker`
+    = note: this error originates in the macro `wiggle::from_witx` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0599]: no method named `read_to_string` found for reference `&Path` in the current scope
+  --> src/gpu/xmx.rs:56:50
+   |
+56 |         if std::path::Path::new("/proc/cpuinfo").read_to_string()
+   |                                                  ^^^^^^^^^^^^^^ method not found in `&Path`
+
+error[E0599]: no method named `read_to_string` found for reference `&Path` in the current scope
+  --> src/gpu/xmx.rs:71:50
+   |
+71 |         if std::path::Path::new("/proc/cpuinfo").read_to_string()
+   |                                                  ^^^^^^^^^^^^^^ method not found in `&Path`
+
+error[E0609]: no field `tip_height` on type `serde_json::Value`
+   --> src/consensus_control.rs:105:21
+    |
+105 |             metrics.tip_height,
+    |                     ^^^^^^^^^^ unknown field
+
+error[E0609]: no field `total_blocks` on type `serde_json::Value`
+   --> src/consensus_control.rs:106:21
+    |
+106 |             metrics.total_blocks,
+    |                     ^^^^^^^^^^^^ unknown field
+
+error[E0609]: no field `pending_tx_count` on type `serde_json::Value`
+   --> src/consensus_control.rs:107:21
+    |
+107 |             metrics.pending_tx_count,
+    |                     ^^^^^^^^^^^^^^^^ unknown field
+
+error[E0609]: no field `network_hashrate` on type `serde_json::Value`
+   --> src/consensus_control.rs:108:21
+    |
+108 |             metrics.network_hashrate,
+    |                     ^^^^^^^^^^^^^^^^ unknown field
+
+error[E0609]: no field `active_peers` on type `serde_json::Value`
+   --> src/consensus_control.rs:109:21
+    |
+109 |             metrics.active_peers,
+    |                     ^^^^^^^^^^^^ unknown field
+
+error[E0609]: no field `consensus_reached` on type `serde_json::Value`
+   --> src/consensus_control.rs:110:21
+    |
+110 |             metrics.consensus_reached
+    |                     ^^^^^^^^^^^^^^^^^ unknown field
+
+error[E0308]: mismatched types
+    --> src/consensus_control.rs:138:79
+     |
+ 138 |         futures::executor::block_on(async { self.consensus.submit_transaction(tx).await })?;
+     |                                                            ------------------ ^^ expected `Vec<u8>`, found `Value`
+     |                                                            |
+     |                                                            arguments to this method are incorrect
+     |
+     = note: expected struct `Vec<u8>`
+                  found enum `serde_json::Value`
+note: method defined here
+    --> src/consensus.rs:1226:18
+     |
+1226 |     pub async fn submit_transaction(&self, tx: Vec<u8>) -> anyhow::Result<()> {
+     |                  ^^^^^^^^^^^^^^^^^^        -----------
+
+error[E0609]: no field `parent_id` on type `GhostdagBlock`
+   --> src/consensus_control.rs:156:18
+    |
+156 |                 .parent_id
+    |                  ^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `hash`, `parent_hashes`, `timestamp`, `blue_score`, `red_score` ... and 7 others
+
+error[E0609]: no field `block_id` on type `GhostdagBlock`
+   --> src/consensus_control.rs:163:24
+    |
+163 |                 &block.block_id.chars().take(8).collect::<String>(),
+    |                        ^^^^^^^^ unknown field
+    |
+    = note: available fields are: `hash`, `parent_hashes`, `timestamp`, `blue_score`, `red_score` ... and 7 others
+
+error[E0609]: no field `height` on type `GhostdagBlock`
+   --> src/consensus_control.rs:164:23
+    |
+164 |                 block.height,
+    |                       ^^^^^^ unknown field
+    |
+    = note: available fields are: `hash`, `parent_hashes`, `timestamp`, `blue_score`, `red_score` ... and 7 others
+
+error[E0609]: no field `total_vertices` on type `serde_json::Value`
+   --> src/consensus_control.rs:197:22
+    |
+197 |             dag_info.total_vertices,
+    |                      ^^^^^^^^^^^^^^ unknown field
+
+error[E0609]: no field `total_edges` on type `serde_json::Value`
+   --> src/consensus_control.rs:198:22
+    |
+198 |             dag_info.total_edges,
+    |                      ^^^^^^^^^^^ unknown field
+
+error[E0609]: no field `tips` on type `serde_json::Value`
+   --> src/consensus_control.rs:199:22
+    |
+199 |             dag_info.tips.len(),
+    |                      ^^^^ unknown field
+
+error[E0609]: no field `orphans` on type `serde_json::Value`
+   --> src/consensus_control.rs:200:22
+    |
+200 |             dag_info.orphans,
+    |                      ^^^^^^^ unknown field
+
+error[E0609]: no field `max_depth` on type `serde_json::Value`
+   --> src/consensus_control.rs:201:22
+    |
+201 |             dag_info.max_depth
+    |                      ^^^^^^^^^ unknown field
+
+error[E0609]: no field `tips` on type `serde_json::Value`
+   --> src/consensus_control.rs:205:29
+    |
+205 |         for tip in dag_info.tips {
+    |                             ^^^^ unknown field
+
+error[E0609]: no field `peer_id` on type `std::string::String`
+   --> src/consensus_control.rs:230:22
+    |
+230 |                 peer.peer_id, peer.address, peer.blocks_ahead, peer.latency_ms
+    |                      ^^^^^^^ unknown field
+
+error[E0609]: no field `address` on type `std::string::String`
+   --> src/consensus_control.rs:230:36
+    |
+230 |                 peer.peer_id, peer.address, peer.blocks_ahead, peer.latency_ms
+    |                                    ^^^^^^^ unknown field
+
+error[E0609]: no field `blocks_ahead` on type `std::string::String`
+   --> src/consensus_control.rs:230:50
+    |
+230 |                 peer.peer_id, peer.address, peer.blocks_ahead, peer.latency_ms
+    |                                                  ^^^^^^^^^^^^ unknown field
+
+error[E0609]: no field `latency_ms` on type `std::string::String`
+   --> src/consensus_control.rs:230:69
+    |
+230 |                 peer.peer_id, peer.address, peer.blocks_ahead, peer.latency_ms
+    |                                                                     ^^^^^^^^^^ unknown field
+
+error[E0609]: no field `tip_height` on type `serde_json::Value`
+   --> src/consensus_control.rs:267:21
+    |
+267 |             metrics.tip_height,
+    |                     ^^^^^^^^^^ unknown field
+
+error[E0609]: no field `total_blocks` on type `serde_json::Value`
+   --> src/consensus_control.rs:268:21
+    |
+268 |             metrics.total_blocks,
+    |                     ^^^^^^^^^^^^ unknown field
+
+error[E0609]: no field `pending_tx_count` on type `serde_json::Value`
+   --> src/consensus_control.rs:269:21
+    |
+269 |             metrics.pending_tx_count,
+    |                     ^^^^^^^^^^^^^^^^ unknown field
+
+error[E0609]: no field `network_hashrate` on type `serde_json::Value`
+   --> src/consensus_control.rs:270:21
+    |
+270 |             metrics.network_hashrate,
+    |                     ^^^^^^^^^^^^^^^^ unknown field
+
+error[E0609]: no field `active_peers` on type `serde_json::Value`
+   --> src/consensus_control.rs:271:21
+    |
+271 |             metrics.active_peers
+    |                     ^^^^^^^^^^^^ unknown field
+
+warning: unused variable: `node_id`
+    --> src/consensus.rs:1216:30
+     |
+1216 |     pub fn trust_node(&self, node_id: String, public_key: [u8; 32]) {
+     |                              ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_node_id`
+
+warning: unused variable: `public_key`
+    --> src/consensus.rs:1216:47
+     |
+1216 |     pub fn trust_node(&self, node_id: String, public_key: [u8; 32]) {
+     |                                               ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_public_key`
+
+warning: variable does not need to be mutable
+   --> src/transport.rs:354:9
+    |
+354 |     let mut server_config = rustls::ServerConfig::builder()
+    |         ----^^^^^^^^^^^^^
+    |         |
+    |         help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+error[E0310]: the parameter type `T` may not live long enough
+  --> src/wasm/translator.rs:87:9
+   |
+87 | /         linker.func_wrap(
+88 | |             "9p",
+89 | |             "read",
+90 | |             |_caller: wasmtime::Caller<'_, T>, _fid: i32, _offset: i64, _count: i32| -> i32 {
+...  |
+94 | |             },
+95 | |         )?;
+   | |         ^
+   | |         |
+   | |_________the parameter type `T` must be valid for the static lifetime...
+   |           ...so that the type `T` will meet its required lifetime bounds
+   |
+help: consider adding an explicit lifetime bound
+   |
+83 |     fn add_ninep_functions<T: 'static>(&self, linker: &mut Linker<T>) -> Result<()> {
+   |                             +++++++++
+
+error[E0310]: the parameter type `T` may not live long enough
+   --> src/wasm/translator.rs:98:9
+    |
+ 98 | /         linker.func_wrap(
+ 99 | |             "9p",
+100 | |             "write",
+101 | |             |_caller: wasmtime::Caller<'_, T>,
+...   |
+109 | |             },
+110 | |         )?;
+    | |         ^
+    | |         |
+    | |_________the parameter type `T` must be valid for the static lifetime...
+    |           ...so that the type `T` will meet its required lifetime bounds
+    |
+help: consider adding an explicit lifetime bound
+    |
+ 83 |     fn add_ninep_functions<T: 'static>(&self, linker: &mut Linker<T>) -> Result<()> {
+    |                             +++++++++
+
+error[E0310]: the parameter type `T` may not live long enough
+   --> src/wasm/translator.rs:113:9
+    |
+113 | /         linker.func_wrap(
+114 | |             "9p",
+115 | |             "stat",
+116 | |             |_caller: wasmtime::Caller<'_, T>, _fid: i32, _stat_ptr: i32| -> i32 {
+...   |
+119 | |             },
+120 | |         )?;
+    | |         ^
+    | |         |
+    | |_________the parameter type `T` must be valid for the static lifetime...
+    |           ...so that the type `T` will meet its required lifetime bounds
+    |
+help: consider adding an explicit lifetime bound
+    |
+ 83 |     fn add_ninep_functions<T: 'static>(&self, linker: &mut Linker<T>) -> Result<()> {
+    |                             +++++++++
+
+warning: unused variable: `b`
+   --> src/gpu/xmx.rs:113:5
+    |
+113 |     b: &[f32],
+    |     ^ help: if this is intentional, prefix it with an underscore: `_b`
+
+warning: unused variable: `precision`
+   --> src/gpu/xmx.rs:114:5
+    |
+114 |     precision: XmxPrecision,
+    |     ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_precision`
+
+error[E0382]: borrow of moved value: `hardware`
+   --> src/gpu/xmx.rs:165:70
+    |
+158 |     let hardware = detect_xmx_capability();
+    |         -------- move occurs because `hardware` has type `XmxHardware`, which does not implement the `Copy` trait
+159 |     let effective_precision = match (hardware, &precision) {
+    |                                      -------- value moved here
+...
+165 |     tracing::info!("AI workload: {:?} on {:?}", effective_precision, hardware);
+    |                                                                      ^^^^^^^^ value borrowed here after move
+    |
+    = note: this error originates in the macro `$crate::__macro_support::format_args` which comes from the expansion of the macro `tracing::info` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: consider cloning the value if the performance cost is acceptable
+    |
+159 |     let effective_precision = match (hardware.clone(), &precision) {
+    |                                              ++++++++
+
+Some errors have detailed explanations: E0061, E0119, E0277, E0308, E0310, E0382, E0425, E0433, E0596...
+For more information about an error, try `rustc --explain E0061`.
+warning: `ninepe-server` (lib) generated 21 warnings
+warning: ninepe-server@1.0.0: Using pre-built Intel oneAPI SYCL library
+warning: ninepe-server@1.0.0: Using pre-built AdaptiveCpp SYCL library
+warning: ninepe-server@1.0.0: SYCL backends available: Intel oneAPI, AdaptiveCpp
+warning: ninepe-server@1.0.0: Both backends built as separate shared libraries
+warning: ninepe-server@1.0.0: Runtime will dynamically load appropriate backend per GPU
+warning: ninepe-server@1.0.0: No static linking - using dlopen via libloading crate
+error: could not compile `ninepe-server` (lib) due to 59 previous errors; 21 warnings emitted

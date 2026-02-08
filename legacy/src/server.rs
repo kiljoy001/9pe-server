@@ -10,8 +10,8 @@ use anyhow::{Result, Context};
 use tracing::{info, warn, debug};
 use std::time::Instant;
 
-use ninepee::{NinePeeMessage, NINEPEE_VERSION, LEGACY_VERSION};
-use ninepee::Session;
+use ninep::{NinePMessage, NINEP_VERSION, LEGACY_VERSION};
+use ninep::Session;
 use crate::metrics;
 use crate::synthetic::{SyntheticGenerator, CpuInfoGenerator, MemInfoGenerator};
 use crate::translator_base::{TranslatorRegistry, RegistryConfig};
@@ -78,51 +78,51 @@ impl FileSystemServer {
     }
 
     /// Process a 9P.e message and return response
-    pub async fn process_message(&self, msg: NinePeeMessage) -> Result<NinePeeMessage> {
+    pub async fn process_message(&self, msg: NinePMessage) -> Result<NinePMessage> {
         debug!("Processing message: {:?}", msg);
         let start = Instant::now();
         let msg_type = format!("{:?}", msg);
 
         let result = match msg {
-            NinePeeMessage::Version { msize, version } => {
+            NinePMessage::Version { msize, version } => {
                 self.handle_version(msize, version).await
             }
 
-            NinePeeMessage::Attach { fid, afid: _, uname, aname } => {
+            NinePMessage::Attach { fid, afid: _, uname, aname } => {
                 self.handle_attach(fid, uname, aname).await
             }
 
-            NinePeeMessage::Walk { fid, newfid, wnames } => {
+            NinePMessage::Walk { fid, newfid, wnames } => {
                 self.handle_walk(fid, newfid, wnames).await
             }
 
-            NinePeeMessage::Open { fid, mode } => {
+            NinePMessage::Open { fid, mode } => {
                 self.handle_open(fid, mode).await
             }
 
-            NinePeeMessage::Read { fid, offset, count } => {
+            NinePMessage::Read { fid, offset, count } => {
                 self.handle_read(fid, offset, count).await
             }
 
-            NinePeeMessage::Write { fid, offset, data } => {
+            NinePMessage::Write { fid, offset, data } => {
                 self.handle_write(fid, offset, data).await
             }
 
-            NinePeeMessage::Clunk { fid } => {
+            NinePMessage::Clunk { fid } => {
                 self.handle_clunk(fid).await
             }
 
-            NinePeeMessage::Stat { fid } => {
+            NinePMessage::Stat { fid } => {
                 self.handle_stat(fid).await
             }
 
-            NinePeeMessage::Remove { fid } => {
+            NinePMessage::Remove { fid } => {
                 self.handle_remove(fid).await
             }
 
             _ => {
                 warn!("Unhandled message type");
-                Ok(NinePeeMessage::Error {
+                Ok(NinePMessage::Error {
                     ename: "Not implemented".to_string(),
                     errno: 1,
                 })
@@ -138,16 +138,16 @@ impl FileSystemServer {
     }
 
     /// Handle version negotiation
-    async fn handle_version(&self, msize: u32, version: String) -> Result<NinePeeMessage> {
+    async fn handle_version(&self, msize: u32, version: String) -> Result<NinePMessage> {
         info!("Version negotiation: {} with msize {}", version, msize);
 
         // Support both 9P.e and legacy 9P2000
         let negotiated_version = if version.starts_with("9P.e") {
-            NINEPEE_VERSION.to_string()
+            NINEP_VERSION.to_string()
         } else if version == LEGACY_VERSION {
             LEGACY_VERSION.to_string()
         } else {
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: format!("Unknown version: {}", version),
                 errno: 1,
             });
@@ -155,14 +155,14 @@ impl FileSystemServer {
 
         let negotiated_msize = msize.min(self.max_message_size);
 
-        Ok(NinePeeMessage::Version {
+        Ok(NinePMessage::Version {
             msize: negotiated_msize,
             version: negotiated_version,
         })
     }
 
     /// Handle attach request
-    async fn handle_attach(&self, fid: u32, uname: String, aname: String) -> Result<NinePeeMessage> {
+    async fn handle_attach(&self, fid: u32, uname: String, aname: String) -> Result<NinePMessage> {
         info!("Attach request: fid={}, user={}, aname={}", fid, uname, aname);
 
         // Store root directory for this fid
@@ -170,7 +170,7 @@ impl FileSystemServer {
         fids.insert(fid, self.root.clone());
 
         // Return success with attach response
-        Ok(NinePeeMessage::Attach {
+        Ok(NinePMessage::Attach {
             fid,
             afid: 0, // No authentication required for now
             uname,
@@ -179,7 +179,7 @@ impl FileSystemServer {
     }
 
     /// Handle walk request
-    async fn handle_walk(&self, fid: u32, newfid: u32, wnames: Vec<String>) -> Result<NinePeeMessage> {
+    async fn handle_walk(&self, fid: u32, newfid: u32, wnames: Vec<String>) -> Result<NinePMessage> {
         debug!("Walk: fid={}, newfid={}, path={:?}", fid, newfid, wnames);
 
         let fids = self.fids.read().await;
@@ -207,7 +207,7 @@ impl FileSystemServer {
             .unwrap_or_else(|_| current_path.clone());
 
         if !canonical.starts_with(&self.root) {
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: "Path outside root".to_string(),
                 errno: 2,
             });
@@ -219,7 +219,7 @@ impl FileSystemServer {
         fids.insert(newfid, canonical);
 
         // Return success
-        Ok(NinePeeMessage::Walk {
+        Ok(NinePMessage::Walk {
             fid: newfid,
             newfid,
             wnames: vec![],
@@ -227,7 +227,7 @@ impl FileSystemServer {
     }
 
     /// Handle open request
-    async fn handle_open(&self, fid: u32, mode: u8) -> Result<NinePeeMessage> {
+    async fn handle_open(&self, fid: u32, mode: u8) -> Result<NinePMessage> {
         debug!("Open: fid={}, mode={}", fid, mode);
 
         let fids = self.fids.read().await;
@@ -236,18 +236,18 @@ impl FileSystemServer {
 
         // Check if path exists (real file or synthetic)
         if !path.exists() && !self.is_synthetic_path(&path) {
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: "File not found".to_string(),
                 errno: 2,
             });
         }
 
         // For now, always allow open
-        Ok(NinePeeMessage::Open { fid, mode })
+        Ok(NinePMessage::Open { fid, mode })
     }
 
     /// Handle read request
-    async fn handle_read(&self, fid: u32, offset: u64, count: u32) -> Result<NinePeeMessage> {
+    async fn handle_read(&self, fid: u32, offset: u64, count: u32) -> Result<NinePMessage> {
         debug!("Read: fid={}, offset={}, count={}", fid, offset, count);
 
         let fids = self.fids.read().await;
@@ -269,7 +269,7 @@ impl FileSystemServer {
             metrics::record_file_op("read", true, Some(bytes_read));
 
             // Return Write message with the data slice (9P convention: Read response is Write)
-            Ok(NinePeeMessage::Write {
+            Ok(NinePMessage::Write {
                 fid,
                 offset,
                 data: data[start..end].to_vec(),
@@ -283,7 +283,7 @@ impl FileSystemServer {
                 metrics::record_file_op("read_synthetic", true, Some(bytes_read));
 
                 // Return Write message with the data (9P convention: Read response is Write)
-                Ok(NinePeeMessage::Write {
+                Ok(NinePMessage::Write {
                     fid,
                     offset,
                     data,
@@ -300,7 +300,7 @@ impl FileSystemServer {
                 metrics::record_file_op("read", true, Some(bytes_read));
 
                 // Return Write message with the data slice (9P convention: Read response is Write)
-                Ok(NinePeeMessage::Write {
+                Ok(NinePMessage::Write {
                     fid,
                     offset,
                     data: data[start..end].to_vec(),
@@ -310,7 +310,7 @@ impl FileSystemServer {
     }
 
     /// Handle write request
-    async fn handle_write(&self, fid: u32, offset: u64, data: Vec<u8>) -> Result<NinePeeMessage> {
+    async fn handle_write(&self, fid: u32, offset: u64, data: Vec<u8>) -> Result<NinePMessage> {
         debug!("Write: fid={}, offset={}, len={}", fid, offset, data.len());
 
         let fids = self.fids.read().await;
@@ -320,7 +320,7 @@ impl FileSystemServer {
         drop(fids);
 
         if path.is_dir() {
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: "Cannot write to directory".to_string(),
                 errno: 21,
             });
@@ -328,7 +328,7 @@ impl FileSystemServer {
 
         // Prevent writes to synthetic files (they are read-only)
         if self.is_synthetic_path(&path) {
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: "Cannot write to synthetic file".to_string(),
                 errno: 30, // EROFS - Read-only file system
             });
@@ -351,7 +351,7 @@ impl FileSystemServer {
 
         metrics::record_file_op("write", true, Some(data.len() as u64));
 
-        Ok(NinePeeMessage::Write {
+        Ok(NinePMessage::Write {
             fid,
             offset,
             data: vec![], // Return empty to indicate success
@@ -359,17 +359,17 @@ impl FileSystemServer {
     }
 
     /// Handle clunk (close) request
-    async fn handle_clunk(&self, fid: u32) -> Result<NinePeeMessage> {
+    async fn handle_clunk(&self, fid: u32) -> Result<NinePMessage> {
         debug!("Clunk: fid={}", fid);
 
         let mut fids = self.fids.write().await;
         fids.remove(&fid);
 
-        Ok(NinePeeMessage::Clunk { fid })
+        Ok(NinePMessage::Clunk { fid })
     }
 
     /// Handle stat request
-    async fn handle_stat(&self, fid: u32) -> Result<NinePeeMessage> {
+    async fn handle_stat(&self, fid: u32) -> Result<NinePMessage> {
         debug!("Stat: fid={}", fid);
 
         let fids = self.fids.read().await;
@@ -380,11 +380,11 @@ impl FileSystemServer {
 
         // For now, return a simple stat
         // In production, would build proper Dir structure
-        Ok(NinePeeMessage::Stat { fid })
+        Ok(NinePMessage::Stat { fid })
     }
 
     /// Handle remove request
-    async fn handle_remove(&self, fid: u32) -> Result<NinePeeMessage> {
+    async fn handle_remove(&self, fid: u32) -> Result<NinePMessage> {
         debug!("Remove: fid={}", fid);
 
         let fids = self.fids.read().await;
@@ -406,7 +406,7 @@ impl FileSystemServer {
         let mut fids = self.fids.write().await;
         fids.remove(&fid);
 
-        Ok(NinePeeMessage::Remove { fid })
+        Ok(NinePMessage::Remove { fid })
     }
 
     /// Check if a path is a synthetic file

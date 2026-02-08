@@ -1,0 +1,382 @@
+warning: unexpected `cfg` condition value: `gpu`
+ --> build.rs:9:15
+  |
+9 |     #[cfg(not(feature = "gpu"))]
+  |               ^^^^^^^^^^^^^^^
+  |
+  = note: expected values for `feature` are: `base64`, `blake3`, `chacha20poly1305`, `default`, `ecc`, `ed25519-dalek`, `fuse`, `fuser`, `hkdf`, `hmac`, `k256`, `p256`, `quic`, `quinn`, `rcgen`, `reqwest`, `rustls`, `serde_arrays`, `sha2`, `translators`, `wasm`, `webpki-roots`, `x25519-dalek`, and `xmx`
+  = help: consider adding `gpu` as a feature in `Cargo.toml`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: `#[warn(unexpected_cfgs)]` on by default
+
+warning: unexpected `cfg` condition value: `gpu`
+  --> build.rs:15:11
+   |
+15 |     #[cfg(feature = "gpu")]
+   |           ^^^^^^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `base64`, `blake3`, `chacha20poly1305`, `default`, `ecc`, `ed25519-dalek`, `fuse`, `fuser`, `hkdf`, `hmac`, `k256`, `p256`, `quic`, `quinn`, `rcgen`, `reqwest`, `rustls`, `serde_arrays`, `sha2`, `translators`, `wasm`, `webpki-roots`, `x25519-dalek`, and `xmx`
+   = help: consider adding `gpu` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unused variable: `out_dir`
+   --> build.rs:176:9
+    |
+176 |     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+    |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_out_dir`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: function `try_build_intel_backend` is never used
+  --> build.rs:69:4
+   |
+69 | fn try_build_intel_backend() -> bool {
+   |    ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+
+warning: function `try_build_adaptive_backend` is never used
+   --> build.rs:132:4
+    |
+132 | fn try_build_adaptive_backend() -> bool {
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `create_stub_library` is never used
+   --> build.rs:214:4
+    |
+214 | fn create_stub_library() {
+    |    ^^^^^^^^^^^^^^^^^^^
+
+warning: function `locate_acpp_binary` is never used
+   --> build.rs:284:4
+    |
+284 | fn locate_acpp_binary(acpp_cmd: &str) -> Option<PathBuf> {
+    |    ^^^^^^^^^^^^^^^^^^
+
+warning: function `find_in_path` is never used
+   --> build.rs:297:4
+    |
+297 | fn find_in_path(bin: &str) -> Option<PathBuf> {
+    |    ^^^^^^^^^^^^
+
+warning: function `determine_runtime_dirs` is never used
+   --> build.rs:308:4
+    |
+308 | fn determine_runtime_dirs(acpp_cmd: &str) -> Vec<PathBuf> {
+    |    ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `runtime_lib_present` is never used
+   --> build.rs:347:4
+    |
+347 | fn runtime_lib_present(dir: &Path) -> bool {
+    |    ^^^^^^^^^^^^^^^^^^^
+
+warning: `ninepe-server` (build script) generated 10 warnings
+   Compiling ninepe-server v1.0.0 (/home/scott/Repo/9pe-server)
+warning: ninepe-server@1.0.0: Skipping SYCL build (gpu feature disabled)
+warning: unexpected `cfg` condition value: `testing`
+ --> src/protocol.rs:8:7
+  |
+8 | #[cfg(feature = "testing")]
+  |       ^^^^^^^^^^^^^^^^^^^
+  |
+  = note: expected values for `feature` are: `base64`, `blake3`, `chacha20poly1305`, `default`, `ecc`, `ed25519-dalek`, `fuse`, `fuser`, `hkdf`, `hmac`, `k256`, `p256`, `quic`, `quinn`, `rcgen`, `reqwest`, `rustls`, `serde_arrays`, `sha2`, `translators`, `wasm`, `webpki-roots`, `x25519-dalek`, and `xmx`
+  = help: consider adding `testing` as a feature in `Cargo.toml`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: `#[warn(unexpected_cfgs)]` on by default
+
+warning: unexpected `cfg` condition value: `testing`
+  --> src/protocol.rs:28:12
+   |
+28 | #[cfg_attr(feature = "testing", derive(Arbitrary))]
+   |            ^^^^^^^^^^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `base64`, `blake3`, `chacha20poly1305`, `default`, `ecc`, `ed25519-dalek`, `fuse`, `fuser`, `hkdf`, `hmac`, `k256`, `p256`, `quic`, `quinn`, `rcgen`, `reqwest`, `rustls`, `serde_arrays`, `sha2`, `translators`, `wasm`, `webpki-roots`, `x25519-dalek`, and `xmx`
+   = help: consider adding `testing` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `testing`
+  --> src/consensus.rs:13:7
+   |
+13 | #[cfg(feature = "testing")]
+   |       ^^^^^^^^^^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `base64`, `blake3`, `chacha20poly1305`, `default`, `ecc`, `ed25519-dalek`, `fuse`, `fuser`, `hkdf`, `hmac`, `k256`, `p256`, `quic`, `quinn`, `rcgen`, `reqwest`, `rustls`, `serde_arrays`, `sha2`, `translators`, `wasm`, `webpki-roots`, `x25519-dalek`, and `xmx`
+   = help: consider adding `testing` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `testing`
+  --> src/consensus.rs:15:7
+   |
+15 | #[cfg(feature = "testing")]
+   |       ^^^^^^^^^^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `base64`, `blake3`, `chacha20poly1305`, `default`, `ecc`, `ed25519-dalek`, `fuse`, `fuser`, `hkdf`, `hmac`, `k256`, `p256`, `quic`, `quinn`, `rcgen`, `reqwest`, `rustls`, `serde_arrays`, `sha2`, `translators`, `wasm`, `webpki-roots`, `x25519-dalek`, and `xmx`
+   = help: consider adding `testing` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `testing`
+  --> src/consensus.rs:25:12
+   |
+25 | #[cfg_attr(feature = "testing", derive(Arbitrary))]
+   |            ^^^^^^^^^^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `base64`, `blake3`, `chacha20poly1305`, `default`, `ecc`, `ed25519-dalek`, `fuse`, `fuser`, `hkdf`, `hmac`, `k256`, `p256`, `quic`, `quinn`, `rcgen`, `reqwest`, `rustls`, `serde_arrays`, `sha2`, `translators`, `wasm`, `webpki-roots`, `x25519-dalek`, and `xmx`
+   = help: consider adding `testing` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `testing`
+  --> src/consensus.rs:55:7
+   |
+55 | #[cfg(feature = "testing")]
+   |       ^^^^^^^^^^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `base64`, `blake3`, `chacha20poly1305`, `default`, `ecc`, `ed25519-dalek`, `fuse`, `fuser`, `hkdf`, `hmac`, `k256`, `p256`, `quic`, `quinn`, `rcgen`, `reqwest`, `rustls`, `serde_arrays`, `sha2`, `translators`, `wasm`, `webpki-roots`, `x25519-dalek`, and `xmx`
+   = help: consider adding `testing` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unused import: `rustls::server::AllowAnyAuthenticatedClient`
+  --> src/transport.rs:10:5
+   |
+10 | use rustls::server::AllowAnyAuthenticatedClient;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `rustls::Error as RustlsError`
+  --> src/transport.rs:12:5
+   |
+12 | use rustls::Error as RustlsError;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `SystemTime`
+  --> src/transport.rs:17:27
+   |
+17 | use std::time::{Duration, SystemTime};
+   |                           ^^^^^^^^^^
+
+warning: unused import: `NistP256`
+  --> src/identity.rs:12:12
+   |
+12 | use p256::{NistP256, PublicKey as P256PublicKey, SecretKey as P256SecretKey};
+   |            ^^^^^^^^
+
+error[E0425]: cannot find function `configure_client_pinned` in this scope
+   --> src/transport.rs:325:29
+    |
+325 |         let client_config = configure_client_pinned(record.certificate_der)?;
+    |                             ^^^^^^^^^^^^^^^^^^^^^^^ help: a function with a similar name exists: `configure_client`
+...
+377 | fn configure_client() -> Result<ClientConfig, ProtocolError> {
+    | ------------------------------------------------------------ similarly named function `configure_client` defined here
+
+error[E0425]: cannot find function `configure_client_pinned` in this scope
+   --> src/transport.rs:343:29
+    |
+343 |         let client_config = configure_client_pinned(record.certificate_der)?;
+    |                             ^^^^^^^^^^^^^^^^^^^^^^^ help: a function with a similar name exists: `configure_client`
+...
+377 | fn configure_client() -> Result<ClientConfig, ProtocolError> {
+    | ------------------------------------------------------------ similarly named function `configure_client` defined here
+
+error[E0599]: no method named `upgrade` found for struct `libp2p::libp2p_tcp::Transport` in the current scope
+   --> src/dht.rs:209:14
+    |
+208 |           let transport = libp2p::tcp::tokio::Transport::new(libp2p::tcp::Config::default())
+    |  _________________________-
+209 | |             .upgrade(libp2p::core::upgrade::Version::V1)
+    | |             -^^^^^^^ method not found in `libp2p::libp2p_tcp::Transport<libp2p::libp2p_tcp::tokio::Tcp>`
+    | |_____________|
+    |
+    |
+   ::: /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libp2p-core-0.40.1/src/transport.rs:240:8
+    |
+240 |       fn upgrade(self, version: upgrade::Version) -> upgrade::Builder<Self>
+    |          ------- the method is available for `libp2p::libp2p_tcp::Transport<libp2p::libp2p_tcp::tokio::Tcp>` here
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: trait `Transport` which provides `upgrade` is implemented but not in scope; perhaps you want to import it
+    |
+  6 + use libp2p::Transport;
+    |
+
+error[E0599]: no variant named `OutboundQueryCompleted` found for enum `libp2p::libp2p_kad::Event`
+   --> src/dht.rs:252:66
+    |
+252 | ...                   SwarmEvent::Behaviour(KademliaEvent::OutboundQueryCompleted { id, result, .. }) => {
+    |                                                            ^^^^^^^^^^^^^^^^^^^^^^
+    |
+help: there is a variant with a similar name
+    |
+252 -                             SwarmEvent::Behaviour(KademliaEvent::OutboundQueryCompleted { id, result, .. }) => {
+252 +                             SwarmEvent::Behaviour(KademliaEvent::OutboundQueryProgressed { id, result, .. }) => {
+    |
+
+error[E0609]: no field `value` on type `std::option::Option<libp2p::libp2p_kad::Record>`
+   --> src/dht.rs:284:101
+    |
+284 | ...                   if let Ok(parsed) = serde_cbor::from_slice::<DhtRecord>(&record.value) {
+    |                                                                                       ^^^^^ unknown field
+    |
+help: one of the expressions' fields has a field of the same name
+    |
+284 |                                     if let Ok(parsed) = serde_cbor::from_slice::<DhtRecord>(&record.unwrap().value) {
+    |                                                                                                     +++++++++
+
+error[E0599]: no method named `accept` found for struct `Connecting` in the current scope
+   --> src/transport.rs:199:53
+    |
+199 |                     let connection = match incoming.accept().await {
+    |                                                     ^^^^^^ method not found in `Connecting`
+    |
+    = help: items from traits can only be used if the trait is implemented and in scope
+note: `ConnectionListener` defines an item `accept`, perhaps you need to implement it
+   --> src/transport.rs:46:1
+    |
+ 46 | pub trait ConnectionListener: Send + Sync {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `extend` found for struct `RootCertStore` in the current scope
+   --> src/transport.rs:379:11
+    |
+379 |     roots.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
+    |           ^^^^^^ method not found in `RootCertStore`
+    |
+help: one of the expressions' fields has a method of the same name
+    |
+379 |     roots.roots.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
+    |           ++++++
+
+error[E0308]: mismatched types
+   --> src/transport.rs:381:62
+    |
+381 |     let client_config = ClientConfig::with_root_certificates(Arc::new(roots))
+    |                         ------------------------------------ ^^^^^^^^^^^^^^^ expected `RootCertStore`, found `Arc<RootCertStore>`
+    |                         |
+    |                         arguments to this function are incorrect
+    |
+    = note: expected struct `RootCertStore`
+               found struct `Arc<RootCertStore>`
+note: associated function defined here
+   --> /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quinn-proto-0.10.6/src/config.rs:824:12
+    |
+824 |     pub fn with_root_certificates(roots: rustls::RootCertStore) -> Self {
+    |            ^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `map_err` found for struct `quinn::ClientConfig` in the current scope
+   --> src/transport.rs:382:10
+    |
+381 |       let client_config = ClientConfig::with_root_certificates(Arc::new(roots))
+    |  _________________________-
+382 | |         .map_err(|e| ProtocolError::InvalidMessage(format!("TLS config error: {}", e)))?;
+    | |         -^^^^^^^ method not found in `quinn::ClientConfig`
+    | |_________|
+    |
+
+error[E0277]: `StaticSecret` doesn't implement `std::fmt::Debug`
+  --> src/identity.rs:49:5
+   |
+35 | #[derive(Debug, Clone)]
+   |          ----- in this derive macro expansion
+...
+49 |     pub x25519_key: StaticSecret,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `std::fmt::Debug` is not implemented for `StaticSecret`
+
+error[E0599]: no function or associated item named `generate` found for struct `ed25519_dalek::SigningKey` in the current scope
+   --> src/identity.rs:74:39
+    |
+ 74 |         let ed25519_key = SigningKey::generate(&mut OsRng);
+    |                                       ^^^^^^^^ function or associated item not found in `ed25519_dalek::SigningKey`
+    |
+note: if you're trying to build a new `ed25519_dalek::SigningKey` consider using one of the following associated functions:
+      ed25519_dalek::SigningKey::from_bytes
+      ed25519_dalek::SigningKey::from_keypair_bytes
+   --> /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ed25519-dalek-2.2.0/src/signing.rs:104:5
+    |
+104 |     pub fn from_bytes(secret_key: &SecretKey) -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+138 |     pub fn from_keypair_bytes(bytes: &[u8; 64]) -> Result<SigningKey, SignatureError> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no function or associated item named `from_secret_key` found for struct `p256::elliptic_curve::PublicKey` in the current scope
+   --> src/identity.rs:79:42
+    |
+ 79 |         let p256_public = P256PublicKey::from_secret_key(&p256_key);
+    |                                          ^^^^^^^^^^^^^^^ function or associated item not found in `p256::elliptic_curve::PublicKey<NistP256>`
+    |
+note: if you're trying to build a new `p256::elliptic_curve::PublicKey<NistP256>` consider using one of the following associated functions:
+      p256::elliptic_curve::PublicKey::<C>::from_affine
+      p256::elliptic_curve::PublicKey::<C>::from_secret_scalar
+      p256::elliptic_curve::PublicKey::<C>::from_sec1_bytes
+   --> /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/elliptic-curve-0.13.8/src/public_key.rs:102:5
+    |
+102 |       pub fn from_affine(point: AffinePoint<C>) -> Result<Self> {
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+112 |       pub fn from_secret_scalar(scalar: &NonZeroScalar<C>) -> Self {
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+126 | /     pub fn from_sec1_bytes(bytes: &[u8]) -> Result<Self>
+127 | |     where
+128 | |         FieldBytesSize<C>: ModulusSize,
+129 | |         AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+    | |________________________________________________________________^
+help: there is an associated function `from_secret_scalar` with a similar name
+    |
+ 79 -         let p256_public = P256PublicKey::from_secret_key(&p256_key);
+ 79 +         let p256_public = P256PublicKey::from_secret_scalar(&p256_key);
+    |
+
+error[E0277]: `NetworkHandle` doesn't implement `std::fmt::Debug`
+  --> src/dht.rs:48:5
+   |
+37 | #[derive(Debug)]
+   |          ----- in this derive macro expansion
+...
+48 |     network: Arc<RwLock<Option<NetworkHandle>>>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `std::fmt::Debug` is not implemented for `NetworkHandle`
+   |
+   = note: add `#[derive(Debug)]` to `NetworkHandle` or manually `impl std::fmt::Debug for NetworkHandle`
+   = help: the trait `std::fmt::Debug` is implemented for `Arc<T, A>`
+help: consider annotating `NetworkHandle` with `#[derive(Debug)]`
+   |
+55 + #[derive(Debug)]
+56 | struct NetworkHandle {
+   |
+
+error[E0308]: mismatched types
+   --> src/dht.rs:426:40
+    |
+426 |                 PeerId::from_multihash(multihash).ok()
+    |                 ---------------------- ^^^^^^^^^ expected `Multihash<64>`, found `PeerId`
+    |                 |
+    |                 arguments to this function are incorrect
+    |
+    = note: expected struct `Multihash<64>`
+               found struct `PeerId`
+note: associated function defined here
+   --> /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libp2p-identity-0.2.13/src/peer_id.rs:94:12
+    |
+ 94 |     pub fn from_multihash(multihash: Multihash) -> Result<PeerId, Multihash> {
+    |            ^^^^^^^^^^^^^^
+help: call `Into::into` on this expression to convert `PeerId` into `Multihash<64>`
+    |
+426 |                 PeerId::from_multihash(multihash.into()).ok()
+    |                                                 +++++++
+
+warning: variable does not need to be mutable
+   --> src/transport.rs:354:9
+    |
+354 |     let mut server_config = rustls::ServerConfig::builder()
+    |         ----^^^^^^^^^^^^^
+    |         |
+    |         help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+Some errors have detailed explanations: E0277, E0308, E0425, E0599, E0609.
+For more information about an error, try `rustc --explain E0277`.
+warning: `ninepe-server` (lib) generated 11 warnings
+warning: ninepe-server@1.0.0: Skipping SYCL build (gpu feature disabled)
+error: could not compile `ninepe-server` (lib) due to 14 previous errors; 11 warnings emitted

@@ -575,7 +575,7 @@ async fn main_async() -> Result<()> {
                         server
                     };
 
-                    let mut client = client::NinePeeClient::connect(&server_addr).await?;
+                    let mut client = client::NinePClient::connect(&server_addr).await?;
                     let data = client.read_file(&remote).await?;
                     tokio::fs::write(&local, data).await?;
                     info!("✅ Downloaded {} to {}", remote, local);
@@ -1088,7 +1088,7 @@ async fn handle_authenticated_tcp_connection(
     peer_addr: std::net::SocketAddr
 ) -> Result<()> {
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
-    use ninepee::NinePeeMessage;
+    use ninep::NinePMessage;
     use tokio::time::{timeout, Duration};
 
     info!("Starting authenticated 9P.e session from {}", peer_addr);
@@ -1150,7 +1150,7 @@ async fn handle_authenticated_tcp_connection(
         }
 
         // Deserialize message
-        let request = match NinePeeMessage::deserialize(msg_buf) {
+        let request = match NinePMessage::deserialize(msg_buf) {
             Ok(msg) => msg,
             Err(e) => {
                 error!("Failed to deserialize message: {}", e);
@@ -1161,7 +1161,7 @@ async fn handle_authenticated_tcp_connection(
                 }
 
                 // Send error response for malformed message
-                let error_resp = NinePeeMessage::Error {
+                let error_resp = NinePMessage::Error {
                     ename: "Malformed message".to_string(),
                     errno: 22, // EINVAL
                 };
@@ -1174,15 +1174,15 @@ async fn handle_authenticated_tcp_connection(
         };
 
         // Handle authentication requirement
-        let response = if !authenticated && !matches!(request, NinePeeMessage::Version { .. } | NinePeeMessage::Auth { .. } | NinePeeMessage::Attach { .. }) {
+        let response = if !authenticated && !matches!(request, NinePMessage::Version { .. } | NinePMessage::Auth { .. } | NinePMessage::Attach { .. }) {
             // Require authentication before allowing any operations
-            NinePeeMessage::Error {
+            NinePMessage::Error {
                 ename: "Authentication required".to_string(),
                 errno: 1,
             }
         } else {
             match &request {
-                NinePeeMessage::Auth { uname, password, .. } => {
+                NinePMessage::Auth { uname, password, .. } => {
                     // Attempt authentication with provided credentials
                     match password {
                         Some(pass) => {
@@ -1193,7 +1193,7 @@ async fn handle_authenticated_tcp_connection(
                                     info!("User '{}' authenticated successfully", uname);
                                     // Return empty Attach to indicate auth success (9P convention)
                                     // The client will then send a real Attach
-                                    NinePeeMessage::Attach {
+                                    NinePMessage::Attach {
                                         fid: 0,
                                         afid: 0,
                                         uname: uname.clone(),
@@ -1202,14 +1202,14 @@ async fn handle_authenticated_tcp_connection(
                                 },
                                 Ok(_) => {
                                     warn!("Authentication succeeded but username mismatch for '{}'", uname);
-                                    NinePeeMessage::Error {
+                                    NinePMessage::Error {
                                         ename: "Authentication failed - username mismatch".to_string(),
                                         errno: 13, // EACCES
                                     }
                                 },
                                 Err(e) => {
                                     warn!("Authentication failed for user '{}': {}", uname, e);
-                                    NinePeeMessage::Error {
+                                    NinePMessage::Error {
                                         ename: "Authentication failed".to_string(),
                                         errno: 13, // EACCES
                                     }
@@ -1218,7 +1218,7 @@ async fn handle_authenticated_tcp_connection(
                         },
                         None => {
                             warn!("Authentication attempted without password for user '{}'", uname);
-                            NinePeeMessage::Error {
+                            NinePMessage::Error {
                                 ename: "Password required for authentication".to_string(),
                                 errno: 13, // EACCES
                             }
@@ -1231,7 +1231,7 @@ async fn handle_authenticated_tcp_connection(
                         Ok(resp) => resp,
                         Err(e) => {
                             error!("Error processing message: {}", e);
-                            NinePeeMessage::Error {
+                            NinePMessage::Error {
                                 ename: e.to_string(),
                                 errno: 1,
                             }
@@ -1432,7 +1432,7 @@ async fn handle_authenticated_quic_stream(
     fs_server: Arc<server::FileSystemServer>,
     auth_service: Arc<auth::AuthService>
 ) -> Result<()> {
-    use ninepee::NinePeeMessage;
+    use ninep::NinePMessage;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
     info!("Handling new authenticated QUIC stream");
@@ -1463,7 +1463,7 @@ async fn handle_authenticated_quic_stream(
         }
 
         // Deserialize message
-        let request = match NinePeeMessage::deserialize(msg_buf) {
+        let request = match NinePMessage::deserialize(msg_buf) {
             Ok(msg) => msg,
             Err(e) => {
                 error!("Failed to deserialize QUIC message: {}", e);
@@ -1472,15 +1472,15 @@ async fn handle_authenticated_quic_stream(
         };
 
         // Handle authentication requirement
-        let response = if !authenticated && !matches!(request, NinePeeMessage::Version { .. } | NinePeeMessage::Auth { .. } | NinePeeMessage::Attach { .. }) {
+        let response = if !authenticated && !matches!(request, NinePMessage::Version { .. } | NinePMessage::Auth { .. } | NinePMessage::Attach { .. }) {
             // Require authentication before allowing any operations
-            NinePeeMessage::Error {
+            NinePMessage::Error {
                 ename: "Authentication required".to_string(),
                 errno: 1,
             }
         } else {
             match &request {
-                NinePeeMessage::Auth { uname, password, .. } => {
+                NinePMessage::Auth { uname, password, .. } => {
                     // Attempt authentication with provided credentials
                     match password {
                         Some(pass) => {
@@ -1490,21 +1490,21 @@ async fn handle_authenticated_quic_stream(
                                     _connection_user = Some(user);
                                     info!("User '{}' authenticated successfully via QUIC", uname);
                                     // Return success (in production, should return proper auth response)
-                                    NinePeeMessage::Version {
+                                    NinePMessage::Version {
                                         msize: 8192,
                                         version: "9P.e".to_string(),
                                     }
                                 },
                                 Ok(_) => {
                                     warn!("QUIC authentication succeeded but username mismatch for '{}'", uname);
-                                    NinePeeMessage::Error {
+                                    NinePMessage::Error {
                                         ename: "Authentication failed - username mismatch".to_string(),
                                         errno: 13, // EACCES
                                     }
                                 },
                                 Err(e) => {
                                     warn!("QUIC authentication failed for user '{}': {}", uname, e);
-                                    NinePeeMessage::Error {
+                                    NinePMessage::Error {
                                         ename: "Authentication failed".to_string(),
                                         errno: 13, // EACCES
                                     }
@@ -1513,7 +1513,7 @@ async fn handle_authenticated_quic_stream(
                         },
                         None => {
                             warn!("QUIC authentication attempted without password for user '{}'", uname);
-                            NinePeeMessage::Error {
+                            NinePMessage::Error {
                                 ename: "Password required for authentication".to_string(),
                                 errno: 13, // EACCES
                             }
@@ -1526,7 +1526,7 @@ async fn handle_authenticated_quic_stream(
                         Ok(resp) => resp,
                         Err(e) => {
                             error!("Error processing QUIC message: {}", e);
-                            NinePeeMessage::Error {
+                            NinePMessage::Error {
                                 ename: e.to_string(),
                                 errno: 1,
                             }

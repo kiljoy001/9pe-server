@@ -147,11 +147,11 @@ Replace VM layer in GhostDAG with 9PE:
 module GhostDAG_9PE = struct
   type contract_runtime =
     | VM of vm_context        (* Old way *)
-    | NinePE of string         (* New way: just a path! *)
+    | NineP of string         (* New way: just a path! *)
 
   let execute_contract = function
     | VM ctx -> Vm_integration.execute ctx
-    | NinePE path ->
+    | NineP path ->
         (* Contract execution is just file I/O! *)
         write_file (path ^ "/input") input_data;
         read_file (path ^ "/output")

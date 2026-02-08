@@ -14,27 +14,122 @@ fn main() {
 
     #[cfg(feature = "gpu")]
     {
-    println!("cargo:rerun-if-changed=sycl_wrapper/sycl_ffi.cpp");
-    println!("cargo:rerun-if-changed=sycl_wrapper/sycl_ffi.hpp");
+    println!("cargo:rerun-if-changed=sycl_ffi.cpp");
+    println!("cargo:rerun-if-changed=sycl_ffi.hpp");
 
-    // Check for Intel oneAPI pre-built library first
-    let intel_lib = PathBuf::from("libsycl_ffi.so");
-    let has_intel_oneapi = intel_lib.exists() &&
-        PathBuf::from("/opt/intel/oneapi/compiler").exists();
+    // NEW DUAL-BACKEND STRATEGY:
+    // Try to build BOTH Intel oneAPI and AdaptiveCpp backends
+    // At runtime, we'll select the appropriate backend per device
 
-    if has_intel_oneapi {
-        println!("cargo:warning=Using pre-built Intel oneAPI SYCL library");
-        println!("cargo:rustc-link-search=native={}", env::current_dir().unwrap().display());
-        println!("cargo:rustc-link-lib=dylib=sycl_ffi");
-        println!("cargo:rustc-link-search=native=/opt/intel/oneapi/compiler/latest/lib");
-        println!("cargo:rustc-link-search=native=/opt/intel/oneapi/mkl/latest/lib");
-        println!("cargo:rustc-link-arg=-Wl,-rpath=/opt/intel/oneapi/compiler/latest/lib");
-        println!("cargo:rustc-link-arg=-Wl,-rpath=/opt/intel/oneapi/mkl/latest/lib");
-        println!("cargo:rustc-link-lib=stdc++");
-        println!("cargo:warning=Intel oneAPI SYCL library linked successfully");
+    let mut backends_available = vec![];
+
+    // Try Intel oneAPI backend first
+    let intel_success = try_build_intel_backend();
+    if intel_success {
+        backends_available.push("Intel oneAPI");
+    }
+
+    // Try AdaptiveCpp backend
+    let adaptive_success = try_build_adaptive_backend();
+    if adaptive_success {
+        backends_available.push("AdaptiveCpp");
+    }
+
+    if backends_available.is_empty() {
+        println!("cargo:warning=No SYCL backends available - SYCL support will be disabled");
+        println!("cargo:warning=Install Intel oneAPI for Intel GPU support");
+        println!("cargo:warning=Install AdaptiveCpp for NVIDIA/AMD GPU support");
+        create_stub_library();
         return;
     }
 
+    println!("cargo:warning=SYCL backends available: {}", backends_available.join(", "));
+
+    // RUNTIME DYNAMIC LOADING STRATEGY:
+    // Both backends are compiled as separate .so files
+    // At RUNTIME, we use dlopen (via libloading) to load the appropriate backend
+    // based on detected GPU vendor
+    //
+    // NO static linking! This allows:
+    // - Loading both backends simultaneously (no symbol conflicts)
+    // - Per-device backend selection (Intel GPU → Intel oneAPI, NVIDIA → AdaptiveCpp)
+    // - Easy deployment (just ship both .so files)
+    //
+    // The backend_loader.rs module handles dynamic loading at runtime
+
+    println!("cargo:warning=Both backends built as separate shared libraries");
+    println!("cargo:warning=Runtime will dynamically load appropriate backend per GPU");
+    println!("cargo:warning=No static linking - using dlopen via libloading crate");
+
+    } // End of #[cfg(feature = "gpu")] block
+}
+
+/// Try to build Intel oneAPI backend
+/// Returns true if successful, false otherwise
+fn try_build_intel_backend() -> bool {
+    // Check if Intel oneAPI compiler (icpx) is available
+    let icpx_available = Command::new("icpx").arg("--version").output().is_ok()
+        || Command::new("/opt/intel/oneapi/compiler/latest/bin/icpx")
+            .arg("--version")
+            .output()
+            .is_ok();
+
+    if !icpx_available {
+        println!("cargo:warning=Intel oneAPI compiler (icpx) not found - Intel backend disabled");
+        return false;
+    }
+
+    // Check if pre-built library exists
+    let intel_lib = PathBuf::from("libsycl_ffi_intel.so");
+    if intel_lib.exists() {
+        println!("cargo:warning=Using pre-built Intel oneAPI SYCL library");
+        return true;
+    }
+
+    println!("cargo:warning=Building Intel oneAPI SYCL backend");
+
+    // Build with icpx
+    let icpx_cmd = if Command::new("icpx").arg("--version").output().is_ok() {
+        "icpx"
+    } else {
+        "/opt/intel/oneapi/compiler/latest/bin/icpx"
+    };
+
+    // Build as shared library with Intel backend flag
+    let output = Command::new(icpx_cmd)
+        .args(&[
+            "-fPIC",
+            "-fsycl",
+            "-O3",
+            "-shared",
+            "-DBACKEND_INTEL",  // Preprocessor flag for Intel-specific code
+            "sycl_ffi.cpp",
+            "-o", "libsycl_ffi_intel.so",
+        ])
+        .output();
+
+    match output {
+        Ok(out) if out.status.success() => {
+            println!("cargo:warning=Intel oneAPI SYCL backend compiled successfully");
+            true
+        },
+        Ok(out) => {
+            eprintln!("Intel oneAPI compilation failed:");
+            eprintln!("stdout: {}", String::from_utf8_lossy(&out.stdout));
+            eprintln!("stderr: {}", String::from_utf8_lossy(&out.stderr));
+            println!("cargo:warning=Intel oneAPI backend build failed - continuing without it");
+            false
+        },
+        Err(e) => {
+            println!("cargo:warning=Failed to execute icpx: {} - continuing without Intel backend", e);
+            false
+        }
+    }
+}
+
+/// Try to build AdaptiveCpp backend
+/// Returns true if successful, false otherwise
+fn try_build_adaptive_backend() -> bool {
     // Check if AdaptiveCpp (acpp) compiler is available
     let acpp_available = Command::new("acpp").arg("--version").output().is_ok()
         || Command::new("/opt/adaptivecpp/bin/acpp")
@@ -43,90 +138,78 @@ fn main() {
             .is_ok();
 
     if !acpp_available {
-        println!("cargo:warning=AdaptiveCpp (acpp) not found - SYCL support will be disabled");
-        println!("cargo:warning=Install AdaptiveCpp: https://github.com/AdaptiveCpp/AdaptiveCpp");
-        println!("cargo:warning=Or use package manager: apt install adaptivecpp (Ubuntu 24.04+)");
-
-        // Create a stub library so compilation doesn't fail
-        create_stub_library();
-        return;
+        println!("cargo:warning=AdaptiveCpp (acpp) not found - AdaptiveCpp backend disabled");
+        return false;
     }
 
-    println!("cargo:warning=Building SYCL wrapper with AdaptiveCpp");
+    // Check if pre-built library exists
+    let adaptive_lib = PathBuf::from("libsycl_ffi_adaptive.so");
+    if adaptive_lib.exists() {
+        println!("cargo:warning=Using pre-built AdaptiveCpp SYCL library");
+        // Still need to check runtime libraries
+        let acpp_cmd = if Command::new("acpp").arg("--version").output().is_ok() {
+            "acpp"
+        } else {
+            "/opt/adaptivecpp/bin/acpp"
+        };
+        let runtime_dirs = determine_runtime_dirs(acpp_cmd);
+        return runtime_dirs.iter().any(|dir| runtime_lib_present(dir));
+    }
 
-    // Get output directory
-    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
-    let sycl_wrapper_dir = PathBuf::from("sycl_wrapper");
+    println!("cargo:warning=Building AdaptiveCpp SYCL backend");
 
-    // Compile SYCL C++ code with acpp
     let acpp_cmd = if Command::new("acpp").arg("--version").output().is_ok() {
         "acpp"
     } else {
         "/opt/adaptivecpp/bin/acpp"
     };
 
+    // Check runtime libraries
     let runtime_dirs = determine_runtime_dirs(acpp_cmd);
     let has_runtime = runtime_dirs.iter().any(|dir| runtime_lib_present(dir));
     if !has_runtime {
-        println!("cargo:warning=AdaptiveCpp runtime libraries not found; falling back to stub SYCL implementation");
-        create_stub_library();
-        return;
+        println!("cargo:warning=AdaptiveCpp runtime libraries not found - AdaptiveCpp backend disabled");
+        return false;
     }
 
+    // Get output directory
+    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+
+    // Compile with acpp as shared library
     let output = Command::new(acpp_cmd)
-        .arg("-c")
-        .arg("-fPIC") // Position independent code for shared library
-        .arg("-O3") // Optimize for performance
-        .arg("-std=c++17")
-        .arg("sycl_ffi.cpp")
-        .arg("-o")
-        .arg(out_dir.join("sycl_ffi.o"))
-        .output()
-        .expect("Failed to compile SYCL wrapper with acpp");
+        .args(&[
+            "-fPIC",
+            "-O3",
+            "-std=c++17",
+            "-shared",
+            "-DBACKEND_ADAPTIVE",  // Preprocessor flag for AdaptiveCpp-specific code
+            "sycl_ffi.cpp",
+            "-o",
+        ])
+        .arg("libsycl_ffi_adaptive.so")
+        .args(&["-lacpp-rt", "-lacpp-common"])
+        .output();
 
-    if !output.status.success() {
-        eprintln!("acpp compilation failed:");
-        eprintln!("stdout: {}", String::from_utf8_lossy(&output.stdout));
-        eprintln!("stderr: {}", String::from_utf8_lossy(&output.stderr));
-        panic!("Failed to compile SYCL wrapper");
+    match output {
+        Ok(out) if out.status.success() => {
+            println!("cargo:warning=AdaptiveCpp SYCL backend compiled successfully");
+            true
+        },
+        Ok(out) => {
+            eprintln!("AdaptiveCpp compilation failed:");
+            eprintln!("stdout: {}", String::from_utf8_lossy(&out.stdout));
+            eprintln!("stderr: {}", String::from_utf8_lossy(&out.stderr));
+            println!("cargo:warning=AdaptiveCpp backend build failed - continuing without it");
+            false
+        },
+        Err(e) => {
+            println!("cargo:warning=Failed to execute acpp: {} - continuing without AdaptiveCpp backend", e);
+            false
+        }
     }
-
-    // Create static library from object file
-    let ar_status = Command::new("ar")
-        .arg("rcs")
-        .arg(out_dir.join("libsycl_ffi.a"))
-        .arg(out_dir.join("sycl_ffi.o"))
-        .status()
-        .expect("Failed to create static library");
-
-    if !ar_status.success() {
-        panic!("Failed to create static library");
-    }
-
-    // Link the library
-    println!("cargo:rustc-link-search=native={}", out_dir.display());
-    println!("cargo:rustc-link-lib=static=sycl_ffi");
-
-    // Link C++ standard library
-    println!("cargo:rustc-link-lib=stdc++");
-
-    for dir in &runtime_dirs {
-        println!("cargo:rustc-link-search=native={}", dir.display());
-        println!("cargo:rustc-link-arg=-Wl,-rpath={}", dir.display());
-    }
-
-    // Link AdaptiveCpp runtime (depends on selected backends)
-    // The runtime will automatically select the appropriate backend:
-    // - CUDA for NVIDIA
-    // - HIP for AMD
-    // - Level-Zero for Intel
-    // - OpenCL fallback for others
-    println!("cargo:rustc-link-lib=dylib=acpp-rt");
-    println!("cargo:rustc-link-lib=dylib=acpp-common");
-
-    println!("cargo:warning=SYCL wrapper compiled successfully with AdaptiveCpp");
-    } // End of #[cfg(feature = "gpu")] block
 }
+
+// Link functions removed - we use dynamic loading via libloading instead
 
 fn create_stub_library() {
     // Create a minimal stub library so Rust code compiles even without SYCL

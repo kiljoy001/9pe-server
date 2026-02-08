@@ -20,7 +20,7 @@ pub struct GlobalArgs {
     pub log_format: LogFormat,
 
     /// Config file path
-    #[arg(long, env = "NINEPEE_CONFIG")]
+    #[arg(long, env("NINEP_CONFIG"))]
     pub config: Option<String>,
 }
 

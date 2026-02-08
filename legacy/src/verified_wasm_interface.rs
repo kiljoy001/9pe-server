@@ -11,7 +11,7 @@ use wasmtime::{Engine, Module, Store, Instance, Memory, Func, Linker};
 use wasmtime_wasi::{WasiCtx, WasiCtxBuilder};
 use tracing::{info, warn, error, debug};
 
-use plan9e::protocol::NinePeeMessage;
+use plan9e::protocol::NinePMessage;
 
 /// Verified WASM translator following proven specifications
 pub struct VerifiedWasmTranslator {
@@ -83,8 +83,8 @@ impl VerifiedWasmTranslator {
     pub async fn execute_verified_message(
         &self,
         conn_id: u64,
-        message: NinePeeMessage,
-    ) -> Result<NinePeeMessage> {
+        message: NinePMessage,
+    ) -> Result<NinePMessage> {
         // Get or create instance for this connection
         let mut instances = self.instances.write().await;
         if !instances.contains_key(&conn_id) {
@@ -168,8 +168,8 @@ impl VerifiedWasmTranslator {
     async fn execute_message_in_instance(
         &self,
         instance: &mut VerifiedWasmInstance,
-        message: NinePeeMessage,
-    ) -> Result<NinePeeMessage> {
+        message: NinePMessage,
+    ) -> Result<NinePMessage> {
         // Step 1: Serialize message (proven to preserve integrity)
         let serialized = self.serialize_message_verified(&message)?;
 
@@ -196,23 +196,23 @@ impl VerifiedWasmTranslator {
     }
 
     /// Serialize message following proven format
-    fn serialize_message_verified(&self, msg: &NinePeeMessage) -> Result<Vec<u8>> {
+    fn serialize_message_verified(&self, msg: &NinePMessage) -> Result<Vec<u8>> {
         let mut bytes = Vec::new();
 
         // Message type (proven format)
         let type_byte = match msg {
-            NinePeeMessage::Read { .. } => 116,
-            NinePeeMessage::Write { .. } => 118,
+            NinePMessage::Read { .. } => 116,
+            NinePMessage::Write { .. } => 118,
             _ => return Err(anyhow::anyhow!("Unsupported message type for WASM")),
         };
         bytes.push(type_byte);
 
         // FID (proven to be preserved)
         match msg {
-            NinePeeMessage::Read { fid, .. } => {
+            NinePMessage::Read { fid, .. } => {
                 bytes.extend_from_slice(&fid.to_le_bytes());
             },
-            NinePeeMessage::Write { fid, data, .. } => {
+            NinePMessage::Write { fid, data, .. } => {
                 bytes.extend_from_slice(&fid.to_le_bytes());
                 bytes.extend_from_slice(data);
             },
@@ -310,7 +310,7 @@ impl VerifiedWasmTranslator {
     }
 
     /// Deserialize message following proven format
-    fn deserialize_message_verified(&self, bytes: &[u8]) -> Result<NinePeeMessage> {
+    fn deserialize_message_verified(&self, bytes: &[u8]) -> Result<NinePMessage> {
         if bytes.is_empty() {
             return Err(anyhow::anyhow!("Empty response from WASM"));
         }
@@ -320,11 +320,11 @@ impl VerifiedWasmTranslator {
         let fid = u32::from_le_bytes(fid_bytes.try_into()?);
 
         let message = match msg_type {
-            117 => NinePeeMessage::ReadResponse {
+            117 => NinePMessage::ReadResponse {
                 fid,
                 data: data.to_vec(),
             },
-            119 => NinePeeMessage::WriteResponse {
+            119 => NinePMessage::WriteResponse {
                 fid,
                 count: data.len() as u32,
             },
@@ -338,13 +338,13 @@ impl VerifiedWasmTranslator {
     /// Verify protocol correctness as proven in Coq
     fn verify_protocol_correctness(
         &self,
-        request: &NinePeeMessage,
-        response: &NinePeeMessage,
+        request: &NinePMessage,
+        response: &NinePMessage,
     ) -> Result<()> {
         // Verify request/response type matching (proven property)
         let type_correct = match (request, response) {
-            (NinePeeMessage::Read { .. }, NinePeeMessage::ReadResponse { .. }) => true,
-            (NinePeeMessage::Write { .. }, NinePeeMessage::WriteResponse { .. }) => true,
+            (NinePMessage::Read { .. }, NinePMessage::ReadResponse { .. }) => true,
+            (NinePMessage::Write { .. }, NinePMessage::WriteResponse { .. }) => true,
             _ => false,
         };
 
@@ -354,14 +354,14 @@ impl VerifiedWasmTranslator {
 
         // Verify FID preservation (proven property)
         let request_fid = match request {
-            NinePeeMessage::Read { fid, .. } => *fid,
-            NinePeeMessage::Write { fid, .. } => *fid,
+            NinePMessage::Read { fid, .. } => *fid,
+            NinePMessage::Write { fid, .. } => *fid,
             _ => return Err(anyhow::anyhow!("Unsupported request type")),
         };
 
         let response_fid = match response {
-            NinePeeMessage::ReadResponse { fid, .. } => *fid,
-            NinePeeMessage::WriteResponse { fid, .. } => *fid,
+            NinePMessage::ReadResponse { fid, .. } => *fid,
+            NinePMessage::WriteResponse { fid, .. } => *fid,
             _ => return Err(anyhow::anyhow!("Unsupported response type")),
         };
 
@@ -480,13 +480,13 @@ mod tests {
 
     #[tokio::test]
     async fn test_protocol_correctness_verification() {
-        let read_request = NinePeeMessage::Read {
+        let read_request = NinePMessage::Read {
             fid: 42,
             offset: 0,
             count: 100,
         };
 
-        let read_response = NinePeeMessage::ReadResponse {
+        let read_response = NinePMessage::ReadResponse {
             fid: 42,
             data: vec![1, 2, 3, 4, 5],
         };
@@ -503,7 +503,7 @@ mod tests {
         assert!(translator.verify_protocol_correctness(&read_request, &read_response).is_ok());
 
         // This should fail verification (wrong response type)
-        let wrong_response = NinePeeMessage::WriteResponse {
+        let wrong_response = NinePMessage::WriteResponse {
             fid: 42,
             count: 5,
         };

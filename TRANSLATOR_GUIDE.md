@@ -156,6 +156,6 @@ curl http://[201:2bd3:1946:41ea:d21a:a129:2b2f:c3a6]:9090/metrics
 Output:
 ```
 # 9P.e Metrics
-ninep_server_running 1
+ninepe_server_running 1
 ninep_connections_total 0
 ```

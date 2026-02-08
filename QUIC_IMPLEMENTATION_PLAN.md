@@ -8,12 +8,12 @@ The 9P.e server has a working TCP-based mesh network implementation with:
 - Integration with NamespaceManager for distributed namespace operations
 
 ## Issues to Address First
-There are pre-existing compilation errors in the codebase related to NinePeeMessage struct changes that need to be fixed before implementing new features.
+There are pre-existing compilation errors in the codebase related to NinePMessage struct changes that need to be fixed before implementing new features.
 
 ## Implementation Phases
 
 ### Phase 1: Fix Compilation Issues
-- Fix `NinePeeMessage` compilation errors in `src/server/handler/basic_ops.rs`
+- Fix `NinePMessage` compilation errors in `src/server/handler/basic_ops.rs`
 - Fix pattern matching issues in `src/server/handler/mod.rs`
 - Ensure existing tests pass
 

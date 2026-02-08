@@ -28,7 +28,7 @@ The synthetic file feature of the 9PE server has been **formally verified** usin
 1. **`unified_preserves_fid`** - FID preservation across the pipeline
 2. **`unified_protocol_correct`** - Protocol correctness (Tread→Rread)
 3. **`unified_system_deterministic`** - System is fully deterministic
-4. **`unified_ninepee_system_correct`** - Main correctness theorem
+4. **`unified_ninep_system_correct`** - Main correctness theorem
 
 ### From `SyntheticFileCorrectness_Complete.v`:
 

@@ -1,12 +1,12 @@
 [package]
-name = "ninepee-afl-fuzz"
+name = "ninep-afl-fuzz"
 version = "0.0.0"
 publish = false
 edition = "2021"
 license = "AGPL-3.0-or-later"
 
 [dependencies]
-ninepee-server = { path = "../.." }
+ninep-server = { path = "../.." }
 afl = "0.15"
 
 [[bin]]

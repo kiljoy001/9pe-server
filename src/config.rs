@@ -21,6 +21,19 @@ pub struct Config {
 
     #[serde(default)]
     pub logging: LoggingConfig,
+
+    #[serde(default)]
+    pub services: ServicesConfig,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "lowercase")] // Use tagged enum like type="quic"
+pub enum TransportConfig {
+    Tcp,
+    Quic {
+        #[serde(default)]
+        server_name: Option<String>,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -30,6 +43,53 @@ pub struct ServerConfig {
 
     #[serde(default = "default_node_id")]
     pub node_id: String,
+
+    #[serde(default)]
+    pub max_message_size: Option<u32>,
+
+    #[serde(default)]
+    pub transport: Option<TransportConfig>,
+
+    #[serde(default)]
+    pub worker_threads: Option<usize>,
+
+    #[serde(default)]
+    pub mesh_enabled: Option<bool>,
+
+    #[serde(default)]
+    pub mesh_port: Option<u16>,
+
+    #[serde(default)]
+    pub auto_mount_enabled: Option<bool>,
+
+    #[serde(default)]
+    pub node_name: Option<String>,
+
+    #[serde(default)]
+    pub root: Option<std::path::PathBuf>,
+
+    #[serde(default)]
+    pub dht_port: Option<u16>,
+
+    #[serde(default)]
+    pub dht_bootstrap_peers: Vec<String>,
+
+    #[serde(default)]
+    pub service_discovery: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ServicesConfig {
+    #[serde(default)]
+    pub wasm_modules: Vec<WasmModuleConfig>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WasmModuleConfig {
+    pub name: String,
+    pub path: String,
+    #[serde(default)]
+    pub public: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -109,6 +169,17 @@ impl Default for ServerConfig {
         Self {
             listen_addr: default_listen_addr(),
             node_id: default_node_id(),
+            node_name: None,
+            root: None,
+            max_message_size: None,
+            worker_threads: None,
+            mesh_enabled: None,
+            mesh_port: None,
+            auto_mount_enabled: None,
+            transport: None,
+            dht_port: None,
+            dht_bootstrap_peers: Vec::new(),
+            service_discovery: Vec::new(),
         }
     }
 }

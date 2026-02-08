@@ -156,7 +156,7 @@ read_file("/srv/compute/pool/jobs/completed/job_xyz/result", result);
 Create Ollama compute plugin:
 ```go
 // Ollama calls plugin for heavy ops
-func (p *NinePeePlugin) MatMul(a, b Matrix) Matrix {
+func (p *NinePPlugin) MatMul(a, b Matrix) Matrix {
     jobID := submitTo9Pe("/srv/compute/pool/jobs/submit", job)
     return waitForResult(jobID)
 }
@@ -376,11 +376,11 @@ static void ggml_9pe_matmul(
 ```go
 package ninep
 
-type NinePeeBackend struct {
+type NinePBackend struct {
     poolPath string
 }
 
-func (b *NinePeeBackend) Forward(input Tensor) Tensor {
+func (b *NinePBackend) Forward(input Tensor) Tensor {
     // Upload input
     bufID := b.createBuffer(input.Size())
     b.writeBuffer(bufID, input.Data())

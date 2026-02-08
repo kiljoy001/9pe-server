@@ -1,0 +1,355 @@
+warning: unused variable: `out_dir`
+   --> build.rs:176:9
+    |
+176 |     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+    |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_out_dir`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: `ninepe-server` (build script) generated 1 warning
+warning: ninepe-server@1.0.0: Using pre-built Intel oneAPI SYCL library
+warning: ninepe-server@1.0.0: Using pre-built AdaptiveCpp SYCL library
+warning: ninepe-server@1.0.0: SYCL backends available: Intel oneAPI, AdaptiveCpp
+warning: ninepe-server@1.0.0: Both backends built as separate shared libraries
+warning: ninepe-server@1.0.0: Runtime will dynamically load appropriate backend per GPU
+warning: ninepe-server@1.0.0: No static linking - using dlopen via libloading crate
+    Checking ninepe-server v1.0.0 (/home/scott/Repo/9pe-server)
+warning: unused import: `Context`
+ --> src/consensus/crypto.rs:1:14
+  |
+1 | use anyhow::{Context, Result};
+  |              ^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `rustls::server::AllowAnyAuthenticatedClient`
+  --> src/transport.rs:10:5
+   |
+10 | use rustls::server::AllowAnyAuthenticatedClient;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `rustls::Error as RustlsError`
+  --> src/transport.rs:12:5
+   |
+12 | use rustls::Error as RustlsError;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `SystemTime`
+  --> src/transport.rs:17:27
+   |
+17 | use std::time::{Duration, SystemTime};
+   |                           ^^^^^^^^^^
+
+warning: unused import: `NistP256`
+  --> src/identity.rs:12:12
+   |
+12 | use p256::{NistP256, PublicKey as P256PublicKey, SecretKey as P256SecretKey};
+   |            ^^^^^^^^
+
+warning: ambiguous glob re-exports
+   --> src/lib.rs:61:9
+    |
+ 61 | pub use protocol::*;
+    |         ^^^^^^^^^^^ the name `ProtocolError` in the type namespace is first re-exported here
+...
+140 | pub use error::*;
+    |         -------- but the name `ProtocolError` in the type namespace is also re-exported here
+    |
+    = note: `#[warn(ambiguous_glob_reexports)]` on by default
+
+warning: ambiguous glob re-exports
+  --> src/lib.rs:63:9
+   |
+63 | pub use translators::*;
+   |         ^^^^^^^^^^^^^^ the name `TranslatorInfo` in the type namespace is first re-exported here
+...
+92 | pub use settrans::*;
+   |         ----------- but the name `TranslatorInfo` in the type namespace is also re-exported here
+
+warning: unused import: `BoundedGhostdag`
+ --> src/server/handler/basic_ops.rs:3:24
+  |
+3 | use crate::consensus::{BoundedGhostdag, NamespaceOp};
+  |                        ^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::consensus::BoundedGhostdag`
+  --> src/server/handler/mod.rs:13:5
+   |
+13 | use crate::consensus::BoundedGhostdag;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `WasiCtx`
+  --> src/wasm/threadsafe.rs:20:21
+   |
+20 | use wasmtime_wasi::{WasiCtx, WasiCtxBuilder};
+   |                     ^^^^^^^
+
+warning: ambiguous glob re-exports
+   --> src/lib.rs:90:9
+    |
+ 90 | pub use server::*;
+    |         ^^^^^^^^^ the name `ServerConfig` in the type namespace is first re-exported here
+...
+131 | pub use config::*;
+    |         --------- but the name `ServerConfig` in the type namespace is also re-exported here
+
+warning: unused imports: `BlockState` and `BoundedGhostdag`
+  --> src/namespace_manager.rs:10:17
+   |
+10 |     consensus::{BlockState, BoundedGhostdag, NamespaceOp},
+   |                 ^^^^^^^^^^  ^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::consensus::GhostdagBlock as Block`
+   --> src/namespace_manager.rs:401:17
+    |
+401 |             use crate::consensus::GhostdagBlock as Block;
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::consensus::GhostdagBlock as Block`
+   --> src/namespace_manager.rs:604:17
+    |
+604 |             use crate::consensus::GhostdagBlock as Block;
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `WorkReceipt`
+  --> src/mesh.rs:25:67
+   |
+25 | use crate::identity::{NodeId, NodePermissions, SovereignIdentity, WorkReceipt};
+   |                                                                   ^^^^^^^^^^^
+
+warning: ambiguous glob re-exports
+   --> src/lib.rs:136:9
+    |
+136 | pub use compute_control::*;
+    |         ^^^^^^^^^^^^^^^^^^ the name `JobStatus` in the type namespace is first re-exported here
+...
+142 | pub use traits::*;
+    |         --------- but the name `JobStatus` in the type namespace is also re-exported here
+
+warning: ambiguous glob re-exports
+   --> src/lib.rs:136:9
+    |
+136 | pub use compute_control::*;
+    |         ^^^^^^^^^^^^^^^^^^ the name `ComputeJob` in the type namespace is first re-exported here
+...
+142 | pub use traits::*;
+    |         --------- but the name `ComputeJob` in the type namespace is also re-exported here
+
+warning: unused import: `std::sync::Arc`
+ --> src/traits.rs:4:5
+  |
+4 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+
+warning: ambiguous glob re-exports
+   --> src/lib.rs:142:9
+    |
+135 | pub use sycl::*;
+    |         ------- but the name `DeviceInfo` in the type namespace is also re-exported here
+...
+142 | pub use traits::*;
+    |         ^^^^^^^^^ the name `DeviceInfo` in the type namespace is first re-exported here
+
+warning: unused variable: `record`
+   --> src/transport.rs:320:13
+    |
+320 |         let record = dht
+    |             ^^^^^^ help: if this is intentional, prefix it with an underscore: `_record`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `now`
+   --> src/server/handler/basic_ops.rs:499:25
+    |
+499 |                     let now = std::time::SystemTime::now()
+    |                         ^^^ help: if this is intentional, prefix it with an underscore: `_now`
+
+error[E0308]: mismatched types
+    --> src/server/mod.rs:246:70
+     |
+ 246 | ...                   .trust_node(trusted.node_id.clone(), public_key)
+     |                        ----------                          ^^^^^^^^^^ expected `[u8; 32]`, found `VerifyingKey`
+     |                        |
+     |                        arguments to this method are incorrect
+     |
+note: method defined here
+    --> src/consensus.rs:1228:12
+     |
+1228 |     pub fn trust_node(&self, _node_id: String, _public_key: [u8; 32]) {
+     |            ^^^^^^^^^^                          ---------------------
+
+error[E0277]: `()` is not a future
+   --> src/server/mod.rs:247:34
+    |
+247 | ...                   .await;
+    |                        ^^^^^ `()` is not a future
+    |
+    = help: the trait `futures::Future` is not implemented for `()`
+    = note: () must be a future or must implement `IntoFuture` to be awaited
+    = note: required for `()` to implement `std::future::IntoFuture`
+help: remove the `.await`
+    |
+247 -                                 .await;
+247 +                                 ;
+    |
+
+error[E0062]: field `settrans_system` specified more than once
+   --> src/server/mod.rs:389:13
+    |
+388 |             settrans_system,
+    |             --------------- first use of `settrans_system`
+389 |             settrans_system,
+    |             ^^^^^^^^^^^^^^^ used more than once
+
+error[E0609]: no field `synth_fs` on type `server::Server`
+   --> src/server/mod.rs:445:53
+    |
+445 |                     let synth_fs = Arc::clone(&self.synth_fs);
+    |                                                     ^^^^^^^^ unknown field
+    |
+    = note: available fields are: `config`, `listener`, `session_manager`, `translator_registry`, `settrans_system` ... and 9 others
+
+warning: variable does not need to be mutable
+   --> src/wasm/threadsafe.rs:990:13
+    |
+990 |         let mut result = vec![0f32; a.len()];
+    |             ----^^^^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+error[E0308]: mismatched types
+   --> src/dht.rs:427:40
+    |
+427 |                 PeerId::from_multihash(multihash).ok()
+    |                 ---------------------- ^^^^^^^^^ expected `Multihash<64>`, found `PeerId`
+    |                 |
+    |                 arguments to this function are incorrect
+    |
+    = note: expected struct `Multihash<64>`
+               found struct `PeerId`
+note: associated function defined here
+   --> /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libp2p-identity-0.2.13/src/peer_id.rs:94:12
+    |
+ 94 |     pub fn from_multihash(multihash: Multihash) -> Result<PeerId, Multihash> {
+    |            ^^^^^^^^^^^^^^
+help: call `Into::into` on this expression to convert `PeerId` into `Multihash<64>`
+    |
+427 |                 PeerId::from_multihash(multihash.into()).ok()
+    |                                                 +++++++
+
+error[E0615]: attempted to take value of method `compute_manager` on type `&server::Server`
+   --> src/server/mod.rs:418:26
+    |
+418 |         Arc::clone(&self.compute_manager)
+    |                          ^^^^^^^^^^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+418 |         Arc::clone(&self.compute_manager())
+    |                                         ++
+
+error[E0308]: mismatched types
+    --> src/consensus_control.rs:233:60
+     |
+ 233 |         let peers: Vec<PeerEntry> = serde_json::from_value(peers_val)?;
+     |                                     ---------------------- ^^^^^^^^^ expected `Value`, found `Vec<String>`
+     |                                     |
+     |                                     arguments to this function are incorrect
+     |
+     = note: expected enum `serde_json::Value`
+              found struct `Vec<std::string::String>`
+note: function defined here
+    --> /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde_json-1.0.145/src/value/mod.rs:1037:8
+     |
+1037 | pub fn from_value<T>(value: Value) -> Result<T, Error>
+     |        ^^^^^^^^^^
+help: call `Into::into` on this expression to convert `Vec<std::string::String>` into `serde_json::Value`
+     |
+ 233 |         let peers: Vec<PeerEntry> = serde_json::from_value(peers_val.into())?;
+     |                                                                     +++++++
+
+error[E0382]: borrow of moved value: `endpoint_clone`
+   --> src/transport.rs:195:40
+    |
+195 |             while let Some(incoming) = endpoint_clone.accept().await {
+    |                                        ^^^^^^^^^^^^^^ value borrowed here after move
+196 |                 let sender = sender.clone();
+197 |                 tokio::spawn(async move {
+    |                              ---------- value moved here, in previous iteration of loop
+    |
+    = note: move occurs because `endpoint_clone` has type `quinn::Endpoint`, which does not implement the `Copy` trait
+
+warning: variable does not need to be mutable
+   --> src/transport.rs:354:9
+    |
+354 |     let mut server_config = rustls::ServerConfig::builder()
+    |         ----^^^^^^^^^^^^^
+    |         |
+    |         help: remove this `mut`
+
+warning: unused variable: `b`
+   --> src/gpu/xmx.rs:113:5
+    |
+113 |     b: &[f32],
+    |     ^ help: if this is intentional, prefix it with an underscore: `_b`
+
+warning: unused variable: `precision`
+   --> src/gpu/xmx.rs:114:5
+    |
+114 |     precision: XmxPrecision,
+    |     ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_precision`
+
+warning: unused variable: `path`
+  --> src/storage_adapter.rs:20:26
+   |
+20 |     async fn read(&self, path: &Path, offset: u64, size: u32) -> Result<Vec<u8>> {
+   |                          ^^^^ help: if this is intentional, prefix it with an underscore: `_path`
+
+warning: unused variable: `offset`
+  --> src/storage_adapter.rs:20:39
+   |
+20 |     async fn read(&self, path: &Path, offset: u64, size: u32) -> Result<Vec<u8>> {
+   |                                       ^^^^^^ help: if this is intentional, prefix it with an underscore: `_offset`
+
+warning: unused variable: `size`
+  --> src/storage_adapter.rs:20:52
+   |
+20 |     async fn read(&self, path: &Path, offset: u64, size: u32) -> Result<Vec<u8>> {
+   |                                                    ^^^^ help: if this is intentional, prefix it with an underscore: `_size`
+
+warning: unused variable: `path`
+  --> src/storage_adapter.rs:27:27
+   |
+27 |     async fn write(&self, path: &Path, offset: u64, data: &[u8]) -> Result<u32> {
+   |                           ^^^^ help: if this is intentional, prefix it with an underscore: `_path`
+
+warning: unused variable: `offset`
+  --> src/storage_adapter.rs:27:40
+   |
+27 |     async fn write(&self, path: &Path, offset: u64, data: &[u8]) -> Result<u32> {
+   |                                        ^^^^^^ help: if this is intentional, prefix it with an underscore: `_offset`
+
+warning: unused variable: `path`
+  --> src/storage_adapter.rs:31:26
+   |
+31 |     async fn stat(&self, path: &Path) -> Result<FileAttr> {
+   |                          ^^^^ help: if this is intentional, prefix it with an underscore: `_path`
+
+warning: unused variable: `path`
+  --> src/storage_adapter.rs:40:30
+   |
+40 |     async fn read_dir(&self, path: &Path) -> Result<Vec<DirEntry>> {
+   |                              ^^^^ help: if this is intentional, prefix it with an underscore: `_path`
+
+Some errors have detailed explanations: E0062, E0277, E0308, E0382, E0609, E0615.
+For more information about an error, try `rustc --explain E0062`.
+warning: `ninepe-server` (lib) generated 32 warnings
+warning: ninepe-server@1.0.0: Using pre-built Intel oneAPI SYCL library
+warning: ninepe-server@1.0.0: Using pre-built AdaptiveCpp SYCL library
+warning: ninepe-server@1.0.0: SYCL backends available: Intel oneAPI, AdaptiveCpp
+warning: ninepe-server@1.0.0: Both backends built as separate shared libraries
+warning: ninepe-server@1.0.0: Runtime will dynamically load appropriate backend per GPU
+warning: ninepe-server@1.0.0: No static linking - using dlopen via libloading crate
+error: could not compile `ninepe-server` (lib) due to 8 previous errors; 32 warnings emitted

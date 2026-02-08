@@ -1,0 +1,601 @@
+warning: unused variable: `out_dir`
+   --> build.rs:176:9
+    |
+176 |     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+    |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_out_dir`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: `ninepe-server` (build script) generated 1 warning
+warning: ninepe-server@1.0.0: Using pre-built Intel oneAPI SYCL library
+warning: ninepe-server@1.0.0: Using pre-built AdaptiveCpp SYCL library
+warning: ninepe-server@1.0.0: SYCL backends available: Intel oneAPI, AdaptiveCpp
+warning: ninepe-server@1.0.0: Both backends built as separate shared libraries
+warning: ninepe-server@1.0.0: Runtime will dynamically load appropriate backend per GPU
+warning: ninepe-server@1.0.0: No static linking - using dlopen via libloading crate
+    Checking ninepe-server v1.0.0 (/home/scott/Repo/9pe-server)
+error[E0428]: the name `StoreData` is defined multiple times
+  --> src/wasm/threadsafe.rs:40:1
+   |
+32 | struct StoreData {
+   | ---------------- previous definition of the type `StoreData` here
+...
+40 | struct StoreData {
+   | ^^^^^^^^^^^^^^^^ `StoreData` redefined here
+   |
+   = note: `StoreData` must be defined only once in the type namespace of this module
+
+error[E0433]: failed to resolve: could not find `PublicKey` in `consensus`
+   --> src/server/mod.rs:233:45
+    |
+233 |                     match crate::consensus::PublicKey::from_hex(
+    |                                             ^^^^^^^^^ could not find `PublicKey` in `consensus`
+    |
+help: consider importing one of these items
+    |
+  3 + use k256::PublicKey;
+    |
+  3 + use p256::PublicKey;
+    |
+  3 + use rcgen::PublicKey;
+    |
+  3 + use x25519_dalek::PublicKey;
+    |
+help: if you import `PublicKey`, refer to it directly
+    |
+233 -                     match crate::consensus::PublicKey::from_hex(
+233 +                     match PublicKey::from_hex(
+    |
+
+error[E0412]: cannot find type `WasiP1Ctx` in crate `wasmtime_wasi`
+   --> src/wasm/threadsafe.rs:33:26
+    |
+ 33 |     wasi: wasmtime_wasi::WasiP1Ctx,
+    |                          ^^^^^^^^^
+    |
+   ::: /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wasmtime-wasi-41.0.1/src/ctx.rs:518:1
+    |
+518 | pub struct WasiCtx {
+    | ------------------ similarly named struct `WasiCtx` defined here
+    |
+help: a struct with a similar name exists
+    |
+ 33 -     wasi: wasmtime_wasi::WasiP1Ctx,
+ 33 +     wasi: wasmtime_wasi::WasiCtx,
+    |
+help: consider importing this struct
+    |
+  6 + use wasmtime_wasi::p1::WasiP1Ctx;
+    |
+help: if you import `WasiP1Ctx`, refer to it directly
+    |
+ 33 -     wasi: wasmtime_wasi::WasiP1Ctx,
+ 33 +     wasi: WasiP1Ctx,
+    |
+
+error[E0412]: cannot find type `WasiP1Ctx` in crate `wasmtime_wasi`
+   --> src/wasm/threadsafe.rs:41:26
+    |
+ 41 |     wasi: wasmtime_wasi::WasiP1Ctx,
+    |                          ^^^^^^^^^
+    |
+   ::: /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wasmtime-wasi-41.0.1/src/ctx.rs:518:1
+    |
+518 | pub struct WasiCtx {
+    | ------------------ similarly named struct `WasiCtx` defined here
+    |
+help: a struct with a similar name exists
+    |
+ 41 -     wasi: wasmtime_wasi::WasiP1Ctx,
+ 41 +     wasi: wasmtime_wasi::WasiCtx,
+    |
+help: consider importing this struct
+    |
+  6 + use wasmtime_wasi::p1::WasiP1Ctx;
+    |
+help: if you import `WasiP1Ctx`, refer to it directly
+    |
+ 41 -     wasi: wasmtime_wasi::WasiP1Ctx,
+ 41 +     wasi: WasiP1Ctx,
+    |
+
+warning: unused import: `Context`
+ --> src/consensus/crypto.rs:1:14
+  |
+1 | use anyhow::{Context, Result};
+  |              ^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `RngCore`
+ --> src/consensus/crypto.rs:3:25
+  |
+3 | use rand::{rngs::OsRng, RngCore};
+  |                         ^^^^^^^
+
+warning: unused import: `rustls::server::AllowAnyAuthenticatedClient`
+  --> src/transport.rs:10:5
+   |
+10 | use rustls::server::AllowAnyAuthenticatedClient;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `rustls::Error as RustlsError`
+  --> src/transport.rs:12:5
+   |
+12 | use rustls::Error as RustlsError;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `SystemTime`
+  --> src/transport.rs:17:27
+   |
+17 | use std::time::{Duration, SystemTime};
+   |                           ^^^^^^^^^^
+
+warning: unused import: `NistP256`
+  --> src/identity.rs:12:12
+   |
+12 | use p256::{NistP256, PublicKey as P256PublicKey, SecretKey as P256SecretKey};
+   |            ^^^^^^^^
+
+warning: ambiguous glob re-exports
+   --> src/lib.rs:61:9
+    |
+ 61 | pub use protocol::*;
+    |         ^^^^^^^^^^^ the name `ProtocolError` in the type namespace is first re-exported here
+...
+140 | pub use error::*;
+    |         -------- but the name `ProtocolError` in the type namespace is also re-exported here
+    |
+    = note: `#[warn(ambiguous_glob_reexports)]` on by default
+
+warning: ambiguous glob re-exports
+  --> src/lib.rs:63:9
+   |
+63 | pub use translators::*;
+   |         ^^^^^^^^^^^^^^ the name `TranslatorInfo` in the type namespace is first re-exported here
+...
+92 | pub use settrans::*;
+   |         ----------- but the name `TranslatorInfo` in the type namespace is also re-exported here
+
+warning: unused import: `BoundedGhostdag`
+ --> src/server/handler/basic_ops.rs:3:24
+  |
+3 | use crate::consensus::{BoundedGhostdag, NamespaceOp};
+  |                        ^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::consensus::BoundedGhostdag`
+  --> src/server/handler/mod.rs:13:5
+   |
+13 | use crate::consensus::BoundedGhostdag;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `WasiCtx`
+  --> src/wasm/threadsafe.rs:20:21
+   |
+20 | use wasmtime_wasi::{WasiCtx, WasiCtxBuilder};
+   |                     ^^^^^^^
+
+warning: ambiguous glob re-exports
+   --> src/lib.rs:90:9
+    |
+ 90 | pub use server::*;
+    |         ^^^^^^^^^ the name `ServerConfig` in the type namespace is first re-exported here
+...
+131 | pub use config::*;
+    |         --------- but the name `ServerConfig` in the type namespace is also re-exported here
+
+warning: unused imports: `BlockState` and `BoundedGhostdag`
+  --> src/namespace_manager.rs:10:17
+   |
+10 |     consensus::{BlockState, BoundedGhostdag, NamespaceOp},
+   |                 ^^^^^^^^^^  ^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::consensus::GhostdagBlock as Block`
+   --> src/namespace_manager.rs:401:17
+    |
+401 |             use crate::consensus::GhostdagBlock as Block;
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::consensus::GhostdagBlock as Block`
+   --> src/namespace_manager.rs:604:17
+    |
+604 |             use crate::consensus::GhostdagBlock as Block;
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `WorkReceipt`
+  --> src/mesh.rs:25:67
+   |
+25 | use crate::identity::{NodeId, NodePermissions, SovereignIdentity, WorkReceipt};
+   |                                                                   ^^^^^^^^^^^
+
+warning: ambiguous glob re-exports
+   --> src/lib.rs:136:9
+    |
+136 | pub use compute_control::*;
+    |         ^^^^^^^^^^^^^^^^^^ the name `JobStatus` in the type namespace is first re-exported here
+...
+142 | pub use traits::*;
+    |         --------- but the name `JobStatus` in the type namespace is also re-exported here
+
+warning: ambiguous glob re-exports
+   --> src/lib.rs:136:9
+    |
+136 | pub use compute_control::*;
+    |         ^^^^^^^^^^^^^^^^^^ the name `ComputeJob` in the type namespace is first re-exported here
+...
+142 | pub use traits::*;
+    |         --------- but the name `ComputeJob` in the type namespace is also re-exported here
+
+warning: unused import: `std::sync::Arc`
+ --> src/traits.rs:4:5
+  |
+4 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+
+warning: ambiguous glob re-exports
+   --> src/lib.rs:142:9
+    |
+135 | pub use sycl::*;
+    |         ------- but the name `DeviceInfo` in the type namespace is also re-exported here
+...
+142 | pub use traits::*;
+    |         ^^^^^^^^^ the name `DeviceInfo` in the type namespace is first re-exported here
+
+warning: unused import: `JobStatus as LegacyJobStatus`
+ --> src/compute_adapter.rs:2:61
+  |
+2 | use crate::compute_control::{ComputeManager, JobSubmission, JobStatus as LegacyJobStatus};
+  |                                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0195]: lifetime parameters or bounds on method `get_job_status` do not match the trait declaration
+  --> src/compute_adapter.rs:42:22
+   |
+42 |     fn get_job_status(&self, job_id: &str) -> Option<JobStatus> {
+   |                      ^ lifetimes do not match method in trait
+   |
+  ::: src/traits.rs:82:1
+   |
+82 | #[async_trait]
+   | -------------- this bound might be missing in the impl
+...
+91 |     async fn get_job_status(&self, job_id: &str) -> Option<JobStatus>;
+   |              -----------------------------------
+   |              |              |              |
+   |              |              |              this bound might be missing in the impl
+   |              |              this bound might be missing in the impl
+   |              lifetimes in impl do not match this method in trait
+
+warning: unused variable: `record`
+   --> src/transport.rs:320:13
+    |
+320 |         let record = dht
+    |             ^^^^^^ help: if this is intentional, prefix it with an underscore: `_record`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+error[E0599]: no method named `upgrade` found for struct `libp2p::libp2p_tcp::Transport` in the current scope
+   --> src/dht.rs:209:14
+    |
+208 |           let transport = libp2p::tcp::tokio::Transport::new(libp2p::tcp::Config::default())
+    |  _________________________-
+209 | |             .upgrade(libp2p::core::upgrade::Version::V1)
+    | |             -^^^^^^^ method not found in `libp2p::libp2p_tcp::Transport<libp2p::libp2p_tcp::tokio::Tcp>`
+    | |_____________|
+    |
+    |
+   ::: /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libp2p-core-0.40.1/src/transport.rs:240:8
+    |
+240 |       fn upgrade(self, version: upgrade::Version) -> upgrade::Builder<Self>
+    |          ------- the method is available for `libp2p::libp2p_tcp::Transport<libp2p::libp2p_tcp::tokio::Tcp>` here
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: trait `Transport` which provides `upgrade` is implemented but not in scope; perhaps you want to import it
+    |
+  6 + use libp2p::Transport;
+    |
+
+warning: unused variable: `now`
+   --> src/server/handler/basic_ops.rs:499:25
+    |
+499 |                     let now = std::time::SystemTime::now()
+    |                         ^^^ help: if this is intentional, prefix it with an underscore: `_now`
+
+error[E0277]: `()` is not a future
+   --> src/server/mod.rs:240:34
+    |
+240 | ...                   .await;
+    |                        ^^^^^ `()` is not a future
+    |
+    = help: the trait `futures::Future` is not implemented for `()`
+    = note: () must be a future or must implement `IntoFuture` to be awaited
+    = note: required for `()` to implement `std::future::IntoFuture`
+help: remove the `.await`
+    |
+240 -                                 .await;
+240 +                                 ;
+    |
+
+warning: variable does not need to be mutable
+    --> src/wasm/threadsafe.rs:1000:13
+     |
+1000 |         let mut result = vec![0f32; a.len()];
+     |             ----^^^^^^
+     |             |
+     |             help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` on by default
+
+error[E0277]: the `?` operator can only be applied to values that implement `std::ops::Try`
+   --> src/namespace_manager.rs:445:13
+    |
+445 |             consensus.add_block(block)?;
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `?` operator cannot be applied to type `impl futures::Future<Output = std::result::Result<(), anyhow::Error>>`
+    |
+    = help: the trait `std::ops::Try` is not implemented for `impl futures::Future<Output = std::result::Result<(), anyhow::Error>>`
+help: consider `await`ing on the `Future`
+    |
+445 |             consensus.add_block(block).await?;
+    |                                       ++++++
+
+error[E0277]: the `?` operator can only be applied to values that implement `std::ops::Try`
+   --> src/namespace_manager.rs:646:13
+    |
+646 |             consensus.add_block(block)?;
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `?` operator cannot be applied to type `impl futures::Future<Output = std::result::Result<(), anyhow::Error>>`
+    |
+    = help: the trait `std::ops::Try` is not implemented for `impl futures::Future<Output = std::result::Result<(), anyhow::Error>>`
+help: consider `await`ing on the `Future`
+    |
+646 |             consensus.add_block(block).await?;
+    |                                       ++++++
+
+error[E0599]: no function or associated item named `generate` found for struct `ed25519_dalek::SigningKey` in the current scope
+   --> src/consensus/crypto.rs:16:35
+    |
+ 16 |         let keypair = SigningKey::generate(&mut csprng);
+    |                                   ^^^^^^^^ function or associated item not found in `ed25519_dalek::SigningKey`
+    |
+note: if you're trying to build a new `ed25519_dalek::SigningKey` consider using one of the following associated functions:
+      ed25519_dalek::SigningKey::from_bytes
+      ed25519_dalek::SigningKey::from_keypair_bytes
+   --> /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ed25519-dalek-2.2.0/src/signing.rs:104:5
+    |
+104 |     pub fn from_bytes(secret_key: &SecretKey) -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+138 |     pub fn from_keypair_bytes(bytes: &[u8; 64]) -> Result<SigningKey, SignatureError> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `accept` found for struct `Connecting` in the current scope
+   --> src/transport.rs:199:53
+    |
+199 |                     let connection = match incoming.accept().await {
+    |                                                     ^^^^^^ method not found in `Connecting`
+    |
+    = help: items from traits can only be used if the trait is implemented and in scope
+note: `ConnectionListener` defines an item `accept`, perhaps you need to implement it
+   --> src/transport.rs:46:1
+    |
+ 46 | pub trait ConnectionListener: Send + Sync {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0609]: no field `0` on type `&rustls_pki_types::TrustAnchor<'_>`
+   --> src/transport.rs:379:105
+    |
+379 |     roots.add_parsable_certificates(webpki_roots::TLS_SERVER_ROOTS.iter().map(|t| rustls::Certificate(t.0.clone())));
+    |                                                                                                         ^ unknown field
+    |
+    = note: available fields are: `subject`, `subject_public_key_info`, `name_constraints`
+
+error[E0308]: mismatched types
+   --> src/transport.rs:379:37
+    |
+379 |     roots.add_parsable_certificates(webpki_roots::TLS_SERVER_ROOTS.iter().map(|t| rustls::Certificate(t.0.clone())));
+    |           ------------------------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `&[_]`, found `Map<Iter<'_, TrustAnchor<'_>>, ...>`
+    |           |
+    |           arguments to this method are incorrect
+    |
+    = note: expected reference `&[_]`
+                  found struct `std::iter::Map<std::slice::Iter<'_, rustls_pki_types::TrustAnchor<'_>>, {closure@src/transport.rs:379:79: 379:82}>`
+note: method defined here
+   --> /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rustls-0.21.12/src/anchors.rs:134:12
+    |
+134 |     pub fn add_parsable_certificates(&mut self, der_certs: &[impl AsRef<[u8]>]) -> (usize, usize) {
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no function or associated item named `generate` found for struct `ed25519_dalek::SigningKey` in the current scope
+   --> src/identity.rs:91:39
+    |
+ 91 |         let ed25519_key = SigningKey::generate(&mut OsRng);
+    |                                       ^^^^^^^^ function or associated item not found in `ed25519_dalek::SigningKey`
+    |
+note: if you're trying to build a new `ed25519_dalek::SigningKey` consider using one of the following associated functions:
+      ed25519_dalek::SigningKey::from_bytes
+      ed25519_dalek::SigningKey::from_keypair_bytes
+   --> /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ed25519-dalek-2.2.0/src/signing.rs:104:5
+    |
+104 |     pub fn from_bytes(secret_key: &SecretKey) -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+138 |     pub fn from_keypair_bytes(bytes: &[u8; 64]) -> Result<SigningKey, SignatureError> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no function or associated item named `from_secret_key` found for struct `p256::elliptic_curve::PublicKey` in the current scope
+   --> src/identity.rs:96:42
+    |
+ 96 |         let p256_public = P256PublicKey::from_secret_key(&p256_key);
+    |                                          ^^^^^^^^^^^^^^^ function or associated item not found in `p256::elliptic_curve::PublicKey<NistP256>`
+    |
+note: if you're trying to build a new `p256::elliptic_curve::PublicKey<NistP256>` consider using one of the following associated functions:
+      p256::elliptic_curve::PublicKey::<C>::from_affine
+      p256::elliptic_curve::PublicKey::<C>::from_secret_scalar
+      p256::elliptic_curve::PublicKey::<C>::from_sec1_bytes
+   --> /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/elliptic-curve-0.13.8/src/public_key.rs:102:5
+    |
+102 |       pub fn from_affine(point: AffinePoint<C>) -> Result<Self> {
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+112 |       pub fn from_secret_scalar(scalar: &NonZeroScalar<C>) -> Self {
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+126 | /     pub fn from_sec1_bytes(bytes: &[u8]) -> Result<Self>
+127 | |     where
+128 | |         FieldBytesSize<C>: ModulusSize,
+129 | |         AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+    | |________________________________________________________________^
+help: there is an associated function `from_secret_scalar` with a similar name
+    |
+ 96 -         let p256_public = P256PublicKey::from_secret_key(&p256_key);
+ 96 +         let p256_public = P256PublicKey::from_secret_scalar(&p256_key);
+    |
+
+error[E0308]: mismatched types
+   --> src/dht.rs:426:40
+    |
+426 |                 PeerId::from_multihash(multihash).ok()
+    |                 ---------------------- ^^^^^^^^^ expected `Multihash<64>`, found `PeerId`
+    |                 |
+    |                 arguments to this function are incorrect
+    |
+    = note: expected struct `Multihash<64>`
+               found struct `PeerId`
+note: associated function defined here
+   --> /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libp2p-identity-0.2.13/src/peer_id.rs:94:12
+    |
+ 94 |     pub fn from_multihash(multihash: Multihash) -> Result<PeerId, Multihash> {
+    |            ^^^^^^^^^^^^^^
+help: call `Into::into` on this expression to convert `PeerId` into `Multihash<64>`
+    |
+426 |                 PeerId::from_multihash(multihash.into()).ok()
+    |                                                 +++++++
+
+error[E0277]: the `?` operator can only be applied to values that implement `std::ops::Try`
+  --> src/server/handler/auth.rs:67:21
+   |
+67 |     let signature = Signature::from_bytes(&response.signature)?;
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `?` operator cannot be applied to type `Signature`
+   |
+   = help: the trait `std::ops::Try` is not implemented for `Signature`
+
+error[E0599]: no method named `read_to_string` found for reference `&Path` in the current scope
+  --> src/gpu/xmx.rs:56:50
+   |
+56 |         if std::path::Path::new("/proc/cpuinfo").read_to_string()
+   |                                                  ^^^^^^^^^^^^^^ method not found in `&Path`
+
+error[E0599]: no method named `read_to_string` found for reference `&Path` in the current scope
+  --> src/gpu/xmx.rs:71:50
+   |
+71 |         if std::path::Path::new("/proc/cpuinfo").read_to_string()
+   |                                                  ^^^^^^^^^^^^^^ method not found in `&Path`
+
+error[E0308]: mismatched types
+    --> src/consensus_control.rs:138:79
+     |
+ 138 |         futures::executor::block_on(async { self.consensus.submit_transaction(tx).await })?;
+     |                                                            ------------------ ^^ expected `Vec<u8>`, found `Value`
+     |                                                            |
+     |                                                            arguments to this method are incorrect
+     |
+     = note: expected struct `Vec<u8>`
+                  found enum `serde_json::Value`
+note: method defined here
+    --> src/consensus.rs:1244:18
+     |
+1244 |     pub async fn submit_transaction(&self, _tx: Vec<u8>) -> anyhow::Result<()> {
+     |                  ^^^^^^^^^^^^^^^^^^        ------------
+
+error[E0609]: no field `tips` on type `serde_json::Value`
+   --> src/consensus_control.rs:205:29
+    |
+205 |         for tip in dag_info.tips {
+    |                             ^^^^ unknown field
+
+error[E0609]: no field `peer_id` on type `std::string::String`
+   --> src/consensus_control.rs:230:22
+    |
+230 |                 peer.peer_id, peer.address, peer.blocks_ahead, peer.latency_ms
+    |                      ^^^^^^^ unknown field
+
+error[E0609]: no field `address` on type `std::string::String`
+   --> src/consensus_control.rs:230:36
+    |
+230 |                 peer.peer_id, peer.address, peer.blocks_ahead, peer.latency_ms
+    |                                    ^^^^^^^ unknown field
+
+error[E0609]: no field `blocks_ahead` on type `std::string::String`
+   --> src/consensus_control.rs:230:50
+    |
+230 |                 peer.peer_id, peer.address, peer.blocks_ahead, peer.latency_ms
+    |                                                  ^^^^^^^^^^^^ unknown field
+
+error[E0609]: no field `latency_ms` on type `std::string::String`
+   --> src/consensus_control.rs:230:69
+    |
+230 |                 peer.peer_id, peer.address, peer.blocks_ahead, peer.latency_ms
+    |                                                                     ^^^^^^^^^^ unknown field
+
+warning: variable does not need to be mutable
+   --> src/transport.rs:354:9
+    |
+354 |     let mut server_config = rustls::ServerConfig::builder()
+    |         ----^^^^^^^^^^^^^
+    |         |
+    |         help: remove this `mut`
+
+warning: unused variable: `b`
+   --> src/gpu/xmx.rs:113:5
+    |
+113 |     b: &[f32],
+    |     ^ help: if this is intentional, prefix it with an underscore: `_b`
+
+warning: unused variable: `precision`
+   --> src/gpu/xmx.rs:114:5
+    |
+114 |     precision: XmxPrecision,
+    |     ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_precision`
+
+warning: unused variable: `job_id`
+  --> src/compute_adapter.rs:42:30
+   |
+42 |     fn get_job_status(&self, job_id: &str) -> Option<JobStatus> {
+   |                              ^^^^^^ help: if this is intentional, prefix it with an underscore: `_job_id`
+
+error[E0391]: cycle detected when computing type of opaque `mesh::<impl at src/mesh.rs:46:1: 46:17>::handle_peer_message::{opaque#0}`
+    --> src/mesh.rs:809:5
+     |
+ 809 |     async fn handle_peer_message(&self, peer_id: &str, message: MeshMessage) -> Result<()> {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+note: ...which requires borrow-checking `mesh::<impl at src/mesh.rs:46:1: 46:17>::handle_peer_message`...
+    --> src/mesh.rs:809:5
+     |
+ 809 |     async fn handle_peer_message(&self, peer_id: &str, message: MeshMessage) -> Result<()> {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     = note: ...which requires evaluating `type_op_prove_predicate` `ProvePredicate { predicate: Binder { value: TraitPredicate(<{async block@src/mesh.rs:831:30: 831:40} as core::marker::Send>, polarity:Positive), bound_vars: [] } }`...
+     = note: ...which requires evaluating trait selection obligation `{async block@src/mesh.rs:831:30: 831:40}: core::marker::Send`...
+note: ...which requires computing type of opaque `mesh::<impl at src/mesh.rs:46:1: 46:17>::try_connect::{opaque#0}`...
+    --> src/mesh.rs:1032:5
+     |
+1032 |     async fn try_connect(&self, addr: SocketAddr, expected_peer: Option<String>) -> Result<()> {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: ...which requires borrow-checking `mesh::<impl at src/mesh.rs:46:1: 46:17>::try_connect`...
+    --> src/mesh.rs:1032:5
+     |
+1032 |     async fn try_connect(&self, addr: SocketAddr, expected_peer: Option<String>) -> Result<()> {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     = note: ...which requires evaluating `type_op_prove_predicate` `ProvePredicate { predicate: Binder { value: TraitPredicate(<{async block@src/mesh.rs:1119:34: 1119:44} as core::marker::Send>, polarity:Positive), bound_vars: [] } }`...
+     = note: ...which again requires computing type of opaque `mesh::<impl at src/mesh.rs:46:1: 46:17>::handle_peer_message::{opaque#0}`, completing the cycle
+     = note: cycle used when evaluating trait selection obligation `{async block@src/mesh.rs:298:34: 298:44}: core::marker::Send`
+     = note: see https://rustc-dev-guide.rust-lang.org/overview.html#queries and https://rustc-dev-guide.rust-lang.org/query.html for more information
+
+Some errors have detailed explanations: E0195, E0277, E0308, E0391, E0412, E0428, E0433, E0599, E0609.
+For more information about an error, try `rustc --explain E0195`.
+warning: `ninepe-server` (lib) generated 28 warnings
+warning: ninepe-server@1.0.0: Using pre-built Intel oneAPI SYCL library
+warning: ninepe-server@1.0.0: Using pre-built AdaptiveCpp SYCL library
+warning: ninepe-server@1.0.0: SYCL backends available: Intel oneAPI, AdaptiveCpp
+warning: ninepe-server@1.0.0: Both backends built as separate shared libraries
+warning: ninepe-server@1.0.0: Runtime will dynamically load appropriate backend per GPU
+warning: ninepe-server@1.0.0: No static linking - using dlopen via libloading crate
+error: could not compile `ninepe-server` (lib) due to 26 previous errors; 28 warnings emitted

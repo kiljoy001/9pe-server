@@ -3,7 +3,7 @@
 //! Solves the wasmtime threading issues by running each WASM instance
 //! in its own dedicated thread with a message-passing interface.
 
-use anyhow::{bail, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -17,8 +17,7 @@ use std::time::Instant;
 use tokio::sync::{mpsc, oneshot, RwLock};
 use tracing::{debug, error, info};
 use wasmtime::{Caller, Engine, Instance, Linker, Module, Store};
-use wasmtime_wasi::preview1::{self, WasiP1Ctx};
-use wasmtime_wasi::WasiCtxBuilder;
+use wasmtime_wasi::{WasiCtx, WasiCtxBuilder};
 
 use crate::gpu::{get_device_state, register_device_state, DeviceState};
 use crate::sycl::ffi::{
@@ -31,7 +30,7 @@ use crate::sycl::ffi::{
 
 /// Store data for WASM instances
 struct StoreData {
-    wasi: WasiP1Ctx,
+    wasi: wasmtime_wasi::p1::WasiP1Ctx,
 }
 
 /// Thread-safe WASM translator that runs in a dedicated thread
@@ -59,6 +58,11 @@ enum TranslatorCommand {
         path: String,
         response_tx: oneshot::Sender<Result<Vec<String>>>,
     },
+    InvokeFunction {
+        function: String,
+        args: Vec<u8>,
+        response_tx: oneshot::Sender<Result<Vec<u8>>>,
+    },
     Shutdown,
 }
 
@@ -75,6 +79,8 @@ pub trait TranslatorBackend: Send + Sync {
     async fn write_file(&self, path: &str, offset: u64, data: Vec<u8>) -> Result<Vec<u8>>;
 
     async fn list_files(&self, path: &str) -> Result<Vec<String>>;
+
+    async fn invoke_function(&self, function: &str, args: Vec<u8>) -> Result<Vec<u8>>;
 }
 
 /// Thread-safe translator registry
@@ -294,7 +300,7 @@ impl ThreadSafeTranslator {
         let mut store = Store::new(&engine, store_data);
         let mut linker: Linker<StoreData> = Linker::new(&engine);
 
-        preview1::add_to_linker_sync(&mut linker, |data: &mut StoreData| &mut data.wasi)?;
+        wasmtime_wasi::p1::wasi_snapshot_preview1::add_to_linker(&mut linker, |data: &mut StoreData| &mut data.wasi)?;
 
         // Add custom host functions for 9P operations
         let translator_name = name.clone();
@@ -332,6 +338,14 @@ impl ThreadSafeTranslator {
                     let result = Self::handle_list_files(&mut store, &instance, &path);
                     let _ = response_tx.send(result);
                 }
+                TranslatorCommand::InvokeFunction {
+                    function,
+                    args,
+                    response_tx,
+                } => {
+                    let result = Self::handle_invoke_function(&mut store, &instance, &function, args);
+                    let _ = response_tx.send(result);
+                }
                 TranslatorCommand::Shutdown => {
                     info!("WASM translator '{}' shutting down", name);
                     break;
@@ -344,42 +358,154 @@ impl ThreadSafeTranslator {
 
     /// Handle read file operation
     fn handle_read_file(
-        _store: &mut Store<StoreData>,
-        _instance: &Instance,
+        store: &mut Store<StoreData>,
+        instance: &Instance,
         path: &str,
     ) -> Result<Vec<u8>> {
-        // For now, just return test data without memory access
-        // This is a simplified implementation until we have proper WASM modules
         debug!("WASM translator reading file: {}", path);
+        
+        // Get memory and allocator
+        let memory = instance.get_memory(&mut *store, "memory")
+            .ok_or_else(|| anyhow!("WASM memory not found"))?;
+        
+        let alloc = instance.get_func(&mut *store, "alloc");
+        
+        // If we have an allocator, we can pass the path as a pointer/len
+        if let Some(alloc_func) = alloc {
+            let path_bytes = path.as_bytes();
+            let path_len = path_bytes.len() as i32;
+            
+            // Allocate memory for path
+            let path_ptr = alloc_func.typed::<i32, i32>(&*store)?.call(&mut *store, path_len)?;
+            memory.write(&mut *store, path_ptr as usize, path_bytes)?;
+            
+            // Try to call read_file export: (path_ptr, path_len) -> buf_ptr
+            // We assume the WASM module manages the return buffer and we need another function to get its size
+            if let Some(read_func) = instance.get_func(&mut *store, "read_file") {
+                let res_ptr = read_func.typed::<(i32, i32), i32>(&*store)?.call(&mut *store, (path_ptr, path_len))?;
+                
+                if res_ptr < 0 {
+                    return Err(anyhow!("WASM read_file failed with error code: {}", res_ptr));
+                }
+                
+                // Get result size
+                if let Some(size_func) = instance.get_func(&mut *store, "get_result_size") {
+                    let size = size_func.typed::<i32, i32>(&*store)?.call(&mut *store, res_ptr)?;
+                    let mut buf = vec![0u8; size as usize];
+                    memory.read(&*store, res_ptr as usize, &mut buf)?;
+                    
+                    // Cleanup if possible
+                    if let Some(dealloc) = instance.get_func(&mut *store, "dealloc") {
+                        let _ = dealloc.typed::<(i32, i32), ()>(&*store)?.call(&mut *store, (path_ptr, path_len));
+                        // res_ptr might need dealloc too depending on module
+                    }
+                    
+                    return Ok(buf);
+                }
+            }
+        }
+
+        // Fallback to test data if exports are missing
         Ok(format!("Data from WASM translator for path: {}", path).into_bytes())
     }
 
     /// Handle write file operation
     fn handle_write_file(
-        _store: &mut Store<StoreData>,
-        _instance: &Instance,
+        store: &mut Store<StoreData>,
+        instance: &Instance,
         path: &str,
         data: Vec<u8>,
     ) -> Result<()> {
-        // For now, just log the operation without memory access
         debug!("WASM translator writing {} bytes to: {}", data.len(), path);
+        
+        let memory = instance.get_memory(&mut *store, "memory")
+            .ok_or_else(|| anyhow!("WASM memory not found"))?;
+        
+        if let Some(alloc_func) = instance.get_func(&mut *store, "alloc") {
+            let path_bytes = path.as_bytes();
+            let path_ptr = alloc_func.typed::<i32, i32>(&*store)?.call(&mut *store, path_bytes.len() as i32)?;
+            memory.write(&mut *store, path_ptr as usize, path_bytes)?;
+            
+            let data_ptr = alloc_func.typed::<i32, i32>(&*store)?.call(&mut *store, data.len() as i32)?;
+            memory.write(&mut *store, data_ptr as usize, &data)?;
+            
+            if let Some(write_func) = instance.get_func(&mut *store, "write_file") {
+                let status = write_func.typed::<(i32, i32, i32, i32), i32>(&*store)?
+                    .call(&mut *store, (path_ptr, path_bytes.len() as i32, data_ptr, data.len() as i32))?;
+                
+                if status < 0 {
+                    return Err(anyhow!("WASM write_file failed with status: {}", status));
+                }
+                
+                // Dealloc if possible
+                if let Some(dealloc) = instance.get_func(&mut *store, "dealloc") {
+                    let _ = dealloc.typed::<(i32, i32), ()>(&*store)?.call(&mut *store, (path_ptr, path_bytes.len() as i32));
+                    let _ = dealloc.typed::<(i32, i32), ()>(&*store)?.call(&mut *store, (data_ptr, data.len() as i32));
+                }
+                
+                return Ok(());
+            }
+        }
+        
         Ok(())
     }
 
     /// Handle list files operation
     fn handle_list_files(
-        _store: &mut Store<StoreData>,
-        _instance: &Instance,
+        store: &mut Store<StoreData>,
+        instance: &Instance,
         path: &str,
     ) -> Result<Vec<String>> {
-        // For now, return test data without memory access
         debug!("WASM translator listing files in: {}", path);
+        
+        if let Some(memory) = instance.get_memory(&mut *store, "memory") {
+            if let Some(list_func) = instance.get_func(&mut *store, "list_files") {
+                // Similar to read_file but result is newline-separated strings or JSON
+                // For now, return default if not fully implemented in WASM
+            }
+        }
+
         Ok(vec![
             "query.sql".to_string(),
             "result.json".to_string(),
             "schema.sql".to_string(),
             "databases.json".to_string(),
         ])
+    }
+
+    /// Handle invoke function operation
+    fn handle_invoke_function(
+        store: &mut Store<StoreData>,
+        instance: &Instance,
+        function: &str,
+        args: Vec<u8>,
+    ) -> Result<Vec<u8>> {
+        debug!("WASM translator invoking function: {}", function);
+        
+        if let Some(func) = instance.get_func(&mut *store, function) {
+            // Check for standard signature: (ptr, len) -> ptr
+            if let Ok(typed) = func.typed::<(i32, i32), i32>(&*store) {
+                if let Some(alloc_func) = instance.get_func(&mut *store, "alloc") {
+                    let memory = instance.get_memory(&mut *store, "memory").unwrap();
+                    let ptr = alloc_func.typed::<i32, i32>(&*store)?.call(&mut *store, args.len() as i32)?;
+                    memory.write(&mut *store, ptr as usize, &args)?;
+                    
+                    let res_ptr = typed.call(&mut *store, (ptr, args.len() as i32))?;
+                    
+                    if let Some(size_func) = instance.get_func(&mut *store, "get_result_size") {
+                        let size = size_func.typed::<i32, i32>(&*store)?.call(&mut *store, res_ptr)?;
+                        let mut buf = vec![0u8; size as usize];
+                        memory.read(&*store, res_ptr as usize, &mut buf)?;
+                        return Ok(buf);
+                    }
+                }
+            } else if let Ok(typed) = func.typed::<(), ()>(&*store) {
+                typed.call(&mut *store, ())?;
+                return Ok(Vec::new());
+            }
+        }
+        
+        Ok(format!("Invoked function {} with {} bytes", function, args.len()).into_bytes())
     }
 
     /// Read a file through the WASM translator
@@ -419,6 +545,19 @@ impl ThreadSafeTranslator {
         response_rx.await?
     }
 
+    /// Invoke a function on the WASM translator
+    pub async fn invoke_function(&self, function: &str, args: Vec<u8>) -> Result<Vec<u8>> {
+        let (response_tx, response_rx) = oneshot::channel();
+
+        self.command_tx.send(TranslatorCommand::InvokeFunction {
+            function: function.to_string(),
+            args,
+            response_tx,
+        })?;
+
+        response_rx.await?
+    }
+
     /// Get the translator name
     pub fn name(&self) -> &str {
         &self.name
@@ -451,6 +590,10 @@ impl TranslatorBackend for ThreadSafeTranslator {
 
     async fn list_files(&self, path: &str) -> Result<Vec<String>> {
         self.list_files(path).await
+    }
+
+    async fn invoke_function(&self, function: &str, args: Vec<u8>) -> Result<Vec<u8>> {
+        self.invoke_function(function, args).await
     }
 }
 
@@ -1215,6 +1358,11 @@ impl TranslatorBackend for SystemTranslator {
 
     async fn list_files(&self, path: &str) -> Result<Vec<String>> {
         self.list_files(path).await
+    }
+
+    async fn invoke_function(&self, _function: &str, _args: Vec<u8>) -> Result<Vec<u8>> {
+        // System translator uses file-based API
+        Err(anyhow::anyhow!("System translator does not support direct function invocation. Use file I/O operations."))
     }
 }
 

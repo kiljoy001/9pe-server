@@ -341,6 +341,15 @@ impl VirtualSettransSystem {
             .send(SettransCommand::Disable(name.to_string()))?;
         Ok(())
     }
+
+    /// Set a translator on a specific path (virtual settrans)
+    pub async fn set_translator(&self, _path: &str, translator_name: &str, _args: Vec<String>) -> Result<()> {
+        // For now, we reuse the enabling logic which registers it at its default mount point.
+        // In a full implementation, we would register it at `path`.
+        // Given the current architecture uses `mount_point` from metadata, 
+        // we can essentially "Enable" it.
+        self.enable_translator(translator_name).await
+    }
 }
 
 #[cfg(test)]

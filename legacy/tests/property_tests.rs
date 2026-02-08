@@ -9,7 +9,7 @@ use quickcheck::{quickcheck, Arbitrary, Gen};
 use quickcheck_macros::quickcheck;
 
 // Import our modules (will need to make them public in lib.rs)
-// use ninepee_server::*;
+// use ninep_server::*;
 
 /// Property: M-of-N threshold must be valid
 #[test]

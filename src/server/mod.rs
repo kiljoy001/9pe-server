@@ -4,6 +4,7 @@ use anyhow::{Context, Result};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tracing::{debug, error, info, warn};
 
 use crate::auto_mount::AutoMountDaemon;
@@ -28,6 +29,7 @@ use crate::synth::SyntheticFilesystem;
 pub mod builder;
 pub mod handler;
 pub mod session;
+pub mod http_gateway;
 
 pub use builder::ServerBuilder;
 use session::SessionManager;
@@ -37,10 +39,11 @@ pub struct Server {
     config: ServerConfig,
     listener: Box<dyn ConnectionListener>,
     session_manager: Arc<SessionManager>,
-    translator_registry: Arc<ThreadSafeTranslatorRegistry>,
-    settrans_system: Arc<VirtualSettransSystem>,
-    synth_fs: Arc<SyntheticFilesystem>,
-    compute_manager: Arc<ComputeManager>,
+    wasm: Arc<dyn crate::traits::WasmProvider>,
+    // translator_registry: Arc<ThreadSafeTranslatorRegistry>, -> Replaced by WasmProvider
+    // settrans_system: Arc<VirtualSettransSystem>, -> Replaced by WasmProvider
+    filesystem: Arc<dyn crate::traits::StorageProvider>,
+    compute: Arc<dyn crate::traits::ComputeBackend>,
     gpu_infos: Vec<GpuInfo>,
     sovereign_identity: Arc<SovereignIdentity>,
     dht: Arc<SovereignDht>,
@@ -52,6 +55,10 @@ pub struct Server {
     consensus_coordinator: Option<Arc<crate::consensus::ConsensusCoordinator>>,
     #[allow(dead_code)]
     mesh_network: Option<Arc<crate::mesh::MeshNetwork>>,
+    /// Shared memory manager
+    pub shm: Arc<crate::ipc::SharedMemoryManager>,
+    /// HTTP Gateway for browser access
+    pub http_gateway: Option<Arc<crate::server::http_gateway::HttpGateway>>,
 }
 
 /// Server configuration
@@ -74,6 +81,9 @@ pub struct ServerConfig {
     pub consensus_config: Option<crate::config::ConsensusConfig>,
     pub node_id: String,
     pub node_name: Option<String>,
+    pub dht_bootstrap_peers: Vec<String>,
+    pub service_discovery: Vec<String>,
+    pub wasm_modules: Vec<crate::config::WasmModuleConfig>,
 }
 
 impl Server {
@@ -83,7 +93,12 @@ impl Server {
     }
 
     /// Internal constructor called by builder
-    pub(crate) async fn new(config: ServerConfig) -> Result<Self> {
+    pub(crate) async fn new(
+        config: ServerConfig,
+        storage_provider: Option<Arc<dyn crate::traits::StorageProvider>>,
+        compute_backend: Option<Arc<dyn crate::traits::ComputeBackend>>,
+        shm: Arc<crate::ipc::SharedMemoryManager>,
+    ) -> Result<Self> {
         // Log execution mode (user vs system)
         crate::util::log_execution_mode();
 
@@ -119,7 +134,34 @@ impl Server {
             .context("Failed to start listener")?;
 
         let dht_listen = std::net::SocketAddr::from(([0, 0, 0, 0], config.dht_port));
-        if let Err(e) = dht.start_networking(dht_listen, Vec::new()).await {
+        // Convert bootstrap peer strings to Multiaddr
+        let bootstrap_addrs: Vec<libp2p::Multiaddr> = config
+            .dht_bootstrap_peers
+            .iter()
+            .filter_map(|peer_str| {
+                peer_str.parse::<libp2p::Multiaddr>().ok().or_else(|| {
+                    // Try parsing as SocketAddr and converting
+                    peer_str.parse::<std::net::SocketAddr>().ok().map(|addr| {
+                        match addr {
+                            std::net::SocketAddr::V4(v4) => {
+                                libp2p::Multiaddr::from(libp2p::multiaddr::Protocol::Ip4(*v4.ip()))
+                                    .with(libp2p::multiaddr::Protocol::Tcp(v4.port()))
+                            }
+                            std::net::SocketAddr::V6(v6) => {
+                                libp2p::Multiaddr::from(libp2p::multiaddr::Protocol::Ip6(*v6.ip()))
+                                    .with(libp2p::multiaddr::Protocol::Tcp(v6.port()))
+                            }
+                        }
+                    })
+                })
+            })
+            .collect();
+
+        if !bootstrap_addrs.is_empty() {
+            info!("Starting DHT with {} bootstrap peers", bootstrap_addrs.len());
+        }
+
+        if let Err(e) = dht.start_networking(dht_listen, bootstrap_addrs).await {
             warn!("Failed to start DHT networking: {}", e);
         }
         dht.start_maintenance(Duration::from_secs(60));
@@ -140,6 +182,26 @@ impl Server {
         // Scan and load existing WASM translators from disk
         if let Err(e) = translator_registry.scan_and_load().await {
             error!("Failed to load existing translators: {}", e);
+        }
+
+        // Load explicitly configured WASM modules
+        for module_config in &config.wasm_modules {
+            info!("Loading configured WASM module: {} from {}", module_config.name, module_config.path);
+            match tokio::fs::read(&module_config.path).await {
+                Ok(bytes) => {
+                    let mount_point = PathBuf::from(format!("/srv/{}", module_config.name));
+                    if let Err(e) = translator_registry.load_translator(
+                        module_config.name.clone(),
+                        mount_point,
+                        bytes
+                    ).await {
+                        error!("Failed to load WASM module {}: {}", module_config.name, e);
+                    }
+                }
+                Err(e) => {
+                    error!("Failed to read WASM module file {}: {}", module_config.path, e);
+                }
+            }
         }
 
         // Discover GPUs and wire synthetic compute namespace
@@ -193,7 +255,6 @@ impl Server {
             // Create consensus coordinator
             let coordinator = Arc::new(crate::consensus::ConsensusCoordinator::new(
                 config.node_id.clone(),
-                crypto,
             ));
 
             // Initialize the coordinator
@@ -202,14 +263,14 @@ impl Server {
 
             if !consensus_cfg.trusted_nodes.is_empty() {
                 for trusted in &consensus_cfg.trusted_nodes {
-                    match crate::consensus::PublicKey::from_hex(
-                        trusted.algorithm.clone(),
-                        &trusted.public_key,
-                    ) {
+                    let key_bytes = hex::decode(&trusted.public_key)
+                        .map_err(|e| anyhow::anyhow!("Invalid hex key: {}", e))?;
+                    let key_array: [u8; 32] = key_bytes.try_into()
+                        .map_err(|_| anyhow::anyhow!("Invalid key length"))?;
+                    match crate::consensus::PublicKey::from_bytes(&key_array) {
                         Ok(public_key) => {
                             coordinator
-                                .trust_node(trusted.node_id.clone(), public_key)
-                                .await;
+                                .trust_node(trusted.node_id.clone(), key_array);
                             debug!(
                                 "Registered trusted consensus peer {} (algorithm {})",
                                 trusted.node_id, trusted.algorithm
@@ -247,6 +308,7 @@ impl Server {
                 Arc::clone(&dht),
                 config.mesh_port,
                 bootstrap_peers,
+                config.service_discovery.clone(),
             ));
 
             // Start the mesh network
@@ -277,18 +339,16 @@ impl Server {
         let namespace_manager = {
             use crate::namespace_manager::NamespaceManager;
 
-            let manager = if let Some(ref mesh) = mesh_network {
+            let mut manager = if let Some(ref mesh) = mesh_network {
                 NamespaceManager::new(synth_fs.clone())?.with_mesh_network(Arc::clone(mesh))
             } else {
                 NamespaceManager::new(synth_fs.clone())?
             };
 
             // Add consensus if available
-            if let Some(ref _consensus) = consensus_coordinator {
-                // Get the bounded ghostdag from consensus coordinator
-                // For now, we'll initialize without consensus integration
-                // TODO: Add get_bounded_ghostdag() method to ConsensusCoordinator
-                info!("Namespace manager created (consensus integration pending)");
+            if let Some(ref consensus) = consensus_coordinator {
+                manager = manager.with_consensus(Arc::clone(consensus));
+                info!("Namespace manager integrated with consensus");
             }
 
             // Initialize namespace manager synthetic filesystem
@@ -309,6 +369,18 @@ impl Server {
                 Arc::clone(&namespace_manager) as Arc<dyn MeshMessageHandler>
             )
             .await;
+
+            // Create and configure fog router for distributed job execution
+            match mesh.create_fog_router(Arc::clone(&compute_manager)).await {
+                Ok(fog_router) => {
+                    // Also set fog router on compute manager for local jobs that can be distributed
+                    compute_manager.set_fog_router(fog_router.clone()).await;
+                    info!("Fog router created for distributed job execution");
+                }
+                Err(e) => {
+                    warn!("Failed to create fog router: {}", e);
+                }
+            }
         }
 
         // Initialize virtual settrans system with synthetic filesystem and namespace manager
@@ -329,29 +401,40 @@ impl Server {
 
         // Initialize auto-mount daemon if enabled
         let auto_mount_daemon = if config.auto_mount_enabled {
-            info!("Auto-mount enabled - starting transparent /n/ namespace daemon");
-            match crate::auto_mount::initialize_auto_mount().await {
-                Ok(daemon) => {
-                    info!("Auto-mount daemon started successfully");
-                    Some(daemon)
-                }
-                Err(e) => {
-                    error!("Failed to start auto-mount daemon: {}", e);
-                    None
-                }
-            }
+            info!("Auto-mount enabled - initializing daemon (will start in run loop)");
+            Some(crate::auto_mount::create_auto_mount_daemon())
         } else {
             None
         };
+
+        // Create Wasm provider adapter
+        let wasm_provider = Arc::new(crate::wasm_adapter::WasmRegistryAdapter::new(
+            translator_registry.clone(),
+            settrans_system.clone(),
+        ));
+        
+        let root_path = config.root_directory.clone();
+        let http_gateway = Some(Arc::new(crate::server::http_gateway::HttpGateway::new(
+            storage_provider.clone().unwrap_or_else(|| Arc::new(crate::storage_adapter::PhysicalStorageAdapter::new(root_path.clone())))
+        )));
 
         Ok(Self {
             config,
             listener,
             session_manager,
-            translator_registry,
-            settrans_system,
-            synth_fs,
-            compute_manager,
+            wasm: wasm_provider,
+
+
+            // Use injected filesystem or default to physical filesystem rooted at config.root_directory
+            filesystem: storage_provider.unwrap_or_else(||
+                Arc::new(crate::storage_adapter::PhysicalStorageAdapter::new(root_path))
+            ),
+
+            // Use injected compute backend or wrap the default manager
+            compute: compute_backend.unwrap_or_else(||
+                Arc::new(crate::compute_adapter::ComputeManagerAdapter::new(compute_manager.clone()))
+            ),
+
             gpu_infos,
             sovereign_identity,
             dht,
@@ -359,6 +442,8 @@ impl Server {
             auto_mount_daemon,
             consensus_coordinator,
             mesh_network,
+            shm,
+            http_gateway,
         })
     }
 
@@ -368,8 +453,8 @@ impl Server {
     }
 
     /// Access the compute manager used for GPU/WASM job orchestration.
-    pub fn compute_manager(&self) -> Arc<ComputeManager> {
-        Arc::clone(&self.compute_manager)
+    pub fn compute(&self) -> Arc<dyn crate::traits::ComputeBackend> {
+        Arc::clone(&self.compute)
     }
 
     /// Access the cached GPU discovery results.
@@ -378,12 +463,51 @@ impl Server {
     }
 
     /// Run the server
-    pub async fn run(self) -> Result<()> {
+    pub async fn run(mut self) -> Result<()> {
         info!(
             "9P.e server running on {} with root {:?}",
             self.address(),
             self.config.root_directory
         );
+
+        // Start HTTP Gateway in background if configured
+        info!("DEBUG: Checking HTTP gateway (is_some: {})", self.http_gateway.is_some());
+        if let Some(gateway) = self.http_gateway.clone() {
+            info!("🌐 Starting HTTP Gateway on port 9090...");
+            tokio::spawn(async move {
+                info!("HTTP Gateway task spawned, attempting to bind port 9090");
+                match gateway.run(9090).await {
+                    Ok(_) => info!("HTTP Gateway stopped normally"),
+                    Err(e) => error!("HTTP Gateway failed: {}", e),
+                }
+            });
+        } else {
+            warn!("HTTP Gateway not configured - web interface unavailable");
+        }
+
+        // Start Auto-Mount Daemon now that server is active
+        if let Some(daemon) = &mut self.auto_mount_daemon {
+            // Register self as a local server so the daemon knows how to connect (Protocol/Port)
+            if let Ok(socket_addr) = self.config.network.socket_addr() {
+                // Determine effective address (use localhost for self-connection if binding 0.0.0.0)
+                let host = if socket_addr.ip().is_unspecified() {
+                    "127.0.0.1".to_string()
+                } else {
+                    socket_addr.ip().to_string()
+                };
+
+                daemon.register_local_server(
+                    host,
+                    socket_addr.port(),
+                    self.config.transport.clone()
+                ).await;
+            }
+
+            info!("Starting auto-mount daemon...");
+            if let Err(e) = daemon.start().await {
+                error!("Failed to start auto-mount daemon: {}", e);
+            }
+        }
 
         // Accept loop with proper error handling
         loop {
@@ -394,22 +518,50 @@ impl Server {
                     let session_mgr = Arc::clone(&self.session_manager);
 
                     // Clone components for the handler
-                    let translator_registry = Arc::clone(&self.translator_registry);
-                    let settrans_system = Arc::clone(&self.settrans_system);
-                    let synth_fs = Arc::clone(&self.synth_fs);
+                    let storage = Arc::clone(&self.filesystem);
+                    let compute = Arc::clone(&self.compute);
+                    let wasm = Arc::clone(&self.wasm);
                     let dht = Arc::clone(&self.dht);
+                    let consensus_coordinator = self.consensus_coordinator.clone();
+                    let shm = Arc::clone(&self.shm);
+                    let namespace_manager = Arc::clone(&self.namespace_manager);
+                    let mesh_network = self.mesh_network.clone();
 
                     // Spawn handler task
+                    let node_id = self.config.node_id.clone();
                     tokio::spawn(async move {
+                        let peer_id_str = &node_id;
+                        // Optional: Log node ID
+                        // debug!("Handling connection for node: {}", node_id);
+                        // Skip hex validation that causes connection drops for non-hex IDs
+                        if false {
+                             let peer_id_str = &node_id;
+                             match hex::decode(peer_id_str) {
+                                Ok(_) => {},
+                                Err(e) => warn!("Invalid hex node_id (non-fatal): {}", e),
+                             }
+                        }
+
+                        // Get fog router from mesh network if available
+                        let fog_router: Option<Arc<dyn crate::fog::FogRouter>> = if let Some(ref mesh) = mesh_network {
+                            mesh.fog_router().await.map(|r| r as Arc<dyn crate::fog::FogRouter>)
+                        } else {
+                            None
+                        };
+
                         if let Err(e) = Self::handle_connection(
                             connection,
                             root_path,
                             max_message_size,
                             session_mgr,
-                            translator_registry,
-                            settrans_system,
-                            synth_fs,
+                            storage,
+                            compute,
+                            wasm,
                             dht,
+                            consensus_coordinator,
+                            shm,
+                            namespace_manager,
+                            fog_router,
                         )
                         .await
                         {
@@ -431,10 +583,14 @@ impl Server {
         root_path: std::path::PathBuf,
         max_message_size: u32,
         session_mgr: Arc<SessionManager>,
-        translator_registry: Arc<ThreadSafeTranslatorRegistry>,
-        settrans_system: Arc<VirtualSettransSystem>,
-        synth_fs: Arc<SyntheticFilesystem>,
+        storage: Arc<dyn crate::traits::StorageProvider>,
+        compute: Arc<dyn crate::traits::ComputeBackend>,
+        wasm: Arc<dyn crate::traits::WasmProvider>,
         dht: Arc<SovereignDht>,
+        consensus_coordinator: Option<Arc<crate::consensus::ConsensusCoordinator>>,
+        shm: Arc<crate::ipc::SharedMemoryManager>,
+        namespace_manager: Arc<crate::namespace_manager::NamespaceManager>,
+        fog_router: Option<Arc<dyn crate::fog::FogRouter>>,
     ) -> Result<()> {
         let peer = connection.peer_addr()?;
         info!("New {} connection from {}", connection.protocol(), peer);
@@ -442,23 +598,32 @@ impl Server {
         // Create session
         let session_id = session_mgr.create_session(peer).await?;
 
-        // Create message handler for this connection with all components
-        let mut handler = crate::server::handler::MessageHandler::new(
+        let handler = crate::server::handler::MessageHandler::new(
             root_path,
             max_message_size,
-            translator_registry,
-            settrans_system,
-            synth_fs,
+            storage,
+            compute,
+            wasm,
             Some(dht),
+            consensus_coordinator,
+            shm,
+            Some(namespace_manager),
         )?;
+
+        // Set up fog router for distributed work distribution if available
+        if let Some(router) = fog_router {
+            handler.set_fog_router(router).await;
+        }
+
+        let mut handler = handler;
 
         use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
         // Handle messages
         loop {
             // Read message size header (4 bytes)
-            let mut size_buf = [0u8; 4];
-            match connection.read_exact(&mut size_buf).await {
+            let mut size_header = [0u8; 4];
+            match connection.read_exact(&mut size_header).await {
                 Ok(_) => {}
                 Err(e) => {
                     debug!("Connection closed or read error: {}", e);
@@ -466,29 +631,62 @@ impl Server {
                 }
             }
 
-            let message_size = u32::from_le_bytes(size_buf);
-            if message_size > max_message_size || message_size < 4 {
+            let message_size = u32::from_le_bytes(size_header);
+            if message_size > max_message_size || message_size < 7 {
                 error!("Invalid message size: {}", message_size);
                 break;
             }
 
-            // Read the rest of the message
-            let mut message_buf = vec![0u8; (message_size - 4) as usize];
-            if let Err(e) = connection.read_exact(&mut message_buf).await {
+            // Read the rest of the message (size includes header)
+            let mut body_buf = vec![0u8; (message_size - 4) as usize];
+            if let Err(e) = connection.read_exact(&mut body_buf).await {
                 error!("Failed to read message body: {}", e);
                 break;
             }
 
+            // Prepare full message for translation if needed
+            let mut full_message_data = size_header.to_vec();
+            full_message_data.extend_from_slice(&body_buf);
+
+            // Peek message type (byte 4)
+            let msg_type = body_buf[0];
+            let is_legacy = msg_type >= 100 && msg_type <= 127;
+
+            // Special case for Tflush (108) which doesn't exist in 9P.e
+            if msg_type == 108 && is_legacy {
+                // Respond with Rflush (size=7, type=109, tag from message)
+                let tag = [body_buf[1], body_buf[2]];
+                let rflush = vec![7, 0, 0, 0, 109, tag[0], tag[1]];
+                if let Err(e) = connection.write_all(&rflush).await {
+                    error!("Failed to send Rflush: {}", e);
+                    break;
+                }
+                let _ = connection.flush().await;
+                continue;
+            }
+
             // Deserialize 9P message
-            let message = match handler.deserialize_ninep_message(message_buf).await {
-                Ok(msg) => msg,
-                Err(e) => {
-                    error!("Failed to deserialize message: {}", e);
-                    continue;
+            let message = if is_legacy {
+                let session = crate::compatibility::CompatibilitySession::new();
+                let translator = crate::compatibility::MessageTranslator::new(session);
+                match translator.translate_legacy_to_9pe(&full_message_data) {
+                    Ok(msg) => msg,
+                    Err(e) => {
+                        error!("Failed to translate legacy message: {}", e);
+                        continue;
+                    }
+                }
+            } else {
+                match handler.deserialize_ninep_message(body_buf).await {
+                    Ok(msg) => msg,
+                    Err(e) => {
+                        error!("Failed to deserialize 9P.e message: {}", e);
+                        continue;
+                    }
                 }
             };
 
-            debug!("Received message - deserializing as NinePMessage");
+            debug!("Received message (is_legacy={}): {:?}", is_legacy, message);
 
             // Process message and get response
             let response = match handler.handle_message(message).await {
@@ -504,24 +702,44 @@ impl Server {
 
             debug!("Sending response: {:?}", response);
 
-            // Serialize response
-            // Serialize response using bincode for now
-            let response_data = match bincode::serialize(&response) {
-                Ok(data) => data,
-                Err(e) => {
-                    error!("Failed to serialize response: {}", e);
-                    continue;
+            // Serialize response based on negotiated protocol
+            let protocol = handler.connection_state.protocol_version().await;
+            if protocol == "9P2000" {
+                let mut session = crate::compatibility::CompatibilitySession::new();
+                session.is_legacy = true;
+                let translator = crate::compatibility::MessageTranslator::new(session);
+                match translator.translate_9pe_to_legacy(&response) {
+                    Ok(response_data) => {
+                        // Response data already includes size header in translate_9pe_to_legacy
+                        if let Err(e) = connection.write_all(&response_data).await {
+                            error!("Failed to send legacy response: {}", e);
+                            break;
+                        }
+                    }
+                    Err(e) => {
+                        error!("Failed to translate response to legacy format: {}", e);
+                        continue;
+                    }
                 }
-            };
+            } else {
+                // Serialize response using 9P.e manual format
+                let response_data = match response.serialize() {
+                    Ok(data) => data,
+                    Err(e) => {
+                        error!("Failed to serialize response: {}", e);
+                        continue;
+                    }
+                };
 
-            // Send response with size header
-            let response_size = (response_data.len() + 4) as u32;
-            let mut response_with_header = response_size.to_le_bytes().to_vec();
-            response_with_header.extend_from_slice(&response_data);
+                // Send response with size header
+                let response_size = (response_data.len() + 4) as u32;
+                let mut response_with_header = response_size.to_le_bytes().to_vec();
+                response_with_header.extend_from_slice(&response_data);
 
-            if let Err(e) = connection.write_all(&response_with_header).await {
-                error!("Failed to send response: {}", e);
-                break;
+                if let Err(e) = connection.write_all(&response_with_header).await {
+                    error!("Failed to send response: {}", e);
+                    break;
+                }
             }
 
             if let Err(e) = connection.flush().await {
@@ -563,19 +781,22 @@ impl Server {
 mod tests {
     use super::*;
     use crate::transport::{ServerTls, TransportFactory, TransportType};
+    use quinn::Endpoint;
     use crate::protocol::{MAX_MESSAGE_SIZE, NINEP_VERSION};
     use tempfile::tempdir;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
     #[tokio::test]
     async fn test_server_builder() {
+        let temp_dir = tempdir().expect("temp dir");
         let server = Server::builder()
             .network_config(NetworkConfig::default())
             .transport(TransportType::Tcp) // Use TCP for testing
+            .state_directory(temp_dir.path().to_path_buf())
             .root_directory(PathBuf::from("/tmp"))
             .build()
             .await;
-
+        
         assert!(server.is_ok());
     }
 
@@ -600,6 +821,29 @@ mod tests {
                 .expect("settrans"),
         );
 
+        let storage = Arc::new(crate::storage_adapter::SyntheticStorageAdapter::new(Arc::clone(&synth_fs)));
+        let memory_manager = Arc::new(crate::memory::MemoryManager::new());
+        let default_pool = memory_manager.create_pool(
+            crate::memory::PoolConfig::default(),
+            crate::memory::AllocationStrategy::FirstFit,
+        ).expect("pool");
+        let shm = Arc::new(crate::ipc::SharedMemoryManager::new(memory_manager).expect("shm"));
+
+        let compute_manager = Arc::new(crate::compute_control::ComputeManager::new());
+        let compute = Arc::new(crate::compute_adapter::ComputeManagerAdapter::new(compute_manager));
+
+        let wasm = Arc::new(crate::wasm_adapter::WasmRegistryAdapter::new(
+            translator_registry.clone(),
+            settrans_system.clone()
+        ));
+
+        let consensus_coordinator: Option<Arc<crate::consensus::ConsensusCoordinator>> = None;
+
+        let namespace_manager = Arc::new(
+            crate::namespace_manager::NamespaceManager::new(Arc::clone(&synth_fs))
+                .expect("namespace manager")
+        );
+
         let transport = TransportFactory::create(TransportType::Quic { server_name: None })
             .expect("transport");
         let addr: std::net::SocketAddr = "127.0.0.1:0".parse().unwrap();
@@ -608,7 +852,7 @@ mod tests {
             key: identity.private_key_der.clone(),
         };
         let listener = transport.listen(addr, Some(tls)).await.expect("listen");
-        let local_addr = listener.local_addr().expect("local addr");
+        let listen_addr = listener.local_addr().expect("local addr");
 
         let session_mgr = Arc::new(SessionManager::new());
         let root_path = PathBuf::from(".");
@@ -621,42 +865,52 @@ mod tests {
                 root_path,
                 max_message_size,
                 session_mgr,
-                translator_registry,
-                settrans_system,
-                synth_fs,
+                storage,
+                compute,
+                wasm,
                 dht,
+                consensus_coordinator,
+                shm,
+                namespace_manager,
+                None, // No fog router in test
             )
             .await
             .ok();
         });
 
-        let client = TransportFactory::create(TransportType::Quic {
-            server_name: Some("localhost".to_string()),
-        })
-        .expect("client transport");
-        let mut connection = client.connect(local_addr).await.expect("connect");
+        let client_config = crate::transport::configure_client_insecure().expect("client config");
+        let mut endpoint = Endpoint::client("0.0.0.0:0".parse().unwrap()).expect("endpoint");
+        endpoint.set_default_client_config(client_config);
+        
+        let connection = endpoint.connect(listen_addr, "localhost")
+            .expect("connect call")
+            .await
+            .expect("connect");
+
+        let (mut send, mut recv) = connection.open_bi().await.expect("open stream");
 
         let message = crate::protocol::NinePMessage::Version {
             msize: MAX_MESSAGE_SIZE,
             version: NINEP_VERSION.to_string(),
         };
-        let data = bincode::serialize(&message).expect("serialize");
+        let data = message.serialize().expect("serialize");
         let size = (data.len() + 4) as u32;
         let mut framed = size.to_le_bytes().to_vec();
         framed.extend_from_slice(&data);
-        connection.write_all(&framed).await.expect("write");
-        connection.flush().await.expect("flush");
+        send.write_all(&framed).await.expect("write");
+        send.flush().await.expect("flush");
 
         let mut size_buf = [0u8; 4];
-        connection.read_exact(&mut size_buf).await.expect("read header");
+        recv.read_exact(&mut size_buf).await.expect("read header");
         let resp_size = u32::from_le_bytes(size_buf);
         let mut resp_buf = vec![0u8; (resp_size - 4) as usize];
-        connection.read_exact(&mut resp_buf).await.expect("read response");
-        let response: crate::protocol::NinePMessage =
-            bincode::deserialize(&resp_buf).expect("deserialize");
+        recv.read_exact(&mut resp_buf).await.expect("read response");
+        let response = crate::protocol::NinePMessage::deserialize(resp_buf).expect("deserialize");
 
         assert!(matches!(response, crate::protocol::NinePMessage::Version { .. }));
 
+        drop(send);
+        drop(recv);
         drop(connection);
         let _ = tokio::time::timeout(Duration::from_secs(2), server_task).await;
     }

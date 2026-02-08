@@ -17,7 +17,7 @@ use anyhow::{Result, Context};
 use tracing::{info, debug, warn, error};
 
 use crate::mesh::DiscoveredPeer;
-use crate::client::NinePeeClient;
+use crate::client::NinePClient;
 
 const TTL: Duration = Duration::from_secs(1);
 const ROOT_INODE: u64 = 1;
@@ -29,7 +29,7 @@ const NS_FILE_BASE: u64 = 10000;
 
 /// Connection pool for multiplexed 9P connections
 pub struct ConnectionPool {
-    connections: Arc<RwLock<HashMap<String, Arc<RwLock<NinePeeClient>>>>>,
+    connections: Arc<RwLock<HashMap<String, Arc<RwLock<NinePClient>>>>>,
 }
 
 impl ConnectionPool {
@@ -40,7 +40,7 @@ impl ConnectionPool {
     }
 
     /// Get or create a multiplexed connection to a peer
-    pub async fn get_connection(&self, service_addr: &str) -> Result<Arc<RwLock<NinePeeClient>>> {
+    pub async fn get_connection(&self, service_addr: &str) -> Result<Arc<RwLock<NinePClient>>> {
         let mut conns = self.connections.write().await;
 
         if let Some(conn) = conns.get(service_addr) {
@@ -49,7 +49,7 @@ impl ConnectionPool {
 
         // Create new multiplexed connection
         debug!("Creating new multiplexed connection to {}", service_addr);
-        let client = NinePeeClient::connect(service_addr).await
+        let client = NinePClient::connect(service_addr).await
             .context(format!("Failed to connect to {}", service_addr))?;
 
         let conn = Arc::new(RwLock::new(client));

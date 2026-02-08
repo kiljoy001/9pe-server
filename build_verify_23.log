@@ -1,0 +1,35 @@
+warning: unused variable: `out_dir`
+   --> build.rs:176:9
+    |
+176 |     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+    |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_out_dir`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: `ninepe-server` (build script) generated 1 warning
+warning: ninepe-server@1.0.0: Using pre-built Intel oneAPI SYCL library
+warning: ninepe-server@1.0.0: Using pre-built AdaptiveCpp SYCL library
+warning: ninepe-server@1.0.0: SYCL backends available: Intel oneAPI, AdaptiveCpp
+warning: ninepe-server@1.0.0: Both backends built as separate shared libraries
+warning: ninepe-server@1.0.0: Runtime will dynamically load appropriate backend per GPU
+warning: ninepe-server@1.0.0: No static linking - using dlopen via libloading crate
+    Checking ninepe-server v1.0.0 (/home/scott/Repo/9pe-server)
+error: unexpected closing delimiter: `}`
+   --> src/transport.rs:388:1
+    |
+351 | fn configure_server(cert: Certificate, key: PrivateKey) -> Result<ServerConfig, ProtocolError> {
+    |                                                                                                - this opening brace...
+...
+374 | }
+    | - ...matches this closing brace
+...
+388 | }
+    | ^ unexpected closing delimiter
+
+warning: ninepe-server@1.0.0: Using pre-built Intel oneAPI SYCL library
+warning: ninepe-server@1.0.0: Using pre-built AdaptiveCpp SYCL library
+warning: ninepe-server@1.0.0: SYCL backends available: Intel oneAPI, AdaptiveCpp
+warning: ninepe-server@1.0.0: Both backends built as separate shared libraries
+warning: ninepe-server@1.0.0: Runtime will dynamically load appropriate backend per GPU
+warning: ninepe-server@1.0.0: No static linking - using dlopen via libloading crate
+error: could not compile `ninepe-server` (lib) due to 1 previous error

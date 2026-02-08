@@ -1,0 +1,139 @@
+  [2m2026-01-30T22:54:43.066816Z[0m [32m INFO[0m [1;32mninepe_server::cli::commands::serve[0m[32m: [32mStarting 9P.e server...[0m
+    [2;3mat[0m src/cli/commands/serve.rs:22
+
+  [2m2026-01-30T22:54:43.066906Z[0m [32m INFO[0m [1;32mninepe_server::settrans[0m[32m: [32mVirtual settrans structure created at "/srv/settrans" (synthetic filesystem only)[0m
+    [2;3mat[0m src/settrans.rs:223
+
+  [2m2026-01-30T22:54:43.066909Z[0m [32m INFO[0m [1;32mninepe_server::sycl::backend_loader[0m[32m: [32mLoading Intel oneAPI backend from /home/scott/Repo/9pe-server/libsycl_ffi_intel.so[0m
+    [2;3mat[0m src/sycl/backend_loader.rs:82
+
+  [2m2026-01-30T22:54:43.066925Z[0m [32m INFO[0m [1;32mninepe_server::util[0m[32m: [32mExecution mode: Standard Server[0m
+    [2;3mat[0m src/util.rs:5
+
+  [2m2026-01-30T22:54:43.066933Z[0m [32m INFO[0m [1;32mninepe_server::identity[0m[32m: [32mGenerating new sovereign identity[0m
+    [2;3mat[0m src/identity.rs:88
+
+  [2m2026-01-30T22:54:43.067072Z[0m [32m INFO[0m [1;32mninepe_server::identity[0m[32m: [32mGenerated identity with NodeID: c9964abcb4043427d2f5ceb292534f222f32708f0540e5b2594505afd201a1b6[0m
+    [2;3mat[0m src/identity.rs:111
+
+  [2m2026-01-30T22:54:43.067165Z[0m [32m INFO[0m [1;32mninepe_server::dht[0m[32m: [32mInitializing sovereign DHT for node: c9964abcb4043427d2f5ceb292534f222f32708f0540e5b2594505afd201a1b6[0m
+    [2;3mat[0m src/dht.rs:90
+
+  [2m2026-01-30T22:54:43.205707Z[0m [32m INFO[0m [1;32mninepe_server::dht[0m[32m: [32mStarting libp2p DHT networking on 0.0.0.0:9651[0m
+    [2;3mat[0m src/dht.rs:196
+
+  [2m2026-01-30T22:54:43.206068Z[0m [32m INFO[0m [1;32mninepe_server::server[0m[32m: [32mSynthetic filesystem initialized for virtual directories[0m
+    [2;3mat[0m src/server/mod.rs:171
+
+  [2m2026-01-30T22:54:43.206075Z[0m [32m INFO[0m [1;32mninepe_server::server[0m[32m: [32mThread-safe WASM translator registry initialized at "/home/scott/.9pe/translators"[0m
+    [2;3mat[0m src/server/mod.rs:177
+
+  [2m2026-01-30T22:54:43.206151Z[0m [32m INFO[0m [1;32mninepe_server::sycl::backend_loader[0m[32m: [32mLoading Intel oneAPI backend from /home/scott/Repo/9pe-server/libsycl_ffi_intel.so[0m
+    [2;3mat[0m src/sycl/backend_loader.rs:82
+
+  [2m2026-01-30T22:54:43.206162Z[0m [32m INFO[0m [1;32mninepe_server::sycl::backend_loader[0m[32m: [32mIntel oneAPI backend loaded successfully[0m
+    [2;3mat[0m src/sycl/backend_loader.rs:304
+
+  [2m2026-01-30T22:54:43.206166Z[0m [32m INFO[0m [1;32mninepe_server::sycl::backend_loader[0m[32m: [32mLoading AdaptiveCpp backend from /home/scott/Repo/9pe-server/libsycl_ffi_adaptive.so[0m
+    [2;3mat[0m src/sycl/backend_loader.rs:82
+
+  [2m2026-01-30T22:54:43.206802Z[0m [32m INFO[0m [1;32mninepe_server::sycl::backend_loader[0m[32m: [32mAdaptiveCpp backend loaded successfully[0m
+    [2;3mat[0m src/sycl/backend_loader.rs:320
+
+  [2m2026-01-30T22:54:43.270903Z[0m [32m INFO[0m [1;32mninepe_server::wasm::threadsafe[0m[32m: [32mRegistered system translator at "/system/sycl"[0m
+    [2;3mat[0m src/wasm/threadsafe.rs:678
+
+  [2m2026-01-30T22:54:43.270997Z[0m [32m INFO[0m [1;32mninepe_server::translators::v8[0m[32m: [32mCanvas initialized with Intel oneAPI backend (640x480)[0m
+    [2;3mat[0m src/translators/v8.rs:68
+
+  [2m2026-01-30T22:54:43.273219Z[0m [32m INFO[0m [1;32mninepe_server::translators::v8[0m[32m: [32m✅ V8 canvas auto-initialized (640x480)[0m
+    [2;3mat[0m src/translators/v8.rs:52
+
+  [2m2026-01-30T22:54:43.273630Z[0m [32m INFO[0m [1;32mninepe_server::server[0m[32m: [32mDiscovered 5 GPU device(s)[0m
+    [2;3mat[0m src/server/mod.rs:210
+
+  [2m2026-01-30T22:54:43.277312Z[0m [32m INFO[0m [1;32mninepe_server::server[0m[32m: [32mGPU synthetic controls mounted under /srv/compute[0m
+    [2;3mat[0m src/server/mod.rs:232
+
+  [2m2026-01-30T22:54:43.277343Z[0m [32m INFO[0m [1;32mninepe_server::server[0m[32m: [32mConsensus disabled in config[0m
+    [2;3mat[0m src/server/mod.rs:291
+
+  [2m2026-01-30T22:54:43.277367Z[0m [32m INFO[0m [1;32mninepe_server::server[0m[32m: [32mStarting mesh networking on port 9650[0m
+    [2;3mat[0m src/server/mod.rs:297
+
+  [2m2026-01-30T22:54:43.277372Z[0m [32m INFO[0m [1;32mninepe_server::mesh[0m[32m: [32mStarting QUIC mesh network on port 9650 with DHT and mDNS discovery[0m
+    [2;3mat[0m src/mesh.rs:85
+
+  [2m2026-01-30T22:54:43.277485Z[0m [32m INFO[0m [1;32mninepe_server::dht[0m[32m: [32mRegistering node c9964abcb4043427d2f5ceb292534f222f32708f0540e5b2594505afd201a1b6 in DHT[0m
+    [2;3mat[0m src/dht.rs:467
+
+  [2m2026-01-30T22:54:43.277489Z[0m [32m INFO[0m [1;32mninepe_server::mesh[0m[32m: [32mQUIC mesh network listening on port 9650[0m
+    [2;3mat[0m src/mesh.rs:185
+
+  [2m2026-01-30T22:54:43.277507Z[0m [32m INFO[0m [1;32mninepe_server::mesh[0m[32m: [32mStarting mDNS peer discovery[0m
+    [2;3mat[0m src/mesh.rs:347
+
+  [2m2026-01-30T22:54:43.277507Z[0m [32m INFO[0m [1;32mninepe_server::mesh[0m[32m: [32mStarting DHT-based peer discovery[0m
+    [2;3mat[0m src/mesh.rs:443
+
+  [2m2026-01-30T22:54:43.277605Z[0m [32m INFO[0m [1;32mninepe_server::server[0m[32m: [32mMesh network started successfully on port 9650[0m
+    [2;3mat[0m src/server/mod.rs:327
+
+  [2m2026-01-30T22:54:43.277615Z[0m [32m INFO[0m [1;32mninepe_server::mesh[0m[32m: [32mRegistered mDNS service: 9pe-c9964abc on port 9650[0m
+    [2;3mat[0m src/mesh.rs:378
+
+  [2m2026-01-30T22:54:43.277629Z[0m [32m INFO[0m [1;32mninepe_server::mesh[0m[32m: [32mmDNS discovery active, browsing for _9pe-mesh._udp.local.[0m
+    [2;3mat[0m src/mesh.rs:395
+
+  [2m2026-01-30T22:54:43.277645Z[0m [32m INFO[0m [1;32mninepe_server::namespace_manager[0m[32m: [32mNamespace manager system public key: 2320dcd61dbe075f97bc9b2db0a329deffb4ed36dbba0e0cd995a3a9a6e7f771[0m
+    [2;3mat[0m src/namespace_manager.rs:177
+
+  [2m2026-01-30T22:54:43.277650Z[0m [32m INFO[0m [1;32mninepe_server::namespace_manager[0m[32m: [32mInitializing namespace manager at /srv/namespace/[0m
+    [2;3mat[0m src/namespace_manager.rs:204
+
+  [2m2026-01-30T22:54:43.277704Z[0m [32m INFO[0m [1;32mninepe_server::namespace_manager[0m[32m: [32mRegistered namespace: /srv/compute (owner: 2320dcd61dbe075f, type: compute)[0m
+    [2;3mat[0m src/namespace_manager.rs:401
+
+  [2m2026-01-30T22:54:43.277741Z[0m [32m INFO[0m [1;32mninepe_server::namespace_manager[0m[32m: [32mRegistered namespace: /srv/namespace (owner: 2320dcd61dbe075f, type: system)[0m
+    [2;3mat[0m src/namespace_manager.rs:401
+
+  [2m2026-01-30T22:54:43.277776Z[0m [32m INFO[0m [1;32mninepe_server::namespace_manager[0m[32m: [32mRegistered namespace: /srv/settrans (owner: 2320dcd61dbe075f, type: system)[0m
+    [2;3mat[0m src/namespace_manager.rs:401
+
+  [2m2026-01-30T22:54:43.277788Z[0m [32m INFO[0m [1;32mninepe_server::namespace_manager[0m[32m: [32mNamespace manager initialized successfully[0m
+    [2;3mat[0m src/namespace_manager.rs:217
+
+  [2m2026-01-30T22:54:43.277794Z[0m [32m INFO[0m [1;32mninepe_server::server[0m[32m: [32mNamespace manager initialized at /srv/namespace/[0m
+    [2;3mat[0m src/server/mod.rs:361
+
+  [2m2026-01-30T22:54:43.277805Z[0m [32m INFO[0m [1;32mninepe_server::settrans[0m[32m: [32mVirtual settrans structure created at "/srv/settrans" (synthetic filesystem only)[0m
+    [2;3mat[0m src/settrans.rs:223
+
+  [2m2026-01-30T22:54:43.277819Z[0m [32m INFO[0m [1;32mninepe_server::server[0m[32m: [32mVirtual settrans system initialized at "/home/scott/.9pe/settrans" (virtual only, no physical directories)[0m
+    [2;3mat[0m src/server/mod.rs:381
+
+  [2m2026-01-30T22:54:43.277823Z[0m [32m INFO[0m [1;32mninepe_server::server[0m[32m: [32mMetrics available at /srv/stats/* (see src/stats.rs)[0m
+    [2;3mat[0m src/server/mod.rs:388
+
+  [2m2026-01-30T22:54:43.277825Z[0m [32m INFO[0m [1;32mninepe_server::server[0m[32m: [32mAuto-mount enabled - initializing daemon (will start in run loop)[0m
+    [2;3mat[0m src/server/mod.rs:392
+
+  [2m2026-01-30T22:54:43.277837Z[0m [32m INFO[0m [1;32mninepe_server::server[0m[32m: [32m9P.e server running on [::]:5640 (IPv6 dual-stack) with root "<synthetic>"[0m
+    [2;3mat[0m src/server/mod.rs:455
+
+  [2m2026-01-30T22:54:43.277840Z[0m [32m INFO[0m [1;32mninepe_server::server[0m[32m: [32mDEBUG: Checking HTTP gateway (is_some: true)[0m
+    [2;3mat[0m src/server/mod.rs:462
+
+  [2m2026-01-30T22:54:43.277843Z[0m [32m INFO[0m [1;32mninepe_server::server[0m[32m: [32m🌐 Starting HTTP Gateway on port 9090...[0m
+    [2;3mat[0m src/server/mod.rs:464
+
+
+thread 'main' panicked at src/auto_mount.rs:329:54:
+Cannot block the current thread from within a runtime. This happens because a function attempted to block the current thread while the thread is being used to drive asynchronous tasks.
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+  [2m2026-01-30T22:54:43.277850Z[0m [32m INFO[0m [1;32mninepe_server::server[0m[32m: [32mHTTP Gateway task spawned, attempting to bind port 9090[0m
+    [2;3mat[0m src/server/mod.rs:466
+
+  [2m2026-01-30T22:54:43.277868Z[0m [32m INFO[0m [1;32mninepe_server::server::http_gateway[0m[32m: [32mHTTP Gateway listening on http://localhost:9090[0m
+    [2;3mat[0m src/server/http_gateway.rs:20
+

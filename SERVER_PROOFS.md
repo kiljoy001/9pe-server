@@ -6,9 +6,9 @@
 **Theorem**: The server always responds with valid 9P.e protocol messages.
 ```coq
 Theorem server_protocol_conformance:
-  forall (req: NinePeeMessage) (server: FileSystemServer),
+  forall (req: NinePMessage) (server: FileSystemServer),
     valid_message req ->
-    exists (resp: NinePeeMessage),
+    exists (resp: NinePMessage),
       server.process_message(req) = Ok(resp) /\
       valid_message resp /\
       message_type_matches req resp.
@@ -111,7 +111,7 @@ Theorem read_write_atomic:
 **Theorem**: Message processing completes in bounded time.
 ```coq
 Theorem bounded_processing:
-  forall (msg: NinePeeMessage),
+  forall (msg: NinePMessage),
     exists (bound: Duration),
       processing_time(msg) < bound /\
       bound = O(message_size(msg)).
@@ -134,7 +134,7 @@ Theorem memory_bounded:
 **Theorem**: All errors are properly propagated as Error messages.
 ```coq
 Theorem error_propagation:
-  forall (req: NinePeeMessage) (err: Error),
+  forall (req: NinePMessage) (err: Error),
     server.process_message(req) = Err(err) ->
     client_receives(Error { ename: err.to_string() }).
 ```
@@ -143,7 +143,7 @@ Theorem error_propagation:
 **Theorem**: Server remains in valid state after error.
 ```coq
 Theorem error_recovery:
-  forall (server: FileSystemServer) (req: NinePeeMessage),
+  forall (server: FileSystemServer) (req: NinePMessage),
     let server' = execute(server, req) in
     is_error(server'.last_response) ->
     valid_state(server').
@@ -155,7 +155,7 @@ Theorem error_recovery:
 **Theorem**: Messages are correctly framed with length prefixes.
 ```coq
 Theorem tcp_framing:
-  forall (msg: NinePeeMessage),
+  forall (msg: NinePMessage),
     send(msg) =
       write(u32::to_le_bytes(size(msg) + 4)) >>
       write(msg.serialize()).
@@ -165,7 +165,7 @@ Theorem tcp_framing:
 **Theorem**: QUIC streams maintain message ordering per stream.
 ```coq
 Theorem quic_ordering:
-  forall (stream: QuicStream) (msgs: List<NinePeeMessage>),
+  forall (stream: QuicStream) (msgs: List<NinePMessage>),
     send_all(stream, msgs) ->
     receive_all(stream) = msgs.
 ```

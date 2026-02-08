@@ -4,7 +4,7 @@
 
 use honggfuzz::fuzz;
 use arbitrary::{Arbitrary, Unstructured};
-use ninepee_server::*;
+use ninepe_server::*;
 
 #[derive(Arbitrary, Debug)]
 struct AuthData {

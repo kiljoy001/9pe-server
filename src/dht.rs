@@ -8,12 +8,14 @@ use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::path::Path;
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::sync::{mpsc, oneshot, RwLock};
 use tracing::{info, debug, warn};
 use sha2::Digest;
 use serde::{Serialize, Deserialize};
 
 use futures::StreamExt;
+use libp2p::Transport;
 use libp2p::{
     core::Multiaddr,
     identity,
@@ -29,7 +31,7 @@ use libp2p::{
         Record,
         Quorum,
     },
-    swarm::{Swarm, SwarmBuilder, SwarmEvent},
+    swarm::SwarmEvent,
     multiaddr::Protocol,
     PeerId,
 };
@@ -51,7 +53,7 @@ pub struct SovereignDht {
     local_services: Arc<RwLock<HashMap<String, ServiceInfo>>>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct NetworkHandle {
     sender: mpsc::Sender<DhtCommand>,
 }
@@ -204,21 +206,25 @@ impl SovereignDht {
             .map_err(|e| anyhow::anyhow!("Failed to create libp2p keypair: {e}"))?;
         let peer_id = PeerId::from(keypair.public());
 
-        let transport = libp2p::tokio_development_transport(keypair.clone())
-            .await
-            .map_err(|e| anyhow::anyhow!("Failed to build libp2p transport: {e}"))?;
+        // Build transport with TCP + Noise + Yamux
+        let transport = libp2p::tcp::tokio::Transport::new(libp2p::tcp::Config::default())
+            .upgrade(libp2p::core::upgrade::Version::V1)
+            .authenticate(libp2p::noise::Config::new(&keypair)
+                .map_err(|e| anyhow::anyhow!("Failed to create noise config: {e}"))?)
+            .multiplex(libp2p::yamux::Config::default())
+            .boxed();
 
         let store = MemoryStore::new(peer_id);
         let mut behaviour = Kademlia::new(peer_id, store);
         behaviour.set_mode(Some(libp2p::kad::Mode::Server));
 
-        let mut swarm = SwarmBuilder::with_tokio_executor(transport, behaviour, peer_id).build();
+        let mut swarm = libp2p::Swarm::new(transport, behaviour, peer_id, libp2p::swarm::Config::with_tokio_executor());
         let listen_multiaddr = Self::socket_addr_to_multiaddr(listen_addr);
         swarm.listen_on(listen_multiaddr)?;
 
-        for addr in bootstrap_addrs {
+        for addr in &bootstrap_addrs {
             if let Some(peer) = Self::peer_id_from_multiaddr(&addr) {
-                swarm.behaviour_mut().add_address(&peer, addr);
+                swarm.behaviour_mut().add_address(&peer, addr.clone());
             } else {
                 warn!("Bootstrap addr missing peer id: {}", addr);
             }
@@ -245,7 +251,7 @@ impl SovereignDht {
                 tokio::select! {
                     event = swarm.select_next_some() => {
                         match event {
-                            SwarmEvent::Behaviour(KademliaEvent::OutboundQueryCompleted { id, result, .. }) => {
+                            SwarmEvent::Behaviour(KademliaEvent::OutboundQueryProgressed { id, result, .. }) => {
                                 match result {
                                     QueryResult::GetRecord(Ok(GetRecordOk::FoundRecord(found))) => {
                                         if let Some(reply) = pending_get.remove(&id) {
@@ -277,6 +283,10 @@ impl SovereignDht {
                             }
                             SwarmEvent::Behaviour(KademliaEvent::InboundRequest { request }) => {
                                 if let libp2p::kad::InboundRequest::PutRecord { source, record, .. } = request {
+                                    let Some(record) = record else {
+                                        warn!("Received PutRecord with no record from {}", source);
+                                        continue;
+                                    };
                                     if let Ok(parsed) = serde_cbor::from_slice::<DhtRecord>(&record.value) {
                                         let mut records = local_records.write().await;
                                         records.insert(parsed.node_id.as_str().to_string(), parsed.clone());
@@ -348,39 +358,101 @@ impl SovereignDht {
         guard.clone()
     }
 
+    /// Maximum retry attempts for DHT operations
+    const MAX_DHT_RETRIES: u32 = 3;
+    /// Initial retry delay for DHT operations
+    const DHT_RETRY_DELAY: Duration = Duration::from_millis(100);
+
     async fn send_put_record<T: Serialize>(
         &self,
         key: Vec<u8>,
         record: &T,
     ) -> Result<(), anyhow::Error> {
         let value = serde_cbor::to_vec(record)?;
-        self.send_put_value(key, value).await
+        self.send_put_value_with_retry(key, value).await
     }
 
-    async fn send_put_value(&self, key: Vec<u8>, value: Vec<u8>) -> Result<(), anyhow::Error> {
-        if let Some(handle) = self.network_handle().await {
-            let (tx, rx) = oneshot::channel();
-            handle
-                .sender
-                .send(DhtCommand::PutRecord { key, value, reply: tx })
-                .await
-                .map_err(|_| anyhow::anyhow!("DHT network task unavailable"))?;
-            return rx.await.map_err(|_| anyhow::anyhow!("DHT put cancelled"))?;
+    async fn send_put_value_with_retry(&self, key: Vec<u8>, value: Vec<u8>) -> Result<(), anyhow::Error> {
+        let mut last_error = None;
+        let mut delay = Self::DHT_RETRY_DELAY;
+
+        for attempt in 1..=Self::MAX_DHT_RETRIES {
+            match self.send_put_value_inner(key.clone(), value.clone()).await {
+                Ok(()) => return Ok(()),
+                Err(e) => {
+                    // Don't retry if network is not initialized (permanent error)
+                    if e.to_string().contains("not initialized") {
+                        return Err(e);
+                    }
+                    debug!("DHT put attempt {}/{} failed: {}", attempt, Self::MAX_DHT_RETRIES, e);
+                    last_error = Some(e);
+                    if attempt < Self::MAX_DHT_RETRIES {
+                        tokio::time::sleep(delay).await;
+                        delay = std::cmp::min(delay * 2, Duration::from_secs(2));
+                    }
+                }
+            }
         }
-        Ok(())
+
+        Err(last_error.unwrap_or_else(|| anyhow::anyhow!("DHT put failed after {} attempts", Self::MAX_DHT_RETRIES)))
+    }
+
+    async fn send_put_value_inner(&self, key: Vec<u8>, value: Vec<u8>) -> Result<(), anyhow::Error> {
+        let handle = self.network_handle().await
+            .ok_or_else(|| anyhow::anyhow!("DHT network not initialized"))?;
+        let (tx, rx) = oneshot::channel();
+        handle
+            .sender
+            .send(DhtCommand::PutRecord { key, value, reply: tx })
+            .await
+            .map_err(|_| anyhow::anyhow!("DHT network task unavailable"))?;
+        rx.await.map_err(|_| anyhow::anyhow!("DHT put cancelled"))?
+    }
+
+    #[allow(dead_code)]
+    async fn send_put_value(&self, key: Vec<u8>, value: Vec<u8>) -> Result<(), anyhow::Error> {
+        self.send_put_value_with_retry(key, value).await
     }
 
     async fn send_get_record(&self, key: Vec<u8>) -> Result<Option<Vec<u8>>, anyhow::Error> {
-        if let Some(handle) = self.network_handle().await {
-            let (tx, rx) = oneshot::channel();
-            handle
-                .sender
-                .send(DhtCommand::GetRecord { key, reply: tx })
-                .await
-                .map_err(|_| anyhow::anyhow!("DHT network task unavailable"))?;
-            return rx.await.map_err(|_| anyhow::anyhow!("DHT get cancelled"))?;
+        self.send_get_record_with_retry(key).await
+    }
+
+    async fn send_get_record_with_retry(&self, key: Vec<u8>) -> Result<Option<Vec<u8>>, anyhow::Error> {
+        let mut last_error = None;
+        let mut delay = Self::DHT_RETRY_DELAY;
+
+        for attempt in 1..=Self::MAX_DHT_RETRIES {
+            match self.send_get_record_inner(key.clone()).await {
+                Ok(result) => return Ok(result),
+                Err(e) => {
+                    // Don't retry if network is not initialized (permanent error)
+                    if e.to_string().contains("not initialized") {
+                        return Err(e);
+                    }
+                    debug!("DHT get attempt {}/{} failed: {}", attempt, Self::MAX_DHT_RETRIES, e);
+                    last_error = Some(e);
+                    if attempt < Self::MAX_DHT_RETRIES {
+                        tokio::time::sleep(delay).await;
+                        delay = std::cmp::min(delay * 2, Duration::from_secs(2));
+                    }
+                }
+            }
         }
-        Ok(None)
+
+        Err(last_error.unwrap_or_else(|| anyhow::anyhow!("DHT get failed after {} attempts", Self::MAX_DHT_RETRIES)))
+    }
+
+    async fn send_get_record_inner(&self, key: Vec<u8>) -> Result<Option<Vec<u8>>, anyhow::Error> {
+        let handle = self.network_handle().await
+            .ok_or_else(|| anyhow::anyhow!("DHT network not initialized"))?;
+        let (tx, rx) = oneshot::channel();
+        handle
+            .sender
+            .send(DhtCommand::GetRecord { key, reply: tx })
+            .await
+            .map_err(|_| anyhow::anyhow!("DHT network task unavailable"))?;
+        rx.await.map_err(|_| anyhow::anyhow!("DHT get cancelled"))?
     }
 
     async fn send_add_address(&self, peer: PeerId, addr: Multiaddr) -> Result<(), anyhow::Error> {
@@ -419,7 +491,7 @@ impl SovereignDht {
     fn peer_id_from_multiaddr(addr: &Multiaddr) -> Option<PeerId> {
         addr.iter().last().and_then(|proto| {
             if let Protocol::P2p(multihash) = proto {
-                PeerId::from_multihash(multihash).ok()
+                PeerId::from_multihash(multihash.into()).ok()
             } else {
                 None
             }
@@ -803,7 +875,108 @@ impl SovereignDht {
     fn peer_id_from_ed25519_public(public_key: &[u8]) -> Result<PeerId, anyhow::Error> {
         let pubkey = identity::ed25519::PublicKey::try_from_bytes(public_key)
             .map_err(|e| anyhow::anyhow!("Invalid ed25519 public key: {e}"))?;
-        Ok(PeerId::from_public_key(&identity::PublicKey::Ed25519(pubkey)))
+        Ok(PeerId::from(identity::PublicKey::from(pubkey)))
+    }
+
+    // === Fog Computing Resource Advertisement ===
+
+    /// Advertise compute resources for fog computing
+    pub async fn advertise_compute_resources(
+        &self,
+        resources: &crate::fog::resources::NodeResources,
+    ) -> Result<(), anyhow::Error> {
+        info!(
+            "Advertising compute resources: {} CPUs, {} GPUs",
+            resources.cpu_cores, resources.gpu_count
+        );
+
+        let key = Self::compute_resource_key(&resources.node_id);
+        let value = serde_cbor::to_vec(resources)?;
+        self.send_put_value(key, value).await?;
+
+        // Also add to compute-capable nodes index
+        let index_key = b"fog-compute-nodes".to_vec();
+        let mut index: Vec<String> = match self.send_get_record(index_key.clone()).await {
+            Ok(Some(bytes)) => serde_cbor::from_slice(&bytes).unwrap_or_default(),
+            _ => Vec::new(),
+        };
+
+        let node_str = resources.node_id.as_str().to_string();
+        if !index.contains(&node_str) {
+            index.push(node_str);
+            let index_value = serde_cbor::to_vec(&index)?;
+            self.send_put_value(index_key, index_value).await?;
+        }
+
+        Ok(())
+    }
+
+    /// Lookup compute resources for a specific node
+    pub async fn lookup_compute_resources(
+        &self,
+        node_id: &NodeId,
+    ) -> Option<crate::fog::resources::NodeResources> {
+        let key = Self::compute_resource_key(node_id);
+        if let Ok(Some(bytes)) = self.send_get_record(key).await {
+            if let Ok(resources) = serde_cbor::from_slice(&bytes) {
+                return Some(resources);
+            }
+        }
+        None
+    }
+
+    /// Find all nodes with compute resources
+    pub async fn find_compute_nodes(&self) -> Vec<crate::fog::resources::NodeResources> {
+        let mut results = Vec::new();
+
+        let index_key = b"fog-compute-nodes".to_vec();
+        if let Ok(Some(bytes)) = self.send_get_record(index_key).await {
+            if let Ok(node_ids) = serde_cbor::from_slice::<Vec<String>>(&bytes) {
+                for node_id in node_ids {
+                    if let Some(resources) = self
+                        .lookup_compute_resources(&NodeId::new(node_id))
+                        .await
+                    {
+                        // Filter stale entries (older than 5 minutes)
+                        if !resources.is_stale(300) {
+                            results.push(resources);
+                        }
+                    }
+                }
+            }
+        }
+
+        results
+    }
+
+    /// Find nodes capable of running a specific job
+    pub async fn find_capable_nodes(
+        &self,
+        query: &crate::fog::resources::ResourceQuery,
+    ) -> Vec<crate::fog::resources::NodeResources> {
+        self.find_compute_nodes()
+            .await
+            .into_iter()
+            .filter(|r| r.can_handle(query))
+            .collect()
+    }
+
+    /// Find best node for a job based on scoring
+    pub async fn find_best_compute_node(
+        &self,
+        query: &crate::fog::resources::ResourceQuery,
+    ) -> Option<crate::fog::resources::NodeResources> {
+        let mut candidates = self.find_capable_nodes(query).await;
+        candidates.sort_by(|a, b| {
+            let score_a = a.score(query);
+            let score_b = b.score(query);
+            score_b.partial_cmp(&score_a).unwrap_or(std::cmp::Ordering::Equal)
+        });
+        candidates.into_iter().next()
+    }
+
+    fn compute_resource_key(node_id: &NodeId) -> Vec<u8> {
+        format!("fog-resources:{}", node_id.as_str()).into_bytes()
     }
 }
 
@@ -860,6 +1033,7 @@ mod tests {
 
         let addr: SocketAddr = "127.0.0.1:9001".parse().unwrap();
         dht.register_self(addr).await.expect("register self");
+        drop(dht);
 
         let reloaded = SovereignDht::new_with_store(identity.clone(), temp_dir.path())
             .await

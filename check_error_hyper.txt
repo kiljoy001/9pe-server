@@ -1,0 +1,349 @@
+warning: unused variable: `out_dir`
+   --> build.rs:176:9
+    |
+176 |     let out_dir = PathBuf::from(env::var("OUT_D...
+    |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_out_dir`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: `ninepe-server` (build script) generated 1 warning
+warning: ninepe-server@1.0.0: Using pre-built Intel oneAPI SYCL library
+warning: ninepe-server@1.0.0: Using pre-built AdaptiveCpp SYCL library
+warning: ninepe-server@1.0.0: SYCL backends available: Intel oneAPI, AdaptiveCpp
+warning: ninepe-server@1.0.0: Both backends built as separate shared libraries
+warning: ninepe-server@1.0.0: Runtime will dynamically load appropriate backend per GPU
+warning: ninepe-server@1.0.0: No static linking - using dlopen via libloading crate
+    Checking ninepe-server v1.0.0 (/home/scott/Repo/9pe-server)
+error[E0761]: file for module `translators` found at both "src/translators.rs" and "src/translators/mod.rs"
+  --> src/lib.rs:28:1
+   |
+28 | pub mod translators;
+   | ^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: delete or rename one of them to remove the ambiguity
+
+warning: unused import: `Context`
+ --> src/consensus/crypto.rs:1:14
+  |
+1 | use anyhow::{Context, Result};
+  |              ^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `rustls::server::AllowAnyAuthenticatedClient`
+  --> src/transport.rs:10:5
+   |
+10 | use rustls::server::AllowAnyAuthenticatedClient;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `rustls::Error as RustlsError`
+  --> src/transport.rs:12:5
+   |
+12 | use rustls::Error as RustlsError;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `SystemTime`
+  --> src/transport.rs:17:27
+   |
+17 | use std::time::{Duration, SystemTime};
+   |                           ^^^^^^^^^^
+
+warning: unused import: `NistP256`
+  --> src/identity.rs:12:12
+   |
+12 | use p256::{NistP256, PublicKey as P256PublicKey, SecretKey as P256SecretKey};
+   |            ^^^^^^^^
+
+warning: ambiguous glob re-exports
+   --> src/lib.rs:61:9
+    |
+ 61 | pub use protocol::*;
+    |         ^^^^^^^^^^^ the name `ProtocolError` in the type namespace is first re-exported here
+...
+140 | pub use error::*;
+    |         -------- but the name `ProtocolError` in the type namespace is also re-exported here
+    |
+    = note: `#[warn(ambiguous_glob_reexports)]` on by default
+
+warning: unused import: `translators::*`
+  --> src/lib.rs:63:9
+   |
+63 | pub use translators::*;
+   |         ^^^^^^^^^^^^^^
+
+warning: unused import: `crate::synth::SyntheticFilesystem`
+  --> src/server/builder.rs:11:5
+   |
+11 | use crate::synth::SyntheticFilesystem;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `BoundedGhostdag`
+ --> src/server/handler/basic_ops.rs:3:24
+  |
+3 | use crate::consensus::{BoundedGhostdag, NamespaceOp};
+  |                        ^^^^^^^^^^^^^^^
+
+warning: unused import: `Hasher`
+   --> src/server/handler/basic_ops.rs:391:35
+    |
+391 |             use std::hash::{Hash, Hasher};
+    |                                   ^^^^^^
+
+warning: unused import: `crate::settrans::VirtualSettransSystem`
+ --> src/server/handler/ninep_extensions.rs:8:5
+  |
+8 | use crate::settrans::VirtualSettransSystem;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::synth::SyntheticFilesystem`
+ --> src/server/handler/ninep_extensions.rs:9:5
+  |
+9 | use crate::synth::SyntheticFilesystem;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::wasm::ThreadSafeTranslatorRegistry`
+  --> src/server/handler/ninep_extensions.rs:10:5
+   |
+10 | use crate::wasm::ThreadSafeTranslatorRegistry;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::consensus::BoundedGhostdag`
+  --> src/server/handler/mod.rs:13:5
+   |
+13 | use crate::consensus::BoundedGhostdag;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::settrans::VirtualSettransSystem`
+  --> src/server/handler/mod.rs:15:5
+   |
+15 | use crate::settrans::VirtualSettransSystem;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::synth::SyntheticFilesystem`
+  --> src/server/handler/mod.rs:16:5
+   |
+16 | use crate::synth::SyntheticFilesystem;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::wasm::ThreadSafeTranslatorRegistry`
+  --> src/server/handler/mod.rs:17:5
+   |
+17 | use crate::wasm::ThreadSafeTranslatorRegistry;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `WasiCtx`
+  --> src/wasm/threadsafe.rs:20:21
+   |
+20 | use wasmtime_wasi::{WasiCtx, WasiCtxBuilder};
+   |                     ^^^^^^^
+
+warning: ambiguous glob re-exports
+   --> src/lib.rs:90:9
+    |
+ 90 | pub use server::*;
+    |         ^^^^^^^^^ the name `ServerConfig` in the type namespace is first re-exported here
+...
+131 | pub use config::*;
+    |         --------- but the name `ServerConfig` in the type namespace is also re-exported here
+
+warning: unused imports: `BlockState` and `BoundedGhostdag`
+  --> src/namespace_manager.rs:10:17
+   |
+10 |     consensus::{BlockState, BoundedGhostdag, NamespaceOp},
+   |                 ^^^^^^^^^^  ^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::consensus::GhostdagBlock as Block`
+   --> src/namespace_manager.rs:413:17
+    |
+413 |             use crate::consensus::GhostdagBlock as Block;
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::consensus::GhostdagBlock as Block`
+   --> src/namespace_manager.rs:640:17
+    |
+640 |             use crate::consensus::GhostdagBlock as Block;
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `WorkReceipt`
+  --> src/mesh.rs:25:67
+   |
+25 | use crate::identity::{NodeId, NodePermissions, SovereignIdentity, WorkReceipt};
+   |                                                                   ^^^^^^^^^^^
+
+warning: unused imports: `debug` and `error`
+  --> src/sycl/backend_loader.rs:17:27
+   |
+17 | use tracing::{info, warn, debug, error};
+   |                           ^^^^^  ^^^^^
+
+warning: unused import: `Builder`
+  --> src/sycl/backend_loader.rs:18:18
+   |
+18 | use uuid::{Uuid, Builder};
+   |                  ^^^^^^^
+
+warning: unused imports: `SystemTime` and `UNIX_EPOCH`
+  --> src/sycl/backend_loader.rs:19:17
+   |
+19 | use std::time::{SystemTime, UNIX_EPOCH};
+   |                 ^^^^^^^^^^  ^^^^^^^^^^
+
+warning: unused import: `crate::ipc::SharedMemoryHandle`
+  --> src/sycl/backend_loader.rs:21:5
+   |
+21 | use crate::ipc::SharedMemoryHandle;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: ambiguous glob re-exports
+   --> src/lib.rs:136:9
+    |
+136 | pub use compute_control::*;
+    |         ^^^^^^^^^^^^^^^^^^ the name `JobStatus` in the type namespace is first re-exported here
+...
+142 | pub use traits::*;
+    |         --------- but the name `JobStatus` in the type namespace is also re-exported here
+
+warning: ambiguous glob re-exports
+   --> src/lib.rs:136:9
+    |
+136 | pub use compute_control::*;
+    |         ^^^^^^^^^^^^^^^^^^ the name `ComputeJob` in the type namespace is first re-exported here
+...
+142 | pub use traits::*;
+    |         --------- but the name `ComputeJob` in the type namespace is also re-exported here
+
+warning: ambiguous glob re-exports
+   --> src/lib.rs:142:9
+    |
+135 | pub use sycl::*;
+    |         ------- but the name `DeviceInfo` in the type namespace is also re-exported here
+...
+142 | pub use traits::*;
+    |         ^^^^^^^^^ the name `DeviceInfo` in the type namespace is first re-exported here
+
+warning: unused import: `std::path::PathBuf`
+ --> src/ipc/shm.rs:5:5
+  |
+5 | use std::path::PathBuf;
+  |     ^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `DerefMut`
+ --> src/ipc/shm.rs:6:23
+  |
+6 | use std::ops::{Deref, DerefMut};
+  |                       ^^^^^^^^
+
+warning: unused import: `PathBuf`
+ --> src/cli/commands/serve.rs:6:23
+  |
+6 | use std::path::{Path, PathBuf};
+  |                       ^^^^^^^
+
+warning: unused variable: `record`
+   --> src/transport.rs:319:13
+    |
+319 |         let record = dht
+    |             ^^^^^^ help: if this is intentional, prefix it with an underscore: `_record`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `wasm_provider`
+   --> src/server/builder.rs:253:13
+    |
+253 |         let wasm_provider = if let Some(wasm) = self.wasm_provider {
+    |             ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_wasm_provider`
+
+warning: unused variable: `default_pool`
+   --> src/server/builder.rs:277:13
+    |
+277 |         let default_pool = memory_manager.create_pool(
+    |             ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_default_pool`
+
+warning: unused variable: `crypto`
+   --> src/server/mod.rs:249:17
+    |
+249 |             let crypto = Arc::new(crate::consensus::crypto::Ed25519Provider::new()?);
+    |                 ^^^^^^ help: if this is intentional, prefix it with an underscore: `_crypto`
+
+warning: unused variable: `public_key`
+   --> src/server/mod.rs:267:28
+    |
+267 |                         Ok(public_key) => {
+    |                            ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_public_key`
+
+warning: unused variable: `peer_id_str`
+   --> src/server/mod.rs:483:29
+    |
+483 |                         let peer_id_str = &node_id;
+    |                             ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_peer_id_str`
+
+warning: variable does not need to be mutable
+   --> src/wasm/threadsafe.rs:990:13
+    |
+990 |         let mut result = vec![0f32; a.len()];
+    |             ----^^^^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+warning: unused variable: `data`
+   --> src/client.rs:341:39
+    |
+341 |                 NinePMessage::Write { data, .. } => {
+    |                                       ^^^^-
+    |                                       |
+    |                                       help: try removing the field
+
+warning: unused variable: `uname`
+   --> src/client.rs:461:36
+    |
+461 |     pub async fn attach(&mut self, uname: &str, aname: &str) -> Result<()> {
+    |                                    ^^^^^ help: if this is intentional, prefix it with an underscore: `_uname`
+
+warning: unused variable: `aname`
+   --> src/client.rs:461:49
+    |
+461 |     pub async fn attach(&mut self, uname: &str, aname: &str) -> Result<()> {
+    |                                                 ^^^^^ help: if this is intentional, prefix it with an underscore: `_aname`
+
+warning: variable does not need to be mutable
+   --> src/transport.rs:353:9
+    |
+353 |     let mut server_config = rustls::ServerConfig::builder()
+    |         ----^^^^^^^^^^^^^
+    |         |
+    |         help: remove this `mut`
+
+warning: unused variable: `b`
+   --> src/gpu/xmx.rs:113:5
+    |
+113 |     b: &[f32],
+    |     ^ help: if this is intentional, prefix it with an underscore: `_b`
+
+warning: unused variable: `precision`
+   --> src/gpu/xmx.rs:114:5
+    |
+114 |     precision: XmxPrecision,
+    |     ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_precision`
+
+warning: unnecessary `unsafe` block
+   --> src/sycl/backend_loader.rs:511:70
+    |
+456 |         let result: anyhow::Result<(String, ActiveJob)> = unsafe {
+    |                                                           ------ because it's nested under this `unsafe` block
+...
+511 |                         (backend_lib.buffer_write)(queue.0, buf_b.0, unsafe { data.as_ptr().add(bytes_a) } as *const c_void, 0, bytes_b);
+    |                                                                      ^^^^^^ unnecessary `unsafe` block
+    |
+    = note: `#[warn(unused_unsafe)]` on by default
+
+For more information about this error, try `rustc --explain E0761`.
+warning: `ninepe-server` (lib) generated 47 warnings
+warning: ninepe-server@1.0.0: Using pre-built Intel oneAPI SYCL library
+warning: ninepe-server@1.0.0: Using pre-built AdaptiveCpp SYCL library
+warning: ninepe-server@1.0.0: SYCL backends available: Intel oneAPI, AdaptiveCpp
+warning: ninepe-server@1.0.0: Both backends built as separate shared libraries
+warning: ninepe-server@1.0.0: Runtime will dynamically load appropriate backend per GPU
+warning: ninepe-server@1.0.0: No static linking - using dlopen via libloading crate
+error: could not compile `ninepe-server` (lib) due to 1 previous error; 47 warnings emitted

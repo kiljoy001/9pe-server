@@ -14,11 +14,11 @@ Import ListNotations.
 (* ================================================================= *)
 (** * Core 9P Protocol Types *)
 
-Inductive NinePeeMessageType : Type :=
+Inductive NinePMessageType : Type :=
   | Tread | Rread | Twrite | Rwrite | Terror | Rerror.
 
-Record NinePeeMessage := {
-  msg_type : NinePeeMessageType;
+Record NinePMessage := {
+  msg_type : NinePMessageType;
   msg_fid : nat;
   msg_offset : nat;
   msg_count : nat;
@@ -58,7 +58,7 @@ Definition execute_wasm_translator
 (* ================================================================= *)
 (** * Unified 9PE System *)
 
-Record UnifiedNinePeeSystem := {
+Record UnifiedNinePSystem := {
   (* Synthetic file generators *)
   synthetic_generators : list nat -> option SyntheticGenerator;
 
@@ -73,8 +73,8 @@ Record UnifiedNinePeeSystem := {
 (** * Unified Message Processing *)
 
 Definition process_unified_message
-  (system : UnifiedNinePeeSystem)
-  (msg : NinePeeMessage) : option NinePeeMessage :=
+  (system : UnifiedNinePSystem)
+  (msg : NinePMessage) : option NinePMessage :=
   match msg.(msg_type) with
   | Tread =>
       (* Step 1: Check if synthetic *)
@@ -171,7 +171,7 @@ Proof.
 Admitted.
 
 (* Property 3: Composition Safety *)
-Definition composition_safe (system : UnifiedNinePeeSystem) : Prop :=
+Definition composition_safe (system : UnifiedNinePSystem) : Prop :=
   forall msg synthetic_content transformed_content,
   msg.(msg_type) = Tread ->
   is_synthetic_path msg.(msg_data) = true ->
@@ -254,8 +254,8 @@ Admitted.
 (* ================================================================= *)
 (** * Main Unified Correctness Theorem *)
 
-Theorem unified_ninepee_system_correct :
-  forall (system : UnifiedNinePeeSystem),
+Theorem unified_ninep_system_correct :
+  forall (system : UnifiedNinePSystem),
   (* Assumptions about system configuration *)
   (forall path gen, system.(synthetic_generators) path = Some gen ->
                     gen.(syn_deterministic) = true) ->
@@ -306,4 +306,4 @@ Qed.
   MATHEMATICALLY PROVEN to be correct and safe.
 *)
 
-Print unified_ninepee_system_correct.
+Print unified_ninep_system_correct.

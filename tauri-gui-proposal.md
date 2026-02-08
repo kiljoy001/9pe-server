@@ -195,7 +195,7 @@ function Dashboard() {
 tauri = { version = "1.0", features = ["api-all"] }
 serde = { version = "1.0", features = ["derive"] }
 tokio = { version = "1.0", features = ["full"] }
-ninepee-server = { path = "../" }  # Our server library
+ninep-server = { path = "../" }  # Our server library
 ```
 
 ### Frontend Dependencies

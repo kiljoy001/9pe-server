@@ -7,7 +7,7 @@ We've successfully enhanced the 9P.e protocol with native GPU compute extensions
 ## 🚀 Key Enhancements
 
 ### 1. **Protocol Extensions**
-- Added 5 new GPU-specific message types to `NinePeeMessage`:
+- Added 5 new GPU-specific message types to `NinePMessage`:
   - `GPUInfo` - Query GPU device information
   - `VRAMAllocate` - Allocate GPU memory
   - `ComputeSubmit` - Submit compute jobs
@@ -15,7 +15,7 @@ We've successfully enhanced the 9P.e protocol with native GPU compute extensions
   - `ComputeResponse` - Standardized response format
 
 ### 2. **Handler Framework**
-- Extended `NinePeeExtensionsHandler` with dedicated methods:
+- Extended `NinePxtensionsHandler` with dedicated methods:
   - `handle_gpu_info()` - Process GPU info requests
   - `handle_vram_allocate()` - Manage VRAM allocation
   - `handle_compute_submit()` - Handle job submission

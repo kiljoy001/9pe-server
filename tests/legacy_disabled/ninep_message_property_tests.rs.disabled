@@ -1,0 +1,523 @@
+//! Property-based tests for NinePMessage serialization and deserialization
+//! Tests that all message types correctly serialize/deserialize and maintain data integrity
+
+use proptest::prelude::*;
+use serde::{Deserialize, Serialize};
+
+use ninep_server::protocol::NinePMessage;
+
+/// Strategy for generating valid file IDs
+fn fid_strategy() -> impl Strategy<Value = u32> {
+    prop_oneof![
+        Just(0u32),        // Root FID
+        Just(1u32),        // Common base FID
+        1u32..1000u32,     // Normal range
+        1000u32..u32::MAX, // Large FIDs
+    ]
+}
+
+/// Strategy for generating valid message sizes
+fn msize_strategy() -> impl Strategy<Value = u32> {
+    prop_oneof![
+        Just(8192u32),       // Common 9P size
+        Just(65536u32),      // 64KB
+        Just(1048576u32),    // 1MB (9P.e)
+        8192u32..1048576u32, // Reasonable range
+    ]
+}
+
+/// Strategy for generating version strings
+fn version_strategy() -> impl Strategy<Value = String> {
+    prop_oneof![
+        Just("9P2000".to_string()),
+        Just("9P2000.e".to_string()),
+        Just("9P.e".to_string()),
+        "[a-zA-Z0-9.]{1,20}".prop_map(|s| s),
+    ]
+}
+
+/// Strategy for generating usernames
+fn username_strategy() -> impl Strategy<Value = String> {
+    prop::collection::vec("[a-zA-Z0-9_-]", 1..20).prop_map(|chars| chars.join(""))
+}
+
+/// Strategy for generating file names
+fn filename_strategy() -> impl Strategy<Value = String> {
+    prop::collection::vec("[a-zA-Z0-9_.-]", 1..50).prop_map(|chars| chars.join(""))
+}
+
+/// Strategy for generating file permissions
+fn permissions_strategy() -> impl Strategy<Value = u32> {
+    prop_oneof![
+        Just(0o644u32),
+        Just(0o755u32),
+        Just(0o600u32),
+        0o000u32..=0o777u32,
+    ]
+}
+
+/// Strategy for generating file data
+fn file_data_strategy() -> impl Strategy<Value = Vec<u8>> {
+    prop::collection::vec(any::<u8>(), 0..1024)
+}
+
+/// Strategy for generating offsets
+fn offset_strategy() -> impl Strategy<Value = u64> {
+    prop_oneof![Just(0u64), 1u64..1024u64, 1024u64..1048576u64,]
+}
+
+/// Strategy for generating walk names
+fn wnames_strategy() -> impl Strategy<Value = Vec<String>> {
+    prop::collection::vec(filename_strategy(), 0..10)
+}
+
+/// Strategy for generating basic 9P messages
+fn basic_message_strategy() -> impl Strategy<Value = NinePMessage> {
+    prop_oneof![
+        // Version
+        (msize_strategy(), version_strategy())
+            .prop_map(|(msize, version)| { NinePMessage::Version { msize, version } }),
+        // Attach
+        (
+            fid_strategy(),
+            fid_strategy(),
+            username_strategy(),
+            filename_strategy()
+        )
+            .prop_map(|(fid, afid, uname, aname)| {
+                NinePMessage::Attach {
+                    fid,
+                    afid,
+                    uname,
+                    aname,
+                }
+            }),
+        // Walk
+        (fid_strategy(), fid_strategy(), wnames_strategy()).prop_map(|(fid, newfid, wnames)| {
+            NinePMessage::Walk {
+                fid,
+                newfid,
+                wnames,
+            }
+        }),
+        // Open
+        (fid_strategy(), any::<u8>())
+            .prop_map(|(fid, mode)| { NinePMessage::Open { fid, mode } }),
+        // Create
+        (
+            fid_strategy(),
+            filename_strategy(),
+            permissions_strategy(),
+            any::<u8>()
+        )
+            .prop_map(|(fid, name, perm, mode)| {
+                NinePMessage::Create {
+                    fid,
+                    name,
+                    perm,
+                    mode,
+                }
+            }),
+        // Read
+        (fid_strategy(), offset_strategy(), any::<u32>()).prop_map(|(fid, offset, count)| {
+            NinePMessage::Read {
+                fid,
+                offset,
+                count,
+                data: Vec::new(),
+            }
+        }),
+        // Write
+        (fid_strategy(), offset_strategy(), file_data_strategy())
+            .prop_map(|(fid, offset, data)| { NinePMessage::Write { fid, offset, data } }),
+        // Clunk
+        fid_strategy().prop_map(|fid| NinePMessage::Clunk { fid }),
+        // Remove
+        fid_strategy().prop_map(|fid| NinePMessage::Remove { fid }),
+        // Stat
+        fid_strategy().prop_map(|fid| NinePMessage::Stat {
+            fid,
+            data: Vec::new(),
+        }),
+        // Wstat
+        (fid_strategy(), file_data_strategy())
+            .prop_map(|(fid, stat)| { NinePMessage::Wstat { fid, stat } }),
+    ]
+}
+
+/// Strategy for generating 9P.e extension messages
+fn extension_message_strategy() -> impl Strategy<Value = NinePMessage> {
+    prop_oneof![
+        // TranslatorSpawn
+        (any::<u32>(), file_data_strategy(), file_data_strategy()).prop_map(
+            |(translator_id, code, config)| {
+                NinePMessage::TranslatorSpawn {
+                    translator_id,
+                    code,
+                    config,
+                }
+            }
+        ),
+        // TranslatorMessage
+        (any::<u32>(), file_data_strategy()).prop_map(|(translator_id, data)| {
+            NinePMessage::TranslatorMessage {
+                translator_id,
+                data,
+            }
+        }),
+        // ConsensusPropose
+        (
+            file_data_strategy(),
+            prop::collection::vec(file_data_strategy(), 0..5)
+        )
+            .prop_map(|(block_hash, parent_hashes)| {
+                NinePMessage::ConsensusPropose {
+                    block_hash,
+                    parent_hashes,
+                }
+            }),
+        // SyntheticCreate
+        (fid_strategy(), filename_strategy(), file_data_strategy()).prop_map(
+            |(fid, generator, params)| {
+                NinePMessage::SyntheticCreate {
+                    fid,
+                    generator,
+                    params,
+                }
+            }
+        ),
+        // Error
+        (filename_strategy(), any::<u32>())
+            .prop_map(|(ename, errno)| { NinePMessage::Error { ename, errno } }),
+        // Reserved
+        Just(NinePMessage::Reserved),
+    ]
+}
+
+/// Strategy for generating any NinePMessage
+fn any_message_strategy() -> impl Strategy<Value = NinePMessage> {
+    prop_oneof![basic_message_strategy(), extension_message_strategy(),]
+}
+
+/// Test that all NinePMessage variants can be serialized and deserialized
+#[test]
+fn prop_ninep_message_serialization_roundtrip() {
+    let mut runner = proptest::test_runner::TestRunner::default();
+
+    runner
+        .run(&any_message_strategy(), |message| {
+            // Test bincode serialization
+            let serialized = bincode::serialize(&message).map_err(|e| {
+                proptest::test_runner::TestCaseError::fail(format!("Serialization failed: {}", e))
+            })?;
+
+            prop_assert!(
+                !serialized.is_empty(),
+                "Serialized data should not be empty"
+            );
+            prop_assert!(
+                serialized.len() < 10485760,
+                "Serialized data should be reasonable size (< 10MB)"
+            );
+
+            let deserialized: NinePMessage = bincode::deserialize(&serialized).map_err(|e| {
+                proptest::test_runner::TestCaseError::fail(format!("Deserialization failed: {}", e))
+            })?;
+
+            // Verify round-trip equality
+            prop_assert_eq!(
+                message,
+                deserialized,
+                "Round-trip should preserve message equality"
+            );
+
+            Ok(())
+        })
+        .unwrap();
+}
+
+/// Test that JSON serialization works for NinePMessage
+#[test]
+fn prop_ninep_message_json_serialization() {
+    let mut runner = proptest::test_runner::TestRunner::default();
+
+    runner
+        .run(&any_message_strategy(), |message| {
+            // Test JSON serialization
+            let json_serialized = serde_json::to_string(&message).map_err(|e| {
+                proptest::test_runner::TestCaseError::fail(format!(
+                    "JSON serialization failed: {}",
+                    e
+                ))
+            })?;
+
+            prop_assert!(
+                !json_serialized.is_empty(),
+                "JSON serialized data should not be empty"
+            );
+            prop_assert!(
+                json_serialized.len() < 10485760,
+                "JSON serialized data should be reasonable size"
+            );
+
+            let json_deserialized: NinePMessage = serde_json::from_str(&json_serialized)
+                .map_err(|e| {
+                    proptest::test_runner::TestCaseError::fail(format!(
+                        "JSON deserialization failed: {}",
+                        e
+                    ))
+                })?;
+
+            // Verify round-trip equality
+            prop_assert_eq!(
+                message,
+                json_deserialized,
+                "JSON round-trip should preserve message equality"
+            );
+
+            Ok(())
+        })
+        .unwrap();
+}
+
+/// Test that message utility methods work correctly
+#[test]
+fn prop_ninep_message_utility_methods() {
+    let mut runner = proptest::test_runner::TestRunner::default();
+
+    runner
+        .run(&any_message_strategy(), |message| {
+            // Test is_error method
+            let is_error = message.is_error();
+            match &message {
+                NinePMessage::Error { .. } => {
+                    prop_assert!(is_error, "Error messages should be identified as errors");
+                }
+                _ => {
+                    prop_assert!(
+                        !is_error,
+                        "Non-error messages should not be identified as errors"
+                    );
+                }
+            }
+
+            // Test is_extension method
+            let is_extension = message.is_extension();
+            match &message {
+                NinePMessage::TranslatorSpawn { .. }
+                | NinePMessage::TranslatorMessage { .. }
+                | NinePMessage::ConsensusPropose { .. }
+                | NinePMessage::SyntheticCreate { .. } => {
+                    prop_assert!(
+                        is_extension,
+                        "Extension messages should be identified as extensions"
+                    );
+                }
+                _ => {
+                    prop_assert!(
+                        !is_extension,
+                        "Basic 9P messages should not be identified as extensions"
+                    );
+                }
+            }
+
+            // Test fid method
+            let fid = message.fid();
+            match &message {
+                NinePMessage::Attach { fid: f, .. }
+                | NinePMessage::Walk { fid: f, .. }
+                | NinePMessage::Open { fid: f, .. }
+                | NinePMessage::Create { fid: f, .. }
+                | NinePMessage::Read { fid: f, .. }
+                | NinePMessage::Write { fid: f, .. }
+                | NinePMessage::Clunk { fid: f }
+                | NinePMessage::Remove { fid: f }
+                | NinePMessage::Stat { fid: f, .. }
+                | NinePMessage::Wstat { fid: f, .. }
+                | NinePMessage::SyntheticCreate { fid: f, .. } => {
+                    prop_assert_eq!(
+                        fid,
+                        Some(*f),
+                        "FID-bearing messages should return their FID"
+                    );
+                }
+                _ => {
+                    prop_assert_eq!(fid, None, "Non-FID messages should return None");
+                }
+            }
+
+            Ok(())
+        })
+        .unwrap();
+}
+
+/// Test that error messages can represent various error conditions
+#[test]
+fn prop_error_message_handling() {
+    let error_strategy = (
+        prop::collection::vec("[a-zA-Z0-9 ._-]", 1..100).prop_map(|chars| chars.join("")),
+        any::<u32>(),
+    );
+    let mut runner = proptest::test_runner::TestRunner::default();
+
+    runner
+        .run(&error_strategy, |(ename, errno)| {
+            let error_msg = NinePMessage::Error {
+                ename: ename.clone(),
+                errno,
+            };
+
+            // Test serialization
+            let serialized = bincode::serialize(&error_msg).unwrap();
+            let deserialized: NinePMessage = bincode::deserialize(&serialized).unwrap();
+
+            prop_assert_eq!(
+                &error_msg,
+                &deserialized,
+                "Error message should round-trip correctly"
+            );
+
+            // Test utility methods
+            prop_assert!(
+                error_msg.is_error(),
+                "Error message should be identified as error"
+            );
+            prop_assert!(
+                !error_msg.is_extension(),
+                "Error message should not be extension"
+            );
+            prop_assert_eq!(error_msg.fid(), None, "Error message should not have FID");
+
+            Ok(())
+        })
+        .unwrap();
+}
+
+/// Test that large data payloads serialize correctly
+#[test]
+fn prop_large_data_serialization() {
+    let large_data_strategy = prop::collection::vec(any::<u8>(), 1000..10000);
+    let mut runner = proptest::test_runner::TestRunner::default();
+
+    runner
+        .run(&large_data_strategy, |data| {
+            let large_messages = vec![
+                NinePMessage::Write {
+                    fid: 1,
+                    offset: 0,
+                    data: data.clone(),
+                },
+                NinePMessage::TranslatorSpawn {
+                    translator_id: 1,
+                    code: data.clone(),
+                    config: vec![],
+                },
+                NinePMessage::TranslatorMessage {
+                    translator_id: 1,
+                    data: data.clone(),
+                },
+                NinePMessage::ConsensusPropose {
+                    block_hash: data.clone(),
+                    parent_hashes: vec![],
+                },
+            ];
+
+            for message in large_messages {
+                // Test serialization
+                let serialized = bincode::serialize(&message).map_err(|e| {
+                    proptest::test_runner::TestCaseError::fail(format!(
+                        "Large data serialization failed: {}",
+                        e
+                    ))
+                })?;
+
+                prop_assert!(
+                    !serialized.is_empty(),
+                    "Large data serialization should not be empty"
+                );
+
+                let deserialized: NinePMessage =
+                    bincode::deserialize(&serialized).map_err(|e| {
+                        proptest::test_runner::TestCaseError::fail(format!(
+                            "Large data deserialization failed: {}",
+                            e
+                        ))
+                    })?;
+
+                prop_assert_eq!(
+                    message,
+                    deserialized,
+                    "Large data round-trip should preserve equality"
+                );
+            }
+
+            Ok(())
+        })
+        .unwrap();
+}
+
+/// Test message construction from 9P responses
+#[test]
+fn prop_message_from_9p_response() {
+    let response_strategy = (fid_strategy(), any::<bool>(), file_data_strategy());
+    let mut runner = proptest::test_runner::TestRunner::default();
+
+    runner
+        .run(&response_strategy, |(fid, success, data)| {
+            let message = NinePMessage::from_9p_response(fid, success, data.clone());
+
+            if success {
+                match message {
+                    NinePMessage::Read {
+                        fid: f,
+                        offset,
+                        count,
+                        data: read_data,
+                    } => {
+                        prop_assert_eq!(f, fid, "FID should match in success response");
+                        prop_assert_eq!(offset, 0, "Offset should be 0 in generated response");
+                        prop_assert_eq!(count, data.len() as u32, "Count should match data length");
+                        prop_assert_eq!(
+                            read_data,
+                            data,
+                            "Read data should match source payload"
+                        );
+                    }
+                    _ => {
+                        return Err(proptest::test_runner::TestCaseError::fail(
+                            "Success should generate Read message".to_string(),
+                        ))
+                    }
+                }
+            } else {
+                match message {
+                    NinePMessage::Error { ename, errno } => {
+                        prop_assert_eq!(
+                            ename,
+                            "Operation failed",
+                            "Error name should be consistent"
+                        );
+                        prop_assert_eq!(errno, 1, "Error number should be 1");
+                    }
+                    _ => {
+                        return Err(proptest::test_runner::TestCaseError::fail(
+                            "Failure should generate Error message".to_string(),
+                        ))
+                    }
+                }
+            }
+
+            Ok(())
+        })
+        .unwrap();
+}
+
+/// Test that all message variants have consistent default behavior
+#[test]
+fn test_message_defaults() {
+    let default_msg = NinePMessage::default();
+    assert_eq!(default_msg, NinePMessage::Reserved);
+    assert!(!default_msg.is_error());
+    assert!(!default_msg.is_extension());
+    assert_eq!(default_msg.fid(), None);
+}

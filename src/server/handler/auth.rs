@@ -21,6 +21,7 @@ pub struct AuthResponse {
     pub p256_pub: Vec<u8>,
     pub cert_der: Vec<u8>,
     pub permissions: NodePermissions,
+    #[serde(with = "serde_arrays")]
     pub signature: [u8; 64],
 }
 
@@ -63,7 +64,7 @@ pub fn verify_auth_response(
 
     let verifying_key = VerifyingKey::from_bytes(&response.ed25519_pub)
         .map_err(|_| anyhow::anyhow!("Invalid Ed25519 public key"))?;
-    let signature = Signature::from_bytes(&response.signature)?;
+    let signature = Signature::from_bytes(&response.signature);
 
     if verifying_key.verify(&digest, &signature).is_err() {
         anyhow::bail!("Invalid auth response signature");

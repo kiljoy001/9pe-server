@@ -91,7 +91,7 @@ async fn start_embedded_grafana() -> Result<()> {
     wait_for_grafana_ready().await?;
 
     // Provision dashboards
-    provision_ninepee_dashboard().await?;
+    provision_ninep_dashboard().await?;
 
     Ok(())
 }

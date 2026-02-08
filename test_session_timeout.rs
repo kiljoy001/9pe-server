@@ -1,4 +1,4 @@
-use ninep_server::auth::{AuthService, AuthConfig};
+use ninepe_server::auth::{AuthService, AuthConfig};
 use tempfile::tempdir;
 use std::time::Instant;
 

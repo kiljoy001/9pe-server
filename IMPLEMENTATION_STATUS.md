@@ -26,7 +26,7 @@
    - Duplicate impl blocks causing conflicts
 
 2. **Pre-existing Code Issues**:
-   - NinePeeMessage struct changes causing compilation failures
+   - NinePMessage struct changes causing compilation failures
    - Several unused variable/import warnings throughout codebase
 
 ### Files Needing Fixes
@@ -52,7 +52,7 @@
 4. Ensure all required imports are present
 
 ### Phase 2: Restore Compilation
-1. Fix NinePeeMessage-related compilation errors
+1. Fix NinePMessage-related compilation errors
 2. Ensure cargo check passes
 3. Run existing tests to verify baseline functionality
 

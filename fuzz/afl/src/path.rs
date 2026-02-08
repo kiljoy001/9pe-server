@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use afl::fuzz;
-use ninepee_server::*;
+use ninepe_server::*;
 
 fn main() {
     fuzz!(|data: &[u8]| {

@@ -17,12 +17,12 @@ use fuser::{
 };
 use libc::ENOENT;
 
-use crate::client::NinePeeClient;
+use crate::client::NinePClient;
 
 /// FUSE filesystem implementation for 9P.e
-pub struct NinePeeFuse {
+pub struct NinePFuse {
     /// Connection to remote 9P.e server
-    client: NinePeeClient,
+    client: NinePClient,
 
     /// Server address for debugging
     server_addr: String,
@@ -34,12 +34,12 @@ pub struct NinePeeFuse {
     next_handle: std::sync::atomic::AtomicU64,
 }
 
-impl NinePeeFuse {
+impl NinePFuse {
     /// Create new FUSE filesystem
     pub async fn new(server_addr: String) -> Result<Self> {
         info!("🔗 Connecting to 9P.e server: {}", server_addr);
 
-        let client = NinePeeClient::connect(&server_addr).await
+        let client = NinePClient::connect(&server_addr).await
             .with_context(|| format!("Failed to connect to {}", server_addr))?;
 
         Ok(Self {
@@ -115,7 +115,7 @@ impl NinePeeFuse {
     }
 }
 
-impl Filesystem for NinePeeFuse {
+impl Filesystem for NinePFuse {
     fn lookup(&mut self, _req: &Request, parent: u64, name: &OsStr, reply: ReplyEntry) {
         debug!("FUSE lookup: parent={}, name={:?}", parent, name);
 
@@ -292,7 +292,7 @@ impl Filesystem for NinePeeFuse {
 }
 
 /// Mount a 9P.e server using FUSE (blocking operation)
-pub async fn mount_ninepee_server(
+pub async fn mount_ninep_server(
     server_addr: String,
     mount_point: &Path,
 ) -> Result<()> {
@@ -302,7 +302,7 @@ pub async fn mount_ninepee_server(
     tokio::fs::create_dir_all(mount_point).await?;
 
     // Create FUSE filesystem
-    let fs = NinePeeFuse::new(server_addr.clone()).await?;
+    let fs = NinePFuse::new(server_addr.clone()).await?;
 
     // Mount it in blocking thread
     let mount_point_owned = mount_point.to_owned();
@@ -364,10 +364,10 @@ pub async fn initialize_plan9_namespace() -> Result<()> {
         use std::os::unix::fs::PermissionsExt;
         use std::process::Command;
 
-        // Try to create the ninepee group if it doesn't exist
+        // Try to create the ninep group if it doesn't exist
         // This will fail silently if the group already exists or if we don't have permissions
         let _ = Command::new("groupadd")
-            .args(&["-f", "ninepee"])  // -f flag: exit successfully if group already exists
+            .args(&["-f", "ninep"])  // -f flag: exit successfully if group already exists
             .output();
 
         // Set permissions: owner and group can read/write/execute, others can only read/execute
@@ -378,13 +378,13 @@ pub async fn initialize_plan9_namespace() -> Result<()> {
         std::fs::set_permissions(n_dir, perms)
             .context("Failed to set /n permissions")?;
 
-        // Try to set group ownership to ninepee
+        // Try to set group ownership to ninep
         // This will fail silently if the group doesn't exist or we don't have permissions
         let _ = Command::new("chgrp")
-            .args(&["ninepee", "/srv"])
+            .args(&["ninep", "/srv"])
             .output();
         let _ = Command::new("chgrp")
-            .args(&["ninepee", "/n"])
+            .args(&["ninep", "/n"])
             .output();
 
         // Set the sticky bit on group permissions so new files inherit the group
@@ -395,8 +395,8 @@ pub async fn initialize_plan9_namespace() -> Result<()> {
             .args(&["g+s", "/n"])
             .output();
 
-        info!("📁 Set permissions 0775 and attempted to set group ownership to 'ninepee'");
-        info!("💡 Add users to 'ninepee' group with: sudo usermod -a -G ninepee <username>");
+        info!("📁 Set permissions 0775 and attempted to set group ownership to 'ninep'");
+        info!("💡 Add users to 'ninep' group with: sudo usermod -a -G ninep <username>");
     }
 
     info!("✅ Plan 9 namespace directories initialized");
@@ -465,7 +465,7 @@ pub async fn mount_with_cleanup(
     tokio::fs::create_dir_all(mount_point).await?;
 
     // Mount
-    mount_ninepee_server(server_addr, mount_point).await?;
+    mount_ninep_server(server_addr, mount_point).await?;
 
     Ok(())
 }

@@ -92,12 +92,12 @@ pub enum Mode {
     Sync(SyncConfig),
 }
 
-pub struct NinePeeApp {
+pub struct NinePApp {
     mode: Mode,
     runtime: tokio::runtime::Runtime,
 }
 
-impl NinePeeApp {
+impl NinePApp {
     pub async fn start(&self) -> Result<()> {
         match &self.mode {
             Mode::Server(config) => self.start_server(config).await,
@@ -115,13 +115,13 @@ impl NinePeeApp {
 // src/client.rs - 9P client functionality
 use crate::transport::QuicClient;
 
-pub struct NinePeeClient {
+pub struct NinePClient {
     connection: QuicClient,
     remote_addr: SocketAddr,
     mount_point: Option<PathBuf>,
 }
 
-impl NinePeeClient {
+impl NinePClient {
     pub async fn connect(addr: SocketAddr) -> Result<Self> {
         let client = QuicClient::new().await?;
         let connection = client.connect(addr, "9pe-server").await?;
@@ -209,13 +209,13 @@ impl NetworkDiscovery {
 ### **Bidirectional Sync**
 ```rust
 // src/sync.rs - rsync-like functionality over 9P
-pub struct NinePeeSync {
+pub struct NinePSync {
     local_path: PathBuf,
-    remote_client: NinePeeClient,
+    remote_client: NinePClient,
     remote_path: String,
 }
 
-impl NinePeeSync {
+impl NinePSync {
     pub async fn sync_bidirectional(&self) -> Result<SyncReport> {
         let local_files = self.scan_local_files().await?;
         let remote_files = self.scan_remote_files().await?;

@@ -1,0 +1,171 @@
+  [2m2026-01-30T22:27:09.837303Z[0m [32m INFO[0m [1;32mninep_server::cli::commands::serve[0m[32m: [32mStarting 9P.e server...[0m
+    [2;3mat[0m src/cli/commands/serve.rs:61
+
+  [2m2026-01-30T22:27:09.837317Z[0m [32m INFO[0m [1;32mninep_server::cli::commands::serve[0m[32m: [32mUsing modern QUIC transport (default)[0m
+    [2;3mat[0m src/cli/commands/serve.rs:81
+
+  [2m2026-01-30T22:27:09.837327Z[0m [32m INFO[0m [1;32mninep_server::util[0m[32m: [32mRunning in USER mode - using ~/srv and ~/n[0m
+    [2;3mat[0m src/util.rs:53
+
+  [2m2026-01-30T22:27:09.837329Z[0m [32m INFO[0m [1;32mninep_server::transport::quic[0m[32m: [32mInitializing QUIC transport (server_name: None)[0m
+    [2;3mat[0m src/transport/quic.rs:18
+
+  [2m2026-01-30T22:27:09.837333Z[0m [32m INFO[0m [1;32mninep_server::transport::quic[0m[32m: [32mQUIC listening on [::]:5640 (IPv6 dual-stack)[0m
+    [2;3mat[0m src/transport/quic.rs:29
+
+  [2m2026-01-30T22:27:09.837337Z[0m [32m INFO[0m [1;32mninep_server::server[0m[32m: [32mSynthetic filesystem initialized for virtual directories[0m
+    [2;3mat[0m src/server/mod.rs:99
+
+  [2m2026-01-30T22:27:09.837339Z[0m [32m INFO[0m [1;32mninep_server::server[0m[32m: [32mThread-safe WASM translator registry initialized at "/home/scott/.9pe/translators"[0m
+    [2;3mat[0m src/server/mod.rs:105
+
+  [2m2026-01-30T22:27:09.837415Z[0m [32m INFO[0m [1;32mninep_server::sycl::backend_loader[0m[32m: [32mLoading Intel oneAPI backend from /home/scott/Repo/9pe-server/libsycl_ffi_intel.so[0m
+    [2;3mat[0m src/sycl/backend_loader.rs:74
+
+  [2m2026-01-30T22:27:09.947273Z[0m [32m INFO[0m [1;32mninep_server::sycl::backend_loader[0m[32m: [32mIntel oneAPI backend loaded successfully[0m
+    [2;3mat[0m src/sycl/backend_loader.rs:262
+
+  [2m2026-01-30T22:27:09.947302Z[0m [32m INFO[0m [1;32mninep_server::sycl::backend_loader[0m[32m: [32mLoading AdaptiveCpp backend from /home/scott/Repo/9pe-server/libsycl_ffi_adaptive.so[0m
+    [2;3mat[0m src/sycl/backend_loader.rs:74
+
+  [2m2026-01-30T22:27:09.947745Z[0m [32m INFO[0m [1;32mninep_server::sycl::backend_loader[0m[32m: [32mAdaptiveCpp backend loaded successfully[0m
+    [2;3mat[0m src/sycl/backend_loader.rs:273
+
+  [2m2026-01-30T22:27:10.023264Z[0m [32m INFO[0m [1;32mninep_server::wasm::threadsafe[0m[32m: [32mRegistered system translator at "/system/sycl"[0m
+    [2;3mat[0m src/wasm/threadsafe.rs:535
+
+  [2m2026-01-30T22:27:10.026011Z[0m [32m INFO[0m [1;32mninep_server::server[0m[32m: [32mDiscovered 5 GPU device(s)[0m
+    [2;3mat[0m src/server/mod.rs:118
+
+  [2m2026-01-30T22:27:10.028679Z[0m [32m INFO[0m [1;32mninep_server::server[0m[32m: [32mGPU synthetic controls mounted under /srv/compute[0m
+    [2;3mat[0m src/server/mod.rs:140
+
+  [2m2026-01-30T22:27:10.028690Z[0m [32m INFO[0m [1;32mninep_server::server[0m[32m: [32mConsensus disabled in config[0m
+    [2;3mat[0m src/server/mod.rs:200
+
+  [2m2026-01-30T22:27:10.028691Z[0m [32m INFO[0m [1;32mninep_server::server[0m[32m: [32mStarting mesh networking on port 9650[0m
+    [2;3mat[0m src/server/mod.rs:206
+
+  [2m2026-01-30T22:27:10.028698Z[0m [32m INFO[0m [1;32mninep_server::mesh[0m[32m: [32mStarting QUIC mesh network on port 9650 with DHT and mDNS discovery[0m
+    [2;3mat[0m src/mesh.rs:59
+
+  [2m2026-01-30T22:27:10.028997Z[0m [32m INFO[0m [1;32mninep_server::server[0m[32m: [32mMesh network started successfully on port 9650[0m
+    [2;3mat[0m src/server/mod.rs:227
+
+  [2m2026-01-30T22:27:10.029008Z[0m [32m INFO[0m [1;32mninep_server::mesh[0m[32m: [32mStarting DHT-based peer discovery[0m
+    [2;3mat[0m src/mesh.rs:370
+
+  [2m2026-01-30T22:27:10.029014Z[0m [32m INFO[0m [1;32mninep_server::mesh[0m[32m: [32mStarting mDNS peer discovery[0m
+    [2;3mat[0m src/mesh.rs:274
+
+  [2m2026-01-30T22:27:10.029017Z[0m [32m INFO[0m [1;32mninep_server::namespace_manager[0m[32m: [32mNamespace manager system public key: 0582057d953b67f041c42749b46bc9513e0d09b906a8cee447fc016eca149c61[0m
+    [2;3mat[0m src/namespace_manager.rs:168
+
+  [2m2026-01-30T22:27:10.029006Z[0m [32m INFO[0m [1;32mninep_server::mesh[0m[32m: [32mQUIC mesh network listening on port 9650[0m
+    [2;3mat[0m src/mesh.rs:162
+
+  [2m2026-01-30T22:27:10.029037Z[0m [32m INFO[0m [1;32mninep_server::namespace_manager[0m[32m: [32mInitializing namespace manager at /srv/namespace/[0m
+    [2;3mat[0m src/namespace_manager.rs:190
+
+  [2m2026-01-30T22:27:10.029068Z[0m [32m INFO[0m [1;32mninep_server::namespace_manager[0m[32m: [32mRegistered namespace: /srv/compute (owner: 0582057d953b67f0, type: compute)[0m
+    [2;3mat[0m src/namespace_manager.rs:384
+
+  [2m2026-01-30T22:27:10.029086Z[0m [32m INFO[0m [1;32mninep_server::namespace_manager[0m[32m: [32mRegistered namespace: /srv/namespace (owner: 0582057d953b67f0, type: system)[0m
+    [2;3mat[0m src/namespace_manager.rs:384
+
+  [2m2026-01-30T22:27:10.029099Z[0m [32m INFO[0m [1;32mninep_server::namespace_manager[0m[32m: [32mRegistered namespace: /srv/settrans (owner: 0582057d953b67f0, type: system)[0m
+    [2;3mat[0m src/namespace_manager.rs:384
+
+  [2m2026-01-30T22:27:10.029103Z[0m [32m INFO[0m [1;32mninep_server::namespace_manager[0m[32m: [32mNamespace manager initialized successfully[0m
+    [2;3mat[0m src/namespace_manager.rs:203
+
+  [2m2026-01-30T22:27:10.029105Z[0m [32m INFO[0m [1;32mninep_server::server[0m[32m: [32mNamespace manager initialized at /srv/namespace/[0m
+    [2;3mat[0m src/server/mod.rs:263
+
+  [2m2026-01-30T22:27:10.029112Z[0m [32m INFO[0m [1;32mninep_server::settrans[0m[32m: [32mVirtual settrans structure created at "/srv/settrans" (synthetic filesystem only)[0m
+    [2;3mat[0m src/settrans.rs:223
+
+  [2m2026-01-30T22:27:10.029120Z[0m [32m INFO[0m [1;32mninep_server::server[0m[32m: [32mVirtual settrans system initialized at "/home/scott/srv/settrans" (virtual only, no physical directories)[0m
+    [2;3mat[0m src/server/mod.rs:283
+
+  [2m2026-01-30T22:27:10.029122Z[0m [32m INFO[0m [1;32mninep_server::server[0m[32m: [32mMetrics available at /srv/stats/* (see src/stats.rs)[0m
+    [2;3mat[0m src/server/mod.rs:290
+
+  [2m2026-01-30T22:27:10.029123Z[0m [32m INFO[0m [1;32mninep_server::server[0m[32m: [32mAuto-mount enabled - starting transparent /n/ namespace daemon[0m
+    [2;3mat[0m src/server/mod.rs:294
+
+  [2m2026-01-30T22:27:10.029125Z[0m [32m INFO[0m [1;32mninep_server::auto_mount[0m[32m: [32mStarting transparent auto-mount daemon for "/home/scott/n" namespace[0m
+    [2;3mat[0m src/auto_mount.rs:150
+
+  [2m2026-01-30T22:27:10.029124Z[0m [32m INFO[0m [1;32mninep_server::mesh[0m[32m: [32mRegistered mDNS service: 9pe-node-11d on port 9650[0m
+    [2;3mat[0m src/mesh.rs:305
+
+  [2m2026-01-30T22:27:10.029132Z[0m [32m INFO[0m [1;32mninep_server::auto_mount[0m[32m: [32mAuto-mount daemon started - will automatically manage /n/ mounts[0m
+    [2;3mat[0m src/auto_mount.rs:192
+
+  [2m2026-01-30T22:27:10.029134Z[0m [32m INFO[0m [1;32mninep_server::server[0m[32m: [32mAuto-mount daemon started successfully[0m
+    [2;3mat[0m src/server/mod.rs:297
+
+  [2m2026-01-30T22:27:10.029137Z[0m [32m INFO[0m [1;32mninep_server::cli::commands::serve[0m[32m: [32mServer listening on [::]:5640 (IPv6 dual-stack) with QUIC[0m
+    [2;3mat[0m src/cli/commands/serve.rs:105
+
+  [2m2026-01-30T22:27:10.029138Z[0m [32m INFO[0m [1;32mninep_server::server[0m[32m: [32m9P.e server running on [::]:5640 (IPv6 dual-stack) with root "./test_root"[0m
+    [2;3mat[0m src/server/mod.rs:342
+
+  [2m2026-01-30T22:27:10.029139Z[0m [32m INFO[0m [1;32mninep_server::mesh[0m[32m: [32mmDNS discovery active, browsing for _9pe-mesh._udp.local.[0m
+    [2;3mat[0m src/mesh.rs:322
+
+  [2m2026-01-30T22:27:10.029397Z[0m [32m INFO[0m [1;32mninep_server::transport::tcp[0m[32m: [32mInitializing legacy TCP transport[0m
+    [2;3mat[0m src/transport/tcp.rs:22
+
+  [2m2026-01-30T22:27:10.029446Z[0m [31mERROR[0m [1;31mninep_server::auto_mount[0m[31m: [31mConnection test failed: Connection refused (os error 111)[0m
+    [2;3mat[0m src/auto_mount.rs:475
+
+  [2m2026-01-30T22:27:10.029455Z[0m [33m WARN[0m [1;33mninep_server::auto_mount[0m[33m: [33mFailed to mount server 127.0.0.1:5640: Connection test failed: Connection refused (os error 111)[0m
+    [2;3mat[0m src/auto_mount.rs:361
+
+  [2m2026-01-30T22:27:10.029466Z[0m [32m INFO[0m [1;32mninep_server::transport::tcp[0m[32m: [32mInitializing legacy TCP transport[0m
+    [2;3mat[0m src/transport/tcp.rs:22
+
+  [2m2026-01-30T22:27:10.029492Z[0m [31mERROR[0m [1;31mninep_server::auto_mount[0m[31m: [31mConnection test failed: Connection refused (os error 111)[0m
+    [2;3mat[0m src/auto_mount.rs:475
+
+  [2m2026-01-30T22:27:10.029494Z[0m [33m WARN[0m [1;33mninep_server::auto_mount[0m[33m: [33mFailed to mount server 127.0.0.1:5641: Connection test failed: Connection refused (os error 111)[0m
+    [2;3mat[0m src/auto_mount.rs:361
+
+  [2m2026-01-30T22:27:10.029498Z[0m [32m INFO[0m [1;32mninep_server::transport::tcp[0m[32m: [32mInitializing legacy TCP transport[0m
+    [2;3mat[0m src/transport/tcp.rs:22
+
+  [2m2026-01-30T22:27:10.029506Z[0m [31mERROR[0m [1;31mninep_server::auto_mount[0m[31m: [31mConnection test failed: Connection refused (os error 111)[0m
+    [2;3mat[0m src/auto_mount.rs:475
+
+  [2m2026-01-30T22:27:10.029508Z[0m [33m WARN[0m [1;33mninep_server::auto_mount[0m[33m: [33mFailed to mount server 127.0.0.1:5642: Connection test failed: Connection refused (os error 111)[0m
+    [2;3mat[0m src/auto_mount.rs:361
+
+  [2m2026-01-30T22:27:40.029825Z[0m [32m INFO[0m [1;32mninep_server::transport::tcp[0m[32m: [32mInitializing legacy TCP transport[0m
+    [2;3mat[0m src/transport/tcp.rs:22
+
+  [2m2026-01-30T22:27:40.030016Z[0m [31mERROR[0m [1;31mninep_server::auto_mount[0m[31m: [31mConnection test failed: Connection refused (os error 111)[0m
+    [2;3mat[0m src/auto_mount.rs:475
+
+  [2m2026-01-30T22:27:40.030040Z[0m [33m WARN[0m [1;33mninep_server::auto_mount[0m[33m: [33mFailed to mount server 127.0.0.1:5640: Connection test failed: Connection refused (os error 111)[0m
+    [2;3mat[0m src/auto_mount.rs:361
+
+  [2m2026-01-30T22:27:40.030058Z[0m [32m INFO[0m [1;32mninep_server::transport::tcp[0m[32m: [32mInitializing legacy TCP transport[0m
+    [2;3mat[0m src/transport/tcp.rs:22
+
+  [2m2026-01-30T22:27:40.030091Z[0m [31mERROR[0m [1;31mninep_server::auto_mount[0m[31m: [31mConnection test failed: Connection refused (os error 111)[0m
+    [2;3mat[0m src/auto_mount.rs:475
+
+  [2m2026-01-30T22:27:40.030099Z[0m [33m WARN[0m [1;33mninep_server::auto_mount[0m[33m: [33mFailed to mount server 127.0.0.1:5641: Connection test failed: Connection refused (os error 111)[0m
+    [2;3mat[0m src/auto_mount.rs:361
+
+  [2m2026-01-30T22:27:40.030109Z[0m [32m INFO[0m [1;32mninep_server::transport::tcp[0m[32m: [32mInitializing legacy TCP transport[0m
+    [2;3mat[0m src/transport/tcp.rs:22
+
+  [2m2026-01-30T22:27:40.030136Z[0m [31mERROR[0m [1;31mninep_server::auto_mount[0m[31m: [31mConnection test failed: Connection refused (os error 111)[0m
+    [2;3mat[0m src/auto_mount.rs:475
+
+  [2m2026-01-30T22:27:40.030143Z[0m [33m WARN[0m [1;33mninep_server::auto_mount[0m[33m: [33mFailed to mount server 127.0.0.1:5642: Connection test failed: Connection refused (os error 111)[0m
+    [2;3mat[0m src/auto_mount.rs:361
+

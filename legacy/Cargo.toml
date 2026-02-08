@@ -11,7 +11,7 @@ authors = ["9PE Team"]
 
 [dependencies]
 # 9PE core protocol - using git dependency to avoid path issues
-ninepee = { git = "https://github.com/kiljoy001/9PE.git", branch = "main" }
+ninep = { git = "https://github.com/kiljoy001/9PE.git", branch = "main" }
 
 # Core async runtime
 tokio = { version = "1.0", features = ["full"] }

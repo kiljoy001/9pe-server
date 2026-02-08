@@ -11,13 +11,13 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use anyhow::{Result, Context};
 use tracing::{info, warn, error, debug};
 
-use ninepee::NinePeeMessage;
+use ninep::NinePMessage;
 
 /// File identifier to path mapping (client-side)
 type ClientFidMap = Arc<RwLock<HashMap<u32, PathBuf>>>;
 
 /// 9P.e Client for connecting to remote servers
-pub struct NinePeeClient {
+pub struct NinePClient {
     /// Connection to server
     stream: TcpStream,
 
@@ -37,7 +37,7 @@ pub struct NinePeeClient {
     root_fid: Option<u32>,
 }
 
-impl NinePeeClient {
+impl NinePClient {
     /// Connect to a 9P.e server with retry logic
     pub async fn connect(address: &str) -> Result<Self> {
         Self::connect_with_retries(address, 3, std::time::Duration::from_millis(500)).await
@@ -63,7 +63,7 @@ impl NinePeeClient {
         client.negotiate_version().await?;
 
         // 2. Authentication
-        let auth_msg = NinePeeMessage::Auth {
+        let auth_msg = NinePMessage::Auth {
             afid: 0,
             uname: username.to_string(),
             aname: "/".to_string(),
@@ -73,7 +73,7 @@ impl NinePeeClient {
 
         // Check for proper auth response
         match auth_response {
-            NinePeeMessage::Error { ename, .. } => {
+            NinePMessage::Error { ename, .. } => {
                 return Err(anyhow::anyhow!("Authentication failed: {}", ename));
             }
             _ => {
@@ -83,7 +83,7 @@ impl NinePeeClient {
 
         // 3. Attach to root with authenticated user
         let root_fid = client.allocate_fid().await;
-        let attach_msg = NinePeeMessage::Attach {
+        let attach_msg = NinePMessage::Attach {
             fid: root_fid,
             afid: 0,  // We already authenticated
             uname: username.to_string(),
@@ -154,7 +154,7 @@ impl NinePeeClient {
 
     /// Negotiate protocol version with server
     async fn negotiate_version(&mut self) -> Result<()> {
-        let version_msg = NinePeeMessage::Version {
+        let version_msg = NinePMessage::Version {
             msize: self.msize,
             version: "9P.e.2024".to_string(),
         };
@@ -162,7 +162,7 @@ impl NinePeeClient {
         let response = self.send_message(version_msg).await?;
 
         match response {
-            NinePeeMessage::Version { msize, version } => {
+            NinePMessage::Version { msize, version } => {
                 self.msize = msize.min(self.msize);
                 self.version = version;
                 info!("✅ Version negotiated: {} (msize: {})", self.version, self.msize);
@@ -176,7 +176,7 @@ impl NinePeeClient {
     async fn attach_root(&mut self) -> Result<()> {
         let root_fid = self.allocate_fid().await;
 
-        let attach_msg = NinePeeMessage::Attach {
+        let attach_msg = NinePMessage::Attach {
             fid: root_fid,
             afid: 0, // No authentication FID
             uname: "9pe-client".to_string(),
@@ -197,7 +197,7 @@ impl NinePeeClient {
         let fid = self.walk_to_path(path).await?;
 
         // Open directory for reading
-        let open_msg = NinePeeMessage::Open {
+        let open_msg = NinePMessage::Open {
             fid,
             mode: 0, // OREAD
         };
@@ -209,7 +209,7 @@ impl NinePeeClient {
         let mut offset = 0;
 
         loop {
-            let read_msg = NinePeeMessage::Read {
+            let read_msg = NinePMessage::Read {
                 fid,
                 offset,
                 count: 4096,
@@ -218,7 +218,7 @@ impl NinePeeClient {
             let response = self.send_message(read_msg).await?;
 
             match response {
-                NinePeeMessage::Write { data, .. } => {
+                NinePMessage::Write { data, .. } => {
                     if data.is_empty() {
                         break;
                     }
@@ -249,7 +249,7 @@ impl NinePeeClient {
         let fid = self.walk_to_path(path).await?;
 
         // Open file for reading
-        let open_msg = NinePeeMessage::Open {
+        let open_msg = NinePMessage::Open {
             fid,
             mode: 0, // OREAD
         };
@@ -261,7 +261,7 @@ impl NinePeeClient {
         let mut offset = 0;
 
         loop {
-            let read_msg = NinePeeMessage::Read {
+            let read_msg = NinePMessage::Read {
                 fid,
                 offset,
                 count: (self.msize - 24) as u32, // Leave room for protocol overhead
@@ -270,7 +270,7 @@ impl NinePeeClient {
             let response = self.send_message(read_msg).await?;
 
             match response {
-                NinePeeMessage::Write { data, .. } => {
+                NinePMessage::Write { data, .. } => {
                     if data.is_empty() {
                         break;
                     }
@@ -292,7 +292,7 @@ impl NinePeeClient {
         let fid = self.walk_to_path(path).await?;
 
         // Open file for writing
-        let open_msg = NinePeeMessage::Open {
+        let open_msg = NinePMessage::Open {
             fid,
             mode: 1, // OWRITE
         };
@@ -304,7 +304,7 @@ impl NinePeeClient {
         let mut offset = 0;
 
         for chunk in data.chunks(chunk_size) {
-            let write_msg = NinePeeMessage::Write {
+            let write_msg = NinePMessage::Write {
                 fid,
                 offset: offset as u64,
                 data: chunk.to_vec(),
@@ -313,7 +313,7 @@ impl NinePeeClient {
             let response = self.send_message(write_msg).await?;
 
             match response {
-                NinePeeMessage::Write { data, .. } => {
+                NinePMessage::Write { data, .. } => {
                     offset += data.len();
                 }
                 _ => return Err(anyhow::anyhow!("Write failed")),
@@ -330,14 +330,14 @@ impl NinePeeClient {
     pub async fn stat(&mut self, path: &str) -> Result<String> {
         let fid = self.walk_to_path(path).await?;
 
-        let stat_msg = NinePeeMessage::Stat { fid };
+        let stat_msg = NinePMessage::Stat { fid };
         let response = self.send_message(stat_msg).await?;
 
         // Clean up FID
         self.clunk_fid(fid).await?;
 
         match response {
-            NinePeeMessage::Stat { .. } => {
+            NinePMessage::Stat { .. } => {
                 // In real implementation, would parse stat structure
                 Ok(format!("File info for {}", path))
             }
@@ -358,7 +358,7 @@ impl NinePeeClient {
             .map(|s| s.to_string())
             .collect();
 
-        let walk_msg = NinePeeMessage::Walk {
+        let walk_msg = NinePMessage::Walk {
             fid: root_fid,
             newfid: new_fid,
             wnames: components,
@@ -367,7 +367,7 @@ impl NinePeeClient {
         let response = self.send_message(walk_msg).await?;
 
         match response {
-            NinePeeMessage::Walk { .. } => {
+            NinePMessage::Walk { .. } => {
                 self.fids.write().await.insert(new_fid, PathBuf::from(path));
                 debug!("Walked to {} (fid: {})", path, new_fid);
                 Ok(new_fid)
@@ -378,7 +378,7 @@ impl NinePeeClient {
 
     /// Release a FID
     async fn clunk_fid(&mut self, fid: u32) -> Result<()> {
-        let clunk_msg = NinePeeMessage::Clunk { fid };
+        let clunk_msg = NinePMessage::Clunk { fid };
         let _response = self.send_message(clunk_msg).await?;
 
         self.fids.write().await.remove(&fid);
@@ -394,7 +394,7 @@ impl NinePeeClient {
     }
 
     /// Send a message and get response
-    pub async fn send_message(&mut self, message: NinePeeMessage) -> Result<NinePeeMessage> {
+    pub async fn send_message(&mut self, message: NinePMessage) -> Result<NinePMessage> {
         // Serialize message
         let data = message.serialize()
             .context("Failed to serialize message")?;
@@ -423,14 +423,14 @@ impl NinePeeClient {
             .context("Failed to read response data")?;
 
         // Deserialize response
-        NinePeeMessage::deserialize(response_buf)
+        NinePMessage::deserialize(response_buf)
             .context("Failed to deserialize response")
     }
 }
 
 /// Client command implementations
 pub async fn mount_remote_server(server: String, mount_point: String) -> Result<()> {
-    let mut client = NinePeeClient::connect(&server).await?;
+    let mut client = NinePClient::connect(&server).await?;
 
     info!("✅ Successfully connected to {}", server);
     info!("📁 Mount point: {}", mount_point);
@@ -455,7 +455,7 @@ pub async fn mount_remote_server(server: String, mount_point: String) -> Result<
 }
 
 pub async fn list_remote_files(server: String, path: String) -> Result<()> {
-    let mut client = NinePeeClient::connect(&server).await?;
+    let mut client = NinePClient::connect(&server).await?;
 
     info!("📂 Listing files at {} on {}", path, server);
 
@@ -483,10 +483,10 @@ pub async fn list_remote_files_with_auth(server: String, path: String, username:
     // Connect with authentication if provided
     let mut client = if let (Some(user), Some(pass)) = (username, password) {
         info!("🔐 Connecting with authentication as user: {}", user);
-        NinePeeClient::connect_with_auth(&server, &user, &pass).await?
+        NinePClient::connect_with_auth(&server, &user, &pass).await?
     } else {
         warn!("🔓 No credentials provided - attempting anonymous access");
-        NinePeeClient::connect(&server).await?
+        NinePClient::connect(&server).await?
     };
 
     info!("📂 Listing files at {} on {}", path, server);
@@ -527,7 +527,7 @@ pub async fn discover_nodes() -> Result<()> {
         ).await {
             Ok(Ok(_stream)) => {
                 // Try to do version handshake to confirm it's a 9P.e server
-                match NinePeeClient::connect(&addr).await {
+                match NinePClient::connect(&addr).await {
                     Ok(client) => {
                         found_nodes.push((addr, client.version));
                     }

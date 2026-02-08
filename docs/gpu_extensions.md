@@ -126,7 +126,7 @@ Currently implemented in the protocol structures and handler framework. Integrat
 Run the demo to see how these extensions work:
 
 ```bash
-cargo run --bin gpu_ninepee_demo
+cargo run --bin gpu_ninep_demo
 ```
 
 ## Future Extensions

@@ -1,0 +1,17 @@
+# Test Node 2 config - connects to Node 1
+[server]
+listen_addr = "127.0.0.1:5642"
+node_id = "test-node-2"
+mesh_port = 9652
+
+[consensus]
+enabled = true
+peers = ["127.0.0.1:9651"]  # Bootstrap from node 1
+
+[gpu]
+enabled = true
+backend = "sycl"
+device_id = 0
+
+[logging]
+level = "debug"

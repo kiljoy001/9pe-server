@@ -24,93 +24,93 @@ use std::collections::HashMap;
 lazy_static! {
     // Connection metrics
     pub static ref CONNECTIONS_TOTAL: IntCounter = register_int_counter!(
-        "ninepee_connections_total",
+        "ninep_connections_total",
         "Total number of client connections"
     ).unwrap();
 
     pub static ref ACTIVE_CONNECTIONS: IntGauge = register_int_gauge!(
-        "ninepee_connections_active",
+        "ninep_connections_active",
         "Number of active connections"
     ).unwrap();
 
     pub static ref PROTOCOL_GAUGE: IntGaugeVec = register_int_gauge_vec!(
-        "ninepee_connections_by_protocol",
+        "ninep_connections_by_protocol",
         "Active connections by protocol type",
         &["protocol"]
     ).unwrap();
 
     // Message metrics
     pub static ref MESSAGES_TOTAL: CounterVec = register_counter_vec!(
-        "ninepee_messages_total",
+        "ninep_messages_total",
         "Total messages processed",
         &["type", "status"]
     ).unwrap();
 
     pub static ref MESSAGE_LATENCY: HistogramVec = register_histogram_vec!(
-        "ninepee_message_duration_seconds",
+        "ninep_message_duration_seconds",
         "Message processing latency",
         &["type"]
     ).unwrap();
 
     // File operation metrics
     pub static ref FILE_OPS: CounterVec = register_counter_vec!(
-        "ninepee_file_operations_total",
+        "ninep_file_operations_total",
         "File operations",
         &["operation", "status"]
     ).unwrap();
 
     pub static ref FILE_BYTES_READ: Counter = register_counter!(
-        "ninepee_bytes_read_total",
+        "ninep_bytes_read_total",
         "Total bytes read"
     ).unwrap();
 
     pub static ref FILE_BYTES_WRITTEN: Counter = register_counter!(
-        "ninepee_bytes_written_total",
+        "ninep_bytes_written_total",
         "Total bytes written"
     ).unwrap();
 
     // System metrics
     pub static ref MEMORY_USAGE: IntGauge = register_int_gauge!(
-        "ninepee_memory_bytes",
+        "ninep_memory_bytes",
         "Memory usage in bytes"
     ).unwrap();
 
     pub static ref OPEN_FILES: IntGauge = register_int_gauge!(
-        "ninepee_open_files",
+        "ninep_open_files",
         "Number of open file handles"
     ).unwrap();
 
     pub static ref UPTIME_SECONDS: IntGauge = register_int_gauge!(
-        "ninepee_uptime_seconds",
+        "ninep_uptime_seconds",
         "Server uptime in seconds"
     ).unwrap();
 
     // Error metrics
     pub static ref ERRORS_TOTAL: CounterVec = register_counter_vec!(
-        "ninepee_errors_total",
+        "ninep_errors_total",
         "Total errors by type",
         &["error_type"]
     ).unwrap();
 
     // Performance metrics
     pub static ref REQUEST_QUEUE_SIZE: IntGauge = register_int_gauge!(
-        "ninepee_request_queue_size",
+        "ninep_request_queue_size",
         "Number of requests in queue"
     ).unwrap();
 
     pub static ref THROUGHPUT: Gauge = register_gauge!(
-        "ninepee_throughput_mbps",
+        "ninep_throughput_mbps",
         "Current throughput in Mbps"
     ).unwrap();
 
     // QUIC specific metrics
     pub static ref QUIC_STREAMS: IntGauge = register_int_gauge!(
-        "ninepee_quic_streams_active",
+        "ninep_quic_streams_active",
         "Active QUIC streams"
     ).unwrap();
 
     pub static ref QUIC_RTT: Histogram = register_histogram!(
-        "ninepee_quic_rtt_ms",
+        "ninep_quic_rtt_ms",
         "QUIC connection RTT in milliseconds"
     ).unwrap();
 
@@ -253,7 +253,7 @@ async fn detailed_health_check() -> Json<HealthStatus> {
     // Check file operations
     let file_errors = prometheus::gather()
         .iter()
-        .find(|m| m.get_name() == "ninepee_file_ops_total")
+        .find(|m| m.get_name() == "ninep_file_ops_total")
         .and_then(|m| {
             m.get_metric()
                 .iter()
@@ -284,7 +284,7 @@ async fn detailed_health_check() -> Json<HealthStatus> {
     // Check mesh networking
     let mesh_peers = prometheus::gather()
         .iter()
-        .find(|m| m.get_name() == "ninepee_connections_by_protocol")
+        .find(|m| m.get_name() == "ninep_connections_by_protocol")
         .and_then(|m| {
             m.get_metric()
                 .iter()
@@ -432,72 +432,72 @@ pub fn grafana_dashboard() -> serde_json::Value {
                     "title": "Active Connections",
                     "type": "graph",
                     "targets": [{
-                        "expr": "ninepee_connections_active"
+                        "expr": "ninep_connections_active"
                     }]
                 },
                 {
                     "title": "Connections by Protocol",
                     "type": "graph",
                     "targets": [
-                        {"expr": "ninepee_connections_by_protocol{protocol=\"tcp\"}"},
-                        {"expr": "ninepee_connections_by_protocol{protocol=\"quic\"}"}
+                        {"expr": "ninep_connections_by_protocol{protocol=\"tcp\"}"},
+                        {"expr": "ninep_connections_by_protocol{protocol=\"quic\"}"}
                     ]
                 },
                 {
                     "title": "Message Latency (95th percentile)",
                     "type": "graph",
                     "targets": [{
-                        "expr": "histogram_quantile(0.95, ninepee_message_duration_seconds)"
+                        "expr": "histogram_quantile(0.95, ninep_message_duration_seconds)"
                     }]
                 },
                 {
                     "title": "Throughput (Mbps)",
                     "type": "graph",
                     "targets": [{
-                        "expr": "ninepee_throughput_mbps"
+                        "expr": "ninep_throughput_mbps"
                     }]
                 },
                 {
                     "title": "File Operations Rate",
                     "type": "graph",
                     "targets": [{
-                        "expr": "rate(ninepee_file_operations_total[5m])"
+                        "expr": "rate(ninep_file_operations_total[5m])"
                     }]
                 },
                 {
                     "title": "Data Transfer",
                     "type": "graph",
                     "targets": [
-                        {"expr": "rate(ninepee_bytes_read_total[5m])"},
-                        {"expr": "rate(ninepee_bytes_written_total[5m])"}
+                        {"expr": "rate(ninep_bytes_read_total[5m])"},
+                        {"expr": "rate(ninep_bytes_written_total[5m])"}
                     ]
                 },
                 {
                     "title": "Error Rate",
                     "type": "graph",
                     "targets": [{
-                        "expr": "rate(ninepee_errors_total[5m])"
+                        "expr": "rate(ninep_errors_total[5m])"
                     }]
                 },
                 {
                     "title": "QUIC RTT",
                     "type": "graph",
                     "targets": [{
-                        "expr": "ninepee_quic_rtt_ms"
+                        "expr": "ninep_quic_rtt_ms"
                     }]
                 },
                 {
                     "title": "Memory Usage",
                     "type": "graph",
                     "targets": [{
-                        "expr": "ninepee_memory_bytes"
+                        "expr": "ninep_memory_bytes"
                     }]
                 },
                 {
                     "title": "Server Uptime",
                     "type": "stat",
                     "targets": [{
-                        "expr": "ninepee_uptime_seconds"
+                        "expr": "ninep_uptime_seconds"
                     }]
                 }
             ]

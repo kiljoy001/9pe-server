@@ -9,7 +9,7 @@ use tokio::sync::RwLock;
 use anyhow::{Result, Context};
 use tracing::{info, warn, error, debug};
 
-use ninepee::{NinePeeMessage, ProtocolError};
+use ninep::{NinePMessage, ProtocolError};
 
 use crate::synthetic::{SyntheticFileSystem, SyntheticGenerator};
 use crate::synthetic_advanced::{Plan9SyntheticFS, SyntheticFile};
@@ -165,17 +165,17 @@ impl IntegratedServer {
     /// Process a 9P.e message with full integration
     pub async fn process_message(
         &self,
-        msg: NinePeeMessage,
+        msg: NinePMessage,
         conn_id: u64,
-    ) -> Result<NinePeeMessage> {
+    ) -> Result<NinePMessage> {
         debug!("Processing message: {:?}", msg);
 
         // Check authentication if required
         if self.require_auth {
             let contexts = self.contexts.read().await;
             if let Some(ctx) = contexts.get(&conn_id) {
-                if ctx.user.is_none() && !matches!(msg, NinePeeMessage::Auth { .. } | NinePeeMessage::Version { .. }) {
-                    return Ok(NinePeeMessage::Error {
+                if ctx.user.is_none() && !matches!(msg, NinePMessage::Auth { .. } | NinePMessage::Version { .. }) {
+                    return Ok(NinePMessage::Error {
                         ename: "Authentication required".to_string(),
                         errno: 1,
                     });
@@ -184,57 +184,57 @@ impl IntegratedServer {
         }
 
         match msg {
-            NinePeeMessage::Version { msize, version } => {
+            NinePMessage::Version { msize, version } => {
                 self.handle_version(msize, version).await
             }
 
-            NinePeeMessage::Auth { afid, uname, aname } => {
+            NinePMessage::Auth { afid, uname, aname } => {
                 self.handle_auth(afid, uname, aname, conn_id).await
             }
 
-            NinePeeMessage::Attach { fid, afid, uname, aname } => {
+            NinePMessage::Attach { fid, afid, uname, aname } => {
                 self.handle_attach(fid, afid, uname, aname, conn_id).await
             }
 
-            NinePeeMessage::Walk { fid, newfid, wnames } => {
+            NinePMessage::Walk { fid, newfid, wnames } => {
                 self.handle_walk(fid, newfid, wnames, conn_id).await
             }
 
-            NinePeeMessage::Open { fid, mode } => {
+            NinePMessage::Open { fid, mode } => {
                 self.handle_open(fid, mode, conn_id).await
             }
 
-            NinePeeMessage::Read { fid, offset, count } => {
+            NinePMessage::Read { fid, offset, count } => {
                 self.handle_read(fid, offset, count, conn_id).await
             }
 
-            NinePeeMessage::Write { fid, offset, data } => {
+            NinePMessage::Write { fid, offset, data } => {
                 self.handle_write(fid, offset, data, conn_id).await
             }
 
-            NinePeeMessage::Clunk { fid } => {
+            NinePMessage::Clunk { fid } => {
                 self.handle_clunk(fid).await
             }
 
-            NinePeeMessage::Stat { fid } => {
+            NinePMessage::Stat { fid } => {
                 self.handle_stat(fid).await
             }
 
             // Advanced 9P.e messages
-            NinePeeMessage::StreamInit { stream_id, fid, mode } => {
+            NinePMessage::StreamInit { stream_id, fid, mode } => {
                 self.handle_stream_init(stream_id, fid, mode).await
             }
 
-            NinePeeMessage::SyntheticCreate { fid, generator, params } => {
+            NinePMessage::SyntheticCreate { fid, generator, params } => {
                 self.handle_synthetic_create(fid, generator, params).await
             }
 
-            NinePeeMessage::TranslatorSpawn { translator_id, code, config } => {
+            NinePMessage::TranslatorSpawn { translator_id, code, config } => {
                 self.handle_translator_spawn(translator_id, code, config).await
             }
 
             _ => {
-                Ok(NinePeeMessage::Error {
+                Ok(NinePMessage::Error {
                     ename: "Not implemented".to_string(),
                     errno: 1,
                 })
@@ -249,7 +249,7 @@ impl IntegratedServer {
         uname: String,
         aname: String,
         conn_id: u64,
-    ) -> Result<NinePeeMessage> {
+    ) -> Result<NinePMessage> {
         // Password-based authentication
         let auth_method = AuthMethod::Password(aname.clone());
 
@@ -272,7 +272,7 @@ impl IntegratedServer {
                 self.contexts.write().await.insert(conn_id, ctx);
 
                 // Return a successful response (9P.e doesn't have AuthResp)
-                Ok(NinePeeMessage::Attach {
+                Ok(NinePMessage::Attach {
                     fid: afid,
                     afid,
                     uname,
@@ -280,7 +280,7 @@ impl IntegratedServer {
                 })
             }
             Err(e) => {
-                Ok(NinePeeMessage::Error {
+                Ok(NinePMessage::Error {
                     ename: format!("Auth failed: {}", e),
                     errno: 2,
                 })
@@ -295,7 +295,7 @@ impl IntegratedServer {
         newfid: u32,
         wnames: Vec<String>,
         conn_id: u64,
-    ) -> Result<NinePeeMessage> {
+    ) -> Result<NinePMessage> {
         let fids = self.fids.read().await;
         let base_target = fids.get(&fid)
             .ok_or_else(|| anyhow::anyhow!("Unknown fid"))?;
@@ -362,7 +362,7 @@ impl IntegratedServer {
                 };
 
                 if !self.auth_service.authorize(ctx, &resource, Permissions::TRAVERSE).await? {
-                    return Ok(NinePeeMessage::Error {
+                    return Ok(NinePMessage::Error {
                         ename: "Permission denied".to_string(),
                         errno: 3,
                     });
@@ -375,7 +375,7 @@ impl IntegratedServer {
         self.fids.write().await.insert(newfid, new_target);
 
         // Return success - in 9P.e, walk success is indicated by lack of error
-        Ok(NinePeeMessage::Walk {
+        Ok(NinePMessage::Walk {
             fid,
             newfid,
             wnames: vec![], // Empty means success
@@ -389,7 +389,7 @@ impl IntegratedServer {
         offset: u64,
         count: u32,
         conn_id: u64,
-    ) -> Result<NinePeeMessage> {
+    ) -> Result<NinePMessage> {
         let fids = self.fids.read().await;
         let target = fids.get(&fid)
             .ok_or_else(|| anyhow::anyhow!("Unknown fid"))?;
@@ -405,7 +405,7 @@ impl IntegratedServer {
                 };
 
                 if !self.auth_service.authorize(ctx, &resource, Permissions::READ).await? {
-                    return Ok(NinePeeMessage::Error {
+                    return Ok(NinePMessage::Error {
                         ename: "Permission denied".to_string(),
                         errno: 3,
                     });
@@ -453,7 +453,7 @@ impl IntegratedServer {
         metrics::record_bytes_read(data.len() as u64);
 
         // Return read data via a Read message
-        Ok(NinePeeMessage::Read {
+        Ok(NinePMessage::Read {
             fid,
             offset,
             count: data.len() as u32,
@@ -467,7 +467,7 @@ impl IntegratedServer {
         offset: u64,
         data: Vec<u8>,
         conn_id: u64,
-    ) -> Result<NinePeeMessage> {
+    ) -> Result<NinePMessage> {
         let fids = self.fids.read().await;
         let target = fids.get(&fid)
             .ok_or_else(|| anyhow::anyhow!("Unknown fid"))?;
@@ -483,7 +483,7 @@ impl IntegratedServer {
                 };
 
                 if !self.auth_service.authorize(ctx, &resource, Permissions::WRITE).await? {
-                    return Ok(NinePeeMessage::Error {
+                    return Ok(NinePMessage::Error {
                         ename: "Permission denied".to_string(),
                         errno: 3,
                     });
@@ -511,7 +511,7 @@ impl IntegratedServer {
                 if let Some(file) = self.plan9_synthetic.get(path).await {
                     file.write(offset, &data).await?
                 } else {
-                    return Ok(NinePeeMessage::Error {
+                    return Ok(NinePMessage::Error {
                         ename: "Synthetic file is read-only".to_string(),
                         errno: 4,
                     });
@@ -531,7 +531,7 @@ impl IntegratedServer {
         metrics::record_bytes_written(count as u64);
 
         // Return write response via a Write message
-        Ok(NinePeeMessage::Write {
+        Ok(NinePMessage::Write {
             fid,
             offset,
             data: vec![], // Empty data for response
@@ -544,9 +544,9 @@ impl IntegratedServer {
         fid: u32,
         generator: String,
         params: Vec<u8>,
-    ) -> Result<NinePeeMessage> {
+    ) -> Result<NinePMessage> {
         if !self.enable_synthetic {
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: "Synthetic files disabled".to_string(),
                 errno: 5,
             });
@@ -556,7 +556,7 @@ impl IntegratedServer {
         // Store generator and params for fid
         self.fids.write().await.insert(fid, FidTarget::SyntheticFile(generator.clone()));
 
-        Ok(NinePeeMessage::SyntheticRefresh {
+        Ok(NinePMessage::SyntheticRefresh {
             fid: 0, // Would be the actual fid
             force: false,
         })
@@ -568,9 +568,9 @@ impl IntegratedServer {
         translator_id: u32,
         code: Vec<u8>,
         config: Vec<u8>,
-    ) -> Result<NinePeeMessage> {
+    ) -> Result<NinePMessage> {
         if !self.enable_translators {
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: "Translators disabled".to_string(),
                 errno: 6,
             });
@@ -579,7 +579,7 @@ impl IntegratedServer {
         // Spawn translator with provided code and config
         // In a real implementation, this would compile and execute the WASM code
 
-        Ok(NinePeeMessage::TranslatorSpawn {
+        Ok(NinePMessage::TranslatorSpawn {
             translator_id,
             code,
             config,
@@ -592,9 +592,9 @@ impl IntegratedServer {
         stream_id: u32,
         fid: u32,
         mode: u8,
-    ) -> Result<NinePeeMessage> {
+    ) -> Result<NinePMessage> {
         // Would implement streaming for synthetic files
-        Ok(NinePeeMessage::StreamInit {
+        Ok(NinePMessage::StreamInit {
             stream_id: fid,
             fid,
             mode: 0, // Default mode
@@ -603,8 +603,8 @@ impl IntegratedServer {
 
     // ... other handlers (version, attach, clunk, stat, etc.)
 
-    async fn handle_version(&self, msize: u32, version: String) -> Result<NinePeeMessage> {
-        Ok(NinePeeMessage::Version {
+    async fn handle_version(&self, msize: u32, version: String) -> Result<NinePMessage> {
+        Ok(NinePMessage::Version {
             msize: msize.min(self.max_message_size),
             version: if version.starts_with("9P.e") { "9P.e".to_string() } else { version },
         })
@@ -617,11 +617,11 @@ impl IntegratedServer {
         uname: String,
         aname: String,
         conn_id: u64,
-    ) -> Result<NinePeeMessage> {
+    ) -> Result<NinePMessage> {
         // Store root for FID
         self.fids.write().await.insert(fid, FidTarget::RealFile(self.root.clone()));
         // Return successful attach response
-        Ok(NinePeeMessage::Attach {
+        Ok(NinePMessage::Attach {
             fid,
             afid,
             uname,
@@ -629,22 +629,22 @@ impl IntegratedServer {
         })
     }
 
-    async fn handle_open(&self, fid: u32, mode: u8, conn_id: u64) -> Result<NinePeeMessage> {
+    async fn handle_open(&self, fid: u32, mode: u8, conn_id: u64) -> Result<NinePMessage> {
         // Return successful open response
-        Ok(NinePeeMessage::Open {
+        Ok(NinePMessage::Open {
             fid,
             mode: mode as u8,
         })
     }
 
-    async fn handle_clunk(&self, fid: u32) -> Result<NinePeeMessage> {
+    async fn handle_clunk(&self, fid: u32) -> Result<NinePMessage> {
         self.fids.write().await.remove(&fid);
         // Return successful clunk response
-        Ok(NinePeeMessage::Clunk { fid })
+        Ok(NinePMessage::Clunk { fid })
     }
 
-    async fn handle_stat(&self, fid: u32) -> Result<NinePeeMessage> {
+    async fn handle_stat(&self, fid: u32) -> Result<NinePMessage> {
         // Return successful stat response
-        Ok(NinePeeMessage::Stat { fid })
+        Ok(NinePMessage::Stat { fid })
     }
 }

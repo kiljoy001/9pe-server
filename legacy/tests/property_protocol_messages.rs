@@ -4,7 +4,7 @@
 use proptest::prelude::*;
 use proptest::collection::{vec, hash_map};
 use proptest::string::{string_regex};
-use plan9e::protocol::{NinePeeMessage, ProtocolError};
+use plan9e::protocol::{NinePMessage, ProtocolError};
 use plan9e_server::server::FileSystemServer;
 use std::path::PathBuf;
 use std::collections::HashMap;
@@ -42,56 +42,56 @@ fn arbitrary_mode() -> impl Strategy<Value = u8> {
 }
 
 /// Generate arbitrary 9P.e messages
-fn arbitrary_message() -> impl Strategy<Value = NinePeeMessage> {
+fn arbitrary_message() -> impl Strategy<Value = NinePMessage> {
     prop_oneof![
         // Version negotiation
         (arbitrary_msize(), string_regex("9P\\.e.*|9P2000").unwrap())
-            .prop_map(|(msize, version)| NinePeeMessage::Version { msize, version }),
+            .prop_map(|(msize, version)| NinePMessage::Version { msize, version }),
 
         // Attach
         (arbitrary_fid(), arbitrary_fid(), arbitrary_username(), arbitrary_filename())
             .prop_map(|(fid, afid, uname, aname)|
-                NinePeeMessage::Attach { fid, afid, uname, aname }),
+                NinePMessage::Attach { fid, afid, uname, aname }),
 
         // Walk
         (arbitrary_fid(), arbitrary_fid(), arbitrary_path_components())
             .prop_map(|(fid, newfid, wnames)|
-                NinePeeMessage::Walk { fid, newfid, wnames }),
+                NinePMessage::Walk { fid, newfid, wnames }),
 
         // Open
         (arbitrary_fid(), arbitrary_mode())
-            .prop_map(|(fid, mode)| NinePeeMessage::Open { fid, mode }),
+            .prop_map(|(fid, mode)| NinePMessage::Open { fid, mode }),
 
         // Read
         (arbitrary_fid(), 0u64..1000000u64, 0u32..65536u32)
             .prop_map(|(fid, offset, count)|
-                NinePeeMessage::Read { fid, offset, count }),
+                NinePMessage::Read { fid, offset, count }),
 
         // Write
         (arbitrary_fid(), 0u64..1000000u64, vec(0u8..255u8, 0..1024))
             .prop_map(|(fid, offset, data)|
-                NinePeeMessage::Write { fid, offset, data }),
+                NinePMessage::Write { fid, offset, data }),
 
         // Clunk
-        arbitrary_fid().prop_map(|fid| NinePeeMessage::Clunk { fid }),
+        arbitrary_fid().prop_map(|fid| NinePMessage::Clunk { fid }),
 
         // Stat
-        arbitrary_fid().prop_map(|fid| NinePeeMessage::Stat { fid }),
+        arbitrary_fid().prop_map(|fid| NinePMessage::Stat { fid }),
 
         // Remove
-        arbitrary_fid().prop_map(|fid| NinePeeMessage::Remove { fid }),
+        arbitrary_fid().prop_map(|fid| NinePMessage::Remove { fid }),
     ]
 }
 
 #[derive(Debug, Clone)]
 struct MessagePair {
-    request: NinePeeMessage,
-    response: NinePeeMessage,
+    request: NinePMessage,
+    response: NinePMessage,
 }
 
 /// Property: Response type must match request type
-fn is_valid_response_type(request: &NinePeeMessage, response: &NinePeeMessage) -> bool {
-    use NinePeeMessage::*;
+fn is_valid_response_type(request: &NinePMessage, response: &NinePMessage) -> bool {
+    use NinePMessage::*;
 
     match (request, response) {
         // Version -> VersionResp or Error
@@ -147,54 +147,54 @@ proptest! {
     fn prop_valid_response_types(request in arbitrary_message()) {
         // Create a mock response based on request type
         let response = match &request {
-            NinePeeMessage::Version { msize, version } => {
-                NinePeeMessage::Version {
+            NinePMessage::Version { msize, version } => {
+                NinePMessage::Version {
                     msize: *msize,
                     version: version.clone()
                 }
             }
-            NinePeeMessage::Attach { fid, .. } => {
+            NinePMessage::Attach { fid, .. } => {
                 // CORRECT: Should return AttachResp
-                NinePeeMessage::AttachResp {
+                NinePMessage::AttachResp {
                     qid: Default::default()
                 }
             }
-            NinePeeMessage::Walk { fid, newfid, wnames } => {
+            NinePMessage::Walk { fid, newfid, wnames } => {
                 // CORRECT: Should return WalkResp with qids
-                NinePeeMessage::WalkResp {
+                NinePMessage::WalkResp {
                     qids: vec![Default::default(); wnames.len()]
                 }
             }
-            NinePeeMessage::Open { fid, .. } => {
-                NinePeeMessage::OpenResp {
+            NinePMessage::Open { fid, .. } => {
+                NinePMessage::OpenResp {
                     qid: Default::default(),
                     iounit: 8192,
                 }
             }
-            NinePeeMessage::Read { .. } => {
+            NinePMessage::Read { .. } => {
                 // CORRECT: Should return ReadResp
-                NinePeeMessage::ReadResp {
+                NinePMessage::ReadResp {
                     data: vec![]
                 }
             }
-            NinePeeMessage::Write { fid, offset, data } => {
-                NinePeeMessage::WriteResp {
+            NinePMessage::Write { fid, offset, data } => {
+                NinePMessage::WriteResp {
                     count: data.len() as u32
                 }
             }
-            NinePeeMessage::Clunk { .. } => {
-                NinePeeMessage::ClunkResp
+            NinePMessage::Clunk { .. } => {
+                NinePMessage::ClunkResp
             }
-            NinePeeMessage::Stat { .. } => {
+            NinePMessage::Stat { .. } => {
                 // CORRECT: Should return StatResp
-                NinePeeMessage::StatResp {
+                NinePMessage::StatResp {
                     stat: vec![]
                 }
             }
-            NinePeeMessage::Remove { .. } => {
-                NinePeeMessage::RemoveResp
+            NinePMessage::Remove { .. } => {
+                NinePMessage::RemoveResp
             }
-            _ => NinePeeMessage::Error {
+            _ => NinePMessage::Error {
                 ename: "Not implemented".to_string(),
                 errno: 1,
             }
@@ -279,7 +279,7 @@ proptest! {
         ename in string_regex("[A-Za-z ]{1,100}").unwrap(),
         errno in 1i32..255i32
     ) {
-        let error = NinePeeMessage::Error {
+        let error = NinePMessage::Error {
             ename: ename.clone(),
             errno,
         };
@@ -412,8 +412,8 @@ proptest! {
 #[test]
 fn test_attach_response_bug() {
     // The bug
-    let bad_response = NinePeeMessage::Stat { fid: 1 };
-    let request = NinePeeMessage::Attach {
+    let bad_response = NinePMessage::Stat { fid: 1 };
+    let request = NinePMessage::Attach {
         fid: 1,
         afid: 0,
         uname: "user".to_string(),
@@ -423,7 +423,7 @@ fn test_attach_response_bug() {
     assert!(!is_valid_response_type(&request, &bad_response));
 
     // The fix - Attach should return Attach (corrected server behavior)
-    let good_response = NinePeeMessage::Attach {
+    let good_response = NinePMessage::Attach {
         fid: 1,
         afid: 0,
         uname: "user".to_string(),
@@ -437,12 +437,12 @@ fn test_attach_response_bug() {
 #[test]
 fn test_read_response_bug() {
     // The bug
-    let bad_response = NinePeeMessage::Write {
+    let bad_response = NinePMessage::Write {
         fid: 1,
         offset: 0,
         data: vec![],
     };
-    let request = NinePeeMessage::Read {
+    let request = NinePMessage::Read {
         fid: 1,
         offset: 0,
         count: 100,
@@ -451,7 +451,7 @@ fn test_read_response_bug() {
     assert!(!is_valid_response_type(&request, &bad_response));
 
     // The fix - Read should return Read (corrected server behavior)
-    let good_response = NinePeeMessage::Read {
+    let good_response = NinePMessage::Read {
         fid: 1,
         offset: 0,
         count: 0, // 0 bytes read
@@ -464,12 +464,12 @@ fn test_read_response_bug() {
 #[test]
 fn test_walk_response_bug() {
     // The bug - returning Walk with empty wnames
-    let bad_response = NinePeeMessage::Walk {
+    let bad_response = NinePMessage::Walk {
         fid: 2,
         newfid: 2,
         wnames: vec![],
     };
-    let request = NinePeeMessage::Walk {
+    let request = NinePMessage::Walk {
         fid: 1,
         newfid: 2,
         wnames: vec!["dir".to_string(), "file".to_string()],
@@ -478,7 +478,7 @@ fn test_walk_response_bug() {
     assert!(!is_valid_response_type(&request, &bad_response));
 
     // The fix - Walk should return Walk (corrected server behavior)
-    let good_response = NinePeeMessage::Walk {
+    let good_response = NinePMessage::Walk {
         fid: 2,
         newfid: 2,
         wnames: vec![], // Empty wnames in response means success

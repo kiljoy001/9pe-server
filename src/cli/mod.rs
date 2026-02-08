@@ -7,7 +7,7 @@ pub mod args;
 pub mod commands;
 
 pub use args::GlobalArgs;
-pub use commands::{AutoMountCommand, ClientCommand, ServeCommand};
+pub use commands::{AutoMountCommand, ClientCommand, IdentityCommand, ServeCommand};
 
 /// 9P.e Server - Everything is a file, and every file is a function
 #[derive(Parser, Debug)]
@@ -30,6 +30,9 @@ pub enum Command {
 
     /// Connect to a 9P.e server as a client
     Client(ClientCommand),
+
+    /// Manage client identity for authentication
+    Identity(IdentityCommand),
 
     /// Auto-mount management
     #[command(name = "auto-mount")]
@@ -54,6 +57,7 @@ impl Cli {
         match self.command {
             Command::Serve(cmd) => cmd.execute(self.global.config).await,
             Command::Client(cmd) => cmd.execute().await,
+            Command::Identity(cmd) => cmd.execute().await,
             Command::AutoMount(cmd) => cmd.execute().await,
             Command::Version => {
                 println!("9P.e Server v{}", env!("CARGO_PKG_VERSION"));

@@ -50,13 +50,13 @@ Coq Mathematical Proofs → Rust Implementation → WASM Translators
 pub async fn execute_verified_message(
     &self,
     conn_id: u64,
-    message: NinePeeMessage
-) -> Result<NinePeeMessage>
+    message: NinePMessage
+) -> Result<NinePMessage>
 
 // Verifies protocol correctness at runtime
 fn verify_protocol_correctness(
-    request: &NinePeeMessage,
-    response: &NinePeeMessage
+    request: &NinePMessage,
+    response: &NinePMessage
 ) -> Result<()>
 ```
 

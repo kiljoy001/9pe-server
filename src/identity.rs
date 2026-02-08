@@ -32,7 +32,7 @@ impl NodeId {
 }
 
 /// Sovereign node identity with all cryptographic keys
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct SovereignIdentity {
     /// Node identifier (hash of Ed25519 public key)
     pub node_id: NodeId,
@@ -60,6 +60,23 @@ pub struct SovereignIdentity {
     pub permissions: NodePermissions,
 }
 
+impl std::fmt::Debug for SovereignIdentity {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SovereignIdentity")
+            .field("node_id", &self.node_id)
+            .field("ed25519_key", &"REDACTED")
+            .field("ed25519_public", &self.ed25519_public)
+            .field("p256_key", &"REDACTED")
+            .field("p256_public", &self.p256_public)
+            .field("x25519_key", &"REDACTED")
+            .field("x25519_public", &self.x25519_public)
+            .field("certificate", &"REDACTED")
+            .field("created_at", &self.created_at)
+            .field("permissions", &self.permissions)
+            .finish()
+    }
+}
+
 impl SovereignIdentity {
     /// Generate a new sovereign identity for this node
     pub fn generate() -> Result<Self> {
@@ -71,15 +88,19 @@ impl SovereignIdentity {
         info!("Generating new sovereign identity");
 
         // Generate Ed25519 key pair (for signatures/HMAC)
-        let ed25519_key = SigningKey::generate(&mut OsRng);
+        let mut secret_bytes = [0u8; 32];
+        use rand::RngCore;
+        OsRng.fill_bytes(&mut secret_bytes);
+        let secret = ed25519_dalek::SecretKey::from(secret_bytes);
+        let ed25519_key = SigningKey::from_bytes(&secret);
         let ed25519_public = VerifyingKey::from(&ed25519_key);
 
         // Generate P-256 key pair (for TLS certificates)
         let p256_key = P256SecretKey::random(&mut OsRng);
-        let p256_public = P256PublicKey::from_secret_key(&p256_key);
+        let p256_public = P256PublicKey::from_secret_scalar(&p256_key.to_nonzero_scalar());
 
         // Generate X25519 key pair (for key exchange)
-        let x25519_key = StaticSecret::random(&mut OsRng);
+        let x25519_key = StaticSecret::random_from_rng(&mut OsRng);
         let x25519_public = X25519PublicKey::from(&x25519_key);
 
         // Derive node ID from Ed25519 public key
@@ -263,6 +284,12 @@ pub struct DhtRecord {
     /// Node-managed permissions
     pub permissions: NodePermissions,
 
+    /// Optional human-friendly name for this node
+    pub node_name: Option<String>,
+
+    /// Hash of address@node_name for fast lookup
+    pub node_name_hash: Vec<u8>,
+
     /// Network address for direct connection
     pub network_addr: SocketAddr,
 
@@ -307,6 +334,29 @@ pub struct ServiceCapabilities {
     pub memory_requirements_mb: Option<u32>,
     pub gpu_required: bool,
     pub specialized_hardware: Vec<String>,
+    pub capability_flags: u16,
+}
+
+/// Capability flags for compute jobs (matches UUID v8 encoding)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[repr(u16)]
+pub enum Capability {
+    None = 0,
+    BasicCompute = 1 << 0,
+    HighPrecision = 1 << 1,
+    TensorOperations = 1 << 2,
+    SharedMemory = 1 << 3,
+    PrivilegedAccess = 1 << 15,
+}
+
+impl Capability {
+    pub fn from_u16(val: u16) -> Self {
+        match val {
+            0 => Capability::None,
+            1 => Capability::BasicCompute,
+            _ => Capability::BasicCompute, // Default to basic
+        }
+    }
 }
 
 #[cfg(test)]

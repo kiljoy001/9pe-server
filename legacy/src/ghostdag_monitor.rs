@@ -93,14 +93,14 @@ impl Default for GhostDAGMetrics {
 /// Combined metrics for 9P.e and GhostDAG
 #[derive(Debug, Clone)]
 pub struct CombinedMetrics {
-    pub ninepee: super::gtk_monitor::NinePeeMetrics,
+    pub ninep: super::gtk_monitor::NinePMetrics,
     pub ghostdag: GhostDAGMetrics,
     pub timestamp: Instant,
 }
 
 /// Metrics collector for both systems
 pub struct CombinedMetricsCollector {
-    ninepee_collector: super::gtk_monitor::MetricsCollector,
+    ninep_collector: super::gtk_monitor::MetricsCollector,
     metrics_history: Arc<Mutex<VecDeque<CombinedMetrics>>>,
     last_update: Instant,
 }
@@ -108,14 +108,14 @@ pub struct CombinedMetricsCollector {
 impl CombinedMetricsCollector {
     pub fn new() -> Self {
         Self {
-            ninepee_collector: super::gtk_monitor::MetricsCollector::new(),
+            ninep_collector: super::gtk_monitor::MetricsCollector::new(),
             metrics_history: Arc::new(Mutex::new(VecDeque::new())),
             last_update: Instant::now(),
         }
     }
 
     pub fn collect_metrics(&mut self) -> CombinedMetrics {
-        let ninepee = self.ninepee_collector.collect_metrics();
+        let ninep = self.ninep_collector.collect_metrics();
         let mut ghostdag = GhostDAGMetrics::default();
 
         // Simulate realistic GhostDAG metrics (in production, read from actual node)
@@ -161,7 +161,7 @@ impl CombinedMetricsCollector {
         ghostdag.blue_set_changes = (rng.gen::<u32>() % 5);
 
         let combined = CombinedMetrics {
-            ninepee,
+            ninep,
             ghostdag,
             timestamp: Instant::now(),
         };
@@ -256,7 +256,7 @@ pub struct EnhancedMonitor {
     blue_score_chart: super::gtk_monitor::MetricsChart,
 
     // Labels
-    ninepee_labels: Arc<Mutex<Vec<Label>>>,
+    ninep_labels: Arc<Mutex<Vec<Label>>>,
     ghostdag_labels: Arc<Mutex<Vec<Label>>>,
 }
 
@@ -280,8 +280,8 @@ impl EnhancedMonitor {
         notebook.append_page(&overview_box, Some(&Label::new(Some("Overview"))));
 
         // Tab 2: 9P.e Protocol
-        let ninepee_box = super::gtk_monitor::create_protocol_details_tab();
-        notebook.append_page(&ninepee_box, Some(&Label::new(Some("9P.e Protocol"))));
+        let ninep_box = super::gtk_monitor::create_protocol_details_tab();
+        notebook.append_page(&ninep_box, Some(&Label::new(Some("9P.e Protocol"))));
 
         // Tab 3: GhostDAG Consensus
         let ghostdag_box = create_ghostdag_tab();
@@ -316,14 +316,14 @@ impl EnhancedMonitor {
             blocks_chart,
             dag_width_chart,
             blue_score_chart,
-            ninepee_labels: Arc::new(Mutex::new(Vec::new())),
+            ninep_labels: Arc::new(Mutex::new(Vec::new())),
             ghostdag_labels: Arc::new(Mutex::new(Vec::new())),
         }
     }
 
     pub fn start_updates(&self) {
         let collector = self.collector.clone();
-        let ninepee_labels = self.ninepee_labels.clone();
+        let ninep_labels = self.ninep_labels.clone();
         let ghostdag_labels = self.ghostdag_labels.clone();
 
         timeout_add_local(Duration::from_secs(1), move || {

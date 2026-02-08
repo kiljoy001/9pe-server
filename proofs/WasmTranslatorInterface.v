@@ -22,7 +22,7 @@ Definition WasmPointer := nat.
 Definition WasmSize := nat.
 
 (* 9P message types *)
-Inductive NinePeeMessageType : Type :=
+Inductive NinePMessageType : Type :=
   | Tversion | Rversion
   | Tauth | Rauth
   | Tattach | Rattach
@@ -34,8 +34,8 @@ Inductive NinePeeMessageType : Type :=
   | Terror | Rerror.
 
 (* 9P message structure *)
-Record NinePeeMessage : Type := {
-  msg_type : NinePeeMessageType;
+Record NinePMessage : Type := {
+  msg_type : NinePMessageType;
   msg_fid : nat;
   msg_offset : nat;
   msg_count : nat;
@@ -53,7 +53,7 @@ Record WasmTranslatorState : Type := {
 (** * Interface Operations *)
 
 (* Serialize 9P message to bytes *)
-Definition serialize_message (msg : NinePeeMessage) : list nat :=
+Definition serialize_message (msg : NinePMessage) : list nat :=
   match msg.(msg_type) with
   | Tread => [116] ++ [msg.(msg_fid)] ++ [msg.(msg_offset)] ++ [msg.(msg_count)] ++ msg.(msg_data)
   | Rread => [117] ++ [msg.(msg_fid)] ++ [length msg.(msg_data)] ++ msg.(msg_data)
@@ -63,7 +63,7 @@ Definition serialize_message (msg : NinePeeMessage) : list nat :=
   end.
 
 (* Deserialize bytes to 9P message *)
-Definition deserialize_message (bytes : list nat) : option NinePeeMessage :=
+Definition deserialize_message (bytes : list nat) : option NinePMessage :=
   match bytes with
   | 116 :: fid :: offset :: count :: data =>
       Some {| msg_type := Tread; msg_fid := fid; msg_offset := offset;
@@ -119,8 +119,8 @@ Definition read_from_wasm_memory (state : WasmTranslatorState) (ptr : WasmPointe
   read_from_wasm_memory_aux state.(wasm_memory) ptr len.
 
 (* WASM translator execution *)
-Definition execute_wasm_translator (state : WasmTranslatorState) (msg : NinePeeMessage) :
-  option (WasmTranslatorState * NinePeeMessage) :=
+Definition execute_wasm_translator (state : WasmTranslatorState) (msg : NinePMessage) :
+  option (WasmTranslatorState * NinePMessage) :=
   if state.(wasm_active) then
     (* 1. Serialize message *)
     let serialized := serialize_message msg in
@@ -147,7 +147,7 @@ Definition heap_monotonic (old_state new_state : WasmTranslatorState) : Prop :=
   new_state.(wasm_heap_ptr) >= old_state.(wasm_heap_ptr).
 
 (* Message integrity: serialization is reversible *)
-Definition message_integrity (msg : NinePeeMessage) : Prop :=
+Definition message_integrity (msg : NinePMessage) : Prop :=
   match deserialize_message (serialize_message msg) with
   | Some msg' => msg.(msg_type) = msg'.(msg_type) /\
                  msg.(msg_fid) = msg'.(msg_fid)

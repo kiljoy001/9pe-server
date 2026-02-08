@@ -115,9 +115,9 @@ impl AutoMountDaemon {
             anyhow::bail!("address cannot be empty");
         }
 
-        // Split off transport type if provided (host:port@transport[#node_id])
-        let (host_port, transport_str) = match trimmed.split_once('@') {
-            Some((hp, transport)) => (hp, Some(transport)),
+        // Split off friendly QUIC name if provided (host:port@name)
+        let (host_port, name_str) = match trimmed.split_once('@') {
+            Some((hp, name)) => (hp, Some(name)),
             None => (trimmed, None),
         };
 
@@ -133,23 +133,21 @@ impl AutoMountDaemon {
             .parse()
             .map_err(|_| anyhow::anyhow!("invalid port value"))?;
 
-        let (transport_name, node_id) = match transport_str {
-            Some(t) => match t.split_once('#') {
-                Some((name, node)) => (name, Some(node)),
-                None => (t, None),
-            },
-            None => ("", None),
-        };
-
-        let transport = match transport_name.to_ascii_lowercase().as_str() {
-            "quic" => TransportType::Quic {
-                server_name: node_id.map(|s| s.to_string()),
-            },
-            "" | "tcp" => TransportType::Tcp,
-            other => {
-                warn!("Unknown transport '{}', defaulting to TCP", other);
-                TransportType::Tcp
+        let transport = match name_str {
+            Some(name) => {
+                let trimmed_name = name.trim();
+                if trimmed_name.is_empty() {
+                    anyhow::bail!("node name cannot be empty");
+                }
+                let lower = trimmed_name.to_ascii_lowercase();
+                if lower == "quic" || lower == "tcp" {
+                    anyhow::bail!("use @<name> for QUIC nodes and omit @ for TCP");
+                }
+                TransportType::Quic {
+                    server_name: Some(trimmed_name.to_string()),
+                }
             }
+            None => TransportType::Tcp,
         };
 
         Ok((host_part.to_string(), port, transport))
@@ -326,6 +324,23 @@ impl AutoMountDaemon {
         }
     }
 
+    /// Register the local server details to be mounted
+    pub async fn register_local_server(&mut self, address: String, port: u16, transport: TransportType) {
+        let mut discovered = self.discovered_servers.write().await;
+        let server_key = format!("{}:{}", address, port);
+        
+        let server = DiscoveredServer {
+            address: address.clone(),
+            port,
+            transport,
+            last_seen: SystemTime::now(),
+            peer_info: Some("local".to_string()),
+        };
+        
+        discovered.insert(server_key, server);
+        info!("Registered local server for auto-mount: {}:{}", address, port);
+    }
+
     /// Discover servers and automatically mount them
     async fn discover_and_mount_servers(
         consensus_coordinator: Option<&Arc<ConsensusCoordinator>>,
@@ -344,8 +359,8 @@ impl AutoMountDaemon {
             }
         }
 
-        // Add local discovery
-        new_servers.extend(Self::get_local_servers());
+        // Note: Local server is now pre-registered via register_local_server, 
+        // so we don't need to add hardcoded ones here.
 
         // Update discovered servers
         {
@@ -402,17 +417,8 @@ impl AutoMountDaemon {
         info!("Consensus node: {}", consensus_state.node_id);
 
         // Fallback to local discovery since the consensus layer doesn't expose network nodes yet
-        warn!("Consensus network discovery not fully implemented, using local discovery");
-        Ok(Self::get_local_servers())
-    }
-
-    /// Get local servers (fallback discovery)
-    fn get_local_servers() -> Vec<(String, u16, TransportType)> {
-        vec![
-            ("127.0.0.1".to_string(), 5640, TransportType::Tcp),
-            ("127.0.0.1".to_string(), 5641, TransportType::Tcp),
-            ("127.0.0.1".to_string(), 5642, TransportType::Tcp),
-        ]
+        warn!("Consensus network discovery not fully implemented");
+        Ok(Vec::new())
     }
 
     /// Mount a discovered server at its individual mount point
@@ -474,33 +480,57 @@ impl AutoMountDaemon {
             .parse()
             .context("Invalid server address")?;
 
-        match transport_type {
-            TransportType::Quic { server_name: Some(node_id) } => {
-                let home = std::env::var("HOME").unwrap_or_else(|_| ".".to_string());
-                let dht_path = std::path::PathBuf::from(&home).join(".9pe/dht");
+        let mut attempts = 0;
+        const MAX_ATTEMPTS: u32 = 60; // 2 minutes total
+        const RETRY_DELAY: Duration = Duration::from_secs(2);
 
-                let identity = Arc::new(SovereignIdentity::generate_with_permissions(
-                    NodePermissions::owner_defaults(),
-                )?);
-                let dht = Arc::new(SovereignDht::new_with_store(identity, dht_path).await?);
-
-                let mut client = QuicClient::new()?;
-                client.connect_with_dht(addr, &node_id, dht).await?;
-                debug!("DHT-pinned QUIC connection successful to {}:{}", address, port);
-                Ok(())
-            }
-            _ => {
-                let transport =
-                    TransportFactory::create(transport_type).context("Failed to create transport")?;
-                match transport.connect(addr).await {
-                    Ok(_connection) => {
-                        debug!("Connection test successful to {}:{}", address, port);
+        loop {
+            attempts += 1;
+            debug!("Attempting connection to {}:{} using {:?}", address, port, transport_type);
+            
+            let result = match transport_type.clone() {
+                TransportType::Quic { server_name: Some(node_name) } => {
+                     // Since identity generation is heavy, we ideally shouldn't do it in a loop,
+                     // but for correctness in this specific context where failure might be due to UDP binding delay,
+                     // we accept the overhead or assume identity gen is fast enough.
+                     // A better approach would be to refactor this function to take pre-generated components, 
+                     // but that requires changing call sites.
+                     
+                     async {
+                        let home = std::env::var("HOME").unwrap_or_else(|_| ".".to_string());
+                        let dht_path = std::path::PathBuf::from(&home).join(".9pe/dht");
+                        let identity = Arc::new(SovereignIdentity::generate_with_permissions(
+                            NodePermissions::owner_defaults(),
+                        )?);
+                        let dht = Arc::new(SovereignDht::new_with_store(identity, dht_path).await?);
+        
+                        let mut client = QuicClient::new()?;
+                        client.connect_with_dht_name(addr, &node_name, dht).await?;
                         Ok(())
+                     }.await
+                }
+                _ => {
+                    let transport =
+                        TransportFactory::create(transport_type.clone()).context("Failed to create transport")?;
+                    match transport.connect(addr).await {
+                        Ok(_) => Ok(()),
+                        Err(e) => Err(anyhow::anyhow!(e)),
                     }
-                    Err(e) => {
-                        error!("Connection test failed: {}", e);
-                        anyhow::bail!("Connection test failed: {}", e)
+                }
+            };
+
+            match result {
+                Ok(_) => {
+                    debug!("Connection test successful to {}:{}", address, port);
+                    return Ok(());
+                }
+                Err(e) => {
+                    if attempts >= MAX_ATTEMPTS {
+                        error!("Connection test failed after {} attempts: {}", attempts, e);
+                        anyhow::bail!("Connection test failed after {} attempts: {}", attempts, e);
                     }
+                    debug!("Connection attempt {}/{} failed: {}. Retrying in {:?}...", attempts, MAX_ATTEMPTS, e, RETRY_DELAY);
+                    tokio::time::sleep(RETRY_DELAY).await;
                 }
             }
         }
@@ -555,6 +585,11 @@ impl Default for AutoMountDaemon {
     fn default() -> Self {
         Self::new()
     }
+}
+
+/// Create auto-mount daemon without starting it
+pub fn create_auto_mount_daemon() -> AutoMountDaemon {
+    AutoMountDaemon::new()
 }
 
 /// Initialize auto-mount system and start daemon
@@ -630,19 +665,14 @@ mod tests {
         assert_eq!(addr, "192.168.1.1");
         assert_eq!(port, 5640);
 
-        let result = AutoMountDaemon::parse_node_address("10.0.0.1:7000@quic");
-        assert!(result.is_ok());
-        let (_, _, transport) = result.unwrap();
-        assert!(matches!(transport, TransportType::Quic { server_name: None }));
-
-        let result = AutoMountDaemon::parse_node_address("10.0.0.2:7001@quic#node-abc");
+        let result = AutoMountDaemon::parse_node_address("10.0.0.2:7001@alpha");
         assert!(result.is_ok());
         let (_, _, transport) = result.unwrap();
         assert!(matches!(
             transport,
             TransportType::Quic {
                 server_name: Some(ref name)
-            } if name == "node-abc"
+            } if name == "alpha"
         ));
     }
 
@@ -653,18 +683,12 @@ mod tests {
 
         let result = AutoMountDaemon::parse_node_address("192.168.1.1:invalid");
         assert!(result.is_err());
-    }
 
-    #[test]
-    fn test_get_local_servers() {
-        let servers = AutoMountDaemon::get_local_servers();
-        assert!(!servers.is_empty(), "Should return local servers");
+        let result = AutoMountDaemon::parse_node_address("10.0.0.1:7000@quic");
+        assert!(result.is_err());
 
-        for (addr, port, transport) in servers {
-            assert!(matches!(transport, TransportType::Tcp));
-            assert!(port > 0);
-            assert!(!addr.is_empty());
-        }
+        let result = AutoMountDaemon::parse_node_address("10.0.0.1:7000@");
+        assert!(result.is_err());
     }
 
     #[tokio::test]

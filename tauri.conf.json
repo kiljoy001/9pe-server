@@ -48,7 +48,7 @@
         "icons/icon.icns",
         "icons/icon.ico"
       ],
-      "identifier": "com.ninepee.server",
+      "identifier": "com.ninep.server",
       "longDescription": "A modern, secure 9P protocol server with enhanced features including P2P discovery, NAT traversal, and Grafana monitoring",
       "macOS": {
         "entitlements": null,

@@ -426,12 +426,29 @@ impl NamespaceManager {
                 .as_secs();
 
             let operations = vec![op];
-            let block_signature = self.sign_namespace_block(&block_id, timestamp, &operations)?;
-
             let data = bincode::serialize(&operations).unwrap();
 
+            // Compute author bytes
+            let author_bytes = {
+                let mut bytes = [0u8; 32];
+                bytes.copy_from_slice(self.system_keypair.verifying_key().as_bytes());
+                bytes
+            };
+
+            // Compute block hash: blake3(timestamp || author || data)
+            let mut hasher = blake3::Hasher::new();
+            hasher.update(&timestamp.to_le_bytes());
+            hasher.update(&author_bytes);
+            hasher.update(&data);
+            let hash_result = hasher.finalize();
+            let mut hash = [0u8; 32];
+            hash.copy_from_slice(hash_result.as_bytes());
+
+            // Sign the hash (this is what consensus validates)
+            let signature = self.system_keypair.sign(&hash);
+
             let block = crate::consensus::GhostdagBlock {
-                hash: [0u8; 32],
+                hash,
                 parent_hashes: vec![],
                 blue_score: 0,
                 red_score: 0,
@@ -439,16 +456,8 @@ impl NamespaceManager {
 
                 timestamp,
                 data,
-                author: {
-                    let mut bytes = [0u8; 32];
-                    bytes.copy_from_slice(self.system_keypair.verifying_key().as_bytes());
-                    bytes
-                },
-                signature: {
-                    let mut bytes = [0u8; 64];
-                    bytes.copy_from_slice(&block_signature);
-                    bytes
-                },
+                author: author_bytes,
+                signature: signature.to_bytes(),
                 pow_nonce: 0,
                 pow_context: 0,
                 pow_difficulty: 0,
@@ -491,6 +500,27 @@ impl NamespaceManager {
             if claims.contains_key(path) {
                 anyhow::bail!("Namespace {} already registered", path);
             }
+        }
+
+        // Kinetic Defense: Verify Proof-of-Work
+        // Hosting is free, but registration requires energy
+        if let Some(consensus) = &self.consensus {
+            let difficulty = consensus.calculate_difficulty().await;
+            
+            // Context is Hash(path + pubkey)
+            let mut hasher = blake3::Hasher::new();
+            hasher.update(path.as_bytes());
+            hasher.update(request.pubkey.as_bytes());
+            let context_hash = hasher.finalize();
+            
+            let mut context_bytes = [0u8; 8];
+            context_bytes.copy_from_slice(&context_hash.as_bytes()[0..8]);
+            let context = u64::from_be_bytes(context_bytes);
+
+            let nonce = request.pow_nonce.unwrap_or(0);
+            
+            consensus.verify_pow(nonce, context, difficulty).await
+                .map_err(|_| anyhow::anyhow!("Kinetic Defense: Invalid Proof-of-Work (Difficulty: {})", difficulty))?;
         }
 
         let participant_requirements = parse_participant_requirements(&request)?;
@@ -630,12 +660,29 @@ impl NamespaceManager {
                 .as_secs();
 
             let operations = vec![op];
-            let block_signature = self.sign_namespace_block(&block_id, timestamp, &operations)?;
-
             let data = bincode::serialize(&operations).unwrap();
 
+            // Compute author bytes
+            let author_bytes = {
+                let mut bytes = [0u8; 32];
+                bytes.copy_from_slice(self.system_keypair.verifying_key().as_bytes());
+                bytes
+            };
+
+            // Compute block hash: blake3(timestamp || author || data)
+            let mut hasher = blake3::Hasher::new();
+            hasher.update(&timestamp.to_le_bytes());
+            hasher.update(&author_bytes);
+            hasher.update(&data);
+            let hash_result = hasher.finalize();
+            let mut hash = [0u8; 32];
+            hash.copy_from_slice(hash_result.as_bytes());
+
+            // Sign the hash (this is what consensus validates)
+            let signature = self.system_keypair.sign(&hash);
+
             let block = crate::consensus::GhostdagBlock {
-                hash: [0u8; 32],
+                hash,
                 parent_hashes: vec![],
                 blue_score: 0,
                 red_score: 0,
@@ -643,16 +690,8 @@ impl NamespaceManager {
 
                 timestamp,
                 data,
-                author: {
-                    let mut bytes = [0u8; 32];
-                    bytes.copy_from_slice(self.system_keypair.verifying_key().as_bytes());
-                    bytes
-                },
-                signature: {
-                    let mut bytes = [0u8; 64];
-                    bytes.copy_from_slice(&block_signature);
-                    bytes
-                },
+                author: author_bytes,
+                signature: signature.to_bytes(),
                 pow_nonce: 0,
                 pow_context: 0,
                 pow_difficulty: 0,
@@ -1167,22 +1206,6 @@ impl NamespaceManager {
         }
     }
 
-    fn sign_namespace_block(
-        &self,
-        block_id: &str,
-        timestamp: u64,
-        operations: &[NamespaceOp],
-    ) -> Result<Vec<u8>> {
-        let mut payload = Vec::new();
-        payload.extend_from_slice(block_id.as_bytes());
-        payload.extend_from_slice(&timestamp.to_le_bytes());
-
-        let serialized_ops = bincode::serialize(operations)
-            .context("Failed to serialize namespace operations for signature")?;
-        payload.extend_from_slice(&serialized_ops);
-
-        Ok(self.system_keypair.sign(&payload).to_bytes().to_vec())
-    }
 }
 
 // ============================================================================
@@ -1214,6 +1237,8 @@ struct RegisterNamespaceRequest {
     index_file: Option<String>,
     #[serde(default)]
     cors_policy: Option<String>,
+    #[serde(default)]
+    pow_nonce: Option<u64>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -1229,7 +1254,7 @@ struct RegisterNamespaceHandler {
 
 impl ControlHandler for RegisterNamespaceHandler {
     fn read(&self) -> Result<Vec<u8>> {
-        Ok(b"Write JSON with fields: path, description, type, pubkey, signature\n".to_vec())
+        Ok(b"Write JSON with fields: path, description, type, pubkey, signature, pow_nonce\n".to_vec())
     }
 
     fn write(&self, data: &[u8]) -> Result<()> {

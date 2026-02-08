@@ -1,0 +1,729 @@
+DIGEST ad50897f03e6e67ba6c4193342f5038c
+FNineP_complete_verification
+R140:153 Coq.Lists.List <> <> lib
+R171:185 Coq.Arith.Arith <> <> lib
+R203:215 Coq.Bool.Bool <> <> lib
+R233:250 Coq.Strings.String <> <> lib
+R268:301 Coq.Logic.FunctionalExtensionality <> <> lib
+R319:341 Coq.Sorting.Permutation <> <> lib
+R359:361 Coq.micromega.Lia <> <> lib
+R371:383 Coq.Lists.List ListNotations <> mod
+ind 645:662 <> NineP_MessageType
+constr 697:704 <> Tversion
+constr 708:715 <> Rversion
+constr 721:725 <> Tauth
+constr 729:733 <> Rauth
+constr 739:745 <> Tattach
+constr 749:755 <> Rattach
+constr 761:766 <> Tflush
+constr 770:775 <> Rflush
+constr 781:785 <> Twalk
+constr 789:793 <> Rwalk
+constr 799:803 <> Topen
+constr 807:811 <> Ropen
+constr 817:823 <> Tcreate
+constr 827:833 <> Rcreate
+constr 839:843 <> Tread
+constr 847:851 <> Rread
+constr 857:862 <> Twrite
+constr 866:871 <> Rwrite
+constr 877:882 <> Tclunk
+constr 886:891 <> Rclunk
+constr 897:903 <> Tremove
+constr 907:913 <> Rremove
+constr 919:923 <> Tstat
+constr 927:931 <> Rstat
+constr 937:942 <> Twstat
+constr 946:951 <> Rwstat
+constr 981:987 <> Tstream
+constr 991:997 <> Rstream
+constr 1030:1039 <> Tmultiplex
+constr 1043:1052 <> Rmultiplex
+constr 1085:1094 <> Tsynthetic
+constr 1098:1107 <> Rsynthetic
+constr 1138:1148 <> Ttranslator
+constr 1152:1162 <> Rtranslator
+constr 1196:1206 <> Tcapability
+constr 1210:1220 <> Rcapability
+constr 1255:1264 <> Tconsensus
+constr 1268:1277 <> Rconsensus
+constr 1309:1318 <> Tnamespace
+constr 1322:1331 <> Rnamespace
+scheme 645:662 <> NineP_MessageType_rect
+scheme 645:662 <> NineP_MessageType_ind
+scheme 645:662 <> NineP_MessageType_rec
+scheme 645:662 <> NineP_MessageType_sind
+rec 1429:1447 <> NineP_ReadResponse
+proj 1463:1475 <> read_resp_fid
+proj 1486:1501 <> read_resp_offset
+proj 1512:1526 <> read_resp_count
+proj 1537:1553 <> read_resp_payload
+R1479:1481 Coq.Init.Datatypes <> nat ind
+R1505:1507 Coq.Init.Datatypes <> nat ind
+R1530:1532 Coq.Init.Datatypes <> nat ind
+R1557:1560 Coq.Init.Datatypes <> list ind
+R1562:1564 Coq.Init.Datatypes <> nat ind
+rec 1577:1595 <> NineP_StatResponse
+proj 1611:1623 <> stat_resp_fid
+proj 1634:1650 <> stat_resp_payload
+R1627:1629 Coq.Init.Datatypes <> nat ind
+R1654:1657 Coq.Init.Datatypes <> list ind
+R1659:1661 Coq.Init.Datatypes <> nat ind
+def 1749:1773 <> read_response_well_formed
+R1783:1801 NineP_complete_verification <> NineP_ReadResponse rec
+binder 1776:1779 <> resp:11
+R1852:1855 Coq.Init.Peano <> ::nat_scope:x_'<='_x not
+R1816:1826 Coq.Lists.List <> length abbrev
+R1834:1850 NineP_complete_verification <> read_resp_payload proj
+R1828:1831 NineP_complete_verification <> resp:11 var
+R1862:1876 NineP_complete_verification <> read_resp_count proj
+R1856:1859 NineP_complete_verification <> resp:11 var
+def 1892:1916 <> stat_response_well_formed
+R1926:1944 NineP_complete_verification <> NineP_StatResponse rec
+binder 1919:1922 <> resp:12
+R1995:1998 Coq.Init.Peano <> ::nat_scope:x_'>='_x not
+R1959:1969 Coq.Lists.List <> length abbrev
+R1977:1993 NineP_complete_verification <> stat_resp_payload proj
+R1971:1974 NineP_complete_verification <> resp:12 var
+prf 2009:2036 <> read_response_padding_exists
+binder 2049:2052 <> resp:13
+R2089:2096 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2059:2083 NineP_complete_verification <> read_response_well_formed def
+R2085:2088 NineP_complete_verification <> resp:13 var
+R2097:2103 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+R2109:2116 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+binder 2104:2108 <> slack:14
+R2161:2163 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R2122:2124 Coq.Init.Peano <> ::nat_scope:x_'+'_x not
+R2117:2121 NineP_complete_verification <> slack:14 var
+R2125:2135 Coq.Lists.List <> length abbrev
+R2143:2159 NineP_complete_verification <> read_resp_payload proj
+R2137:2140 NineP_complete_verification <> resp:13 var
+R2170:2184 NineP_complete_verification <> read_resp_count proj
+R2164:2167 NineP_complete_verification <> resp:13 var
+R2221:2245 NineP_complete_verification <> read_response_well_formed def
+R2285:2287 Coq.Init.Peano <> ::nat_scope:x_'-'_x not
+R2269:2283 NineP_complete_verification <> read_resp_count proj
+R2288:2298 Coq.Lists.List <> length abbrev
+R2306:2322 NineP_complete_verification <> read_resp_payload proj
+R2285:2287 Coq.Init.Peano <> ::nat_scope:x_'-'_x not
+R2269:2283 NineP_complete_verification <> read_resp_count proj
+R2288:2298 Coq.Lists.List <> length abbrev
+R2306:2322 NineP_complete_verification <> read_resp_payload proj
+prf 2346:2375 <> stat_response_payload_nonempty
+binder 2388:2391 <> resp:15
+R2428:2435 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2398:2422 NineP_complete_verification <> stat_response_well_formed def
+R2424:2427 NineP_complete_verification <> resp:15 var
+R2472:2474 Coq.Init.Peano <> ::nat_scope:x_'>'_x not
+R2436:2446 Coq.Lists.List <> length abbrev
+R2454:2470 NineP_complete_verification <> stat_resp_payload proj
+R2448:2451 NineP_complete_verification <> resp:15 var
+R2511:2535 NineP_complete_verification <> stat_response_well_formed def
+rec 2589:2594 <> FileID
+proj 2610:2617 <> fid_path
+proj 2628:2638 <> fid_version
+proj 2649:2656 <> fid_type
+R2621:2623 Coq.Init.Datatypes <> nat ind
+R2642:2644 Coq.Init.Datatypes <> nat ind
+R2660:2662 Coq.Init.Datatypes <> nat ind
+rec 2711:2720 <> Capability
+proj 2736:2745 <> cap_issuer
+proj 2783:2793 <> cap_subject
+proj 2833:2844 <> cap_resource
+proj 2880:2894 <> cap_permissions
+proj 2948:2962 <> cap_valid_until
+proj 2998:3010 <> cap_signature
+R2749:2751 Coq.Init.Datatypes <> nat ind
+R2797:2799 Coq.Init.Datatypes <> nat ind
+R2848:2853 Coq.Strings.String <> string ind
+R2898:2901 Coq.Init.Datatypes <> list ind
+R2903:2905 Coq.Init.Datatypes <> nat ind
+R2966:2968 Coq.Init.Datatypes <> nat ind
+R3014:3017 Coq.Init.Datatypes <> list ind
+R3019:3021 Coq.Init.Datatypes <> nat ind
+rec 3086:3095 <> Translator
+proj 3111:3118 <> trans_id
+proj 3129:3138 <> trans_type
+proj 3195:3207 <> trans_program
+proj 3248:3263 <> trans_capability
+proj 3281:3295 <> trans_isolation
+proj 3339:3356 <> trans_memory_limit
+proj 3367:3381 <> trans_cpu_limit
+R3122:3124 Coq.Init.Datatypes <> nat ind
+R3142:3147 Coq.Strings.String <> string ind
+R3211:3214 Coq.Init.Datatypes <> list ind
+R3216:3218 Coq.Init.Datatypes <> nat ind
+R3267:3276 NineP_complete_verification <> Capability rec
+R3299:3301 Coq.Init.Datatypes <> nat ind
+R3360:3362 Coq.Init.Datatypes <> nat ind
+R3385:3387 Coq.Init.Datatypes <> nat ind
+rec 3431:3443 <> SyntheticFile
+proj 3459:3468 <> synth_path
+proj 3482:3496 <> synth_generator
+proj 3557:3574 <> synth_refresh_rate
+proj 3629:3640 <> synth_stream
+proj 3693:3707 <> synth_consensus
+R3472:3477 Coq.Strings.String <> string ind
+R3503:3506 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R3500:3502 Coq.Init.Datatypes <> nat ind
+R3507:3510 Coq.Init.Datatypes <> list ind
+R3512:3514 Coq.Init.Datatypes <> nat ind
+R3578:3580 Coq.Init.Datatypes <> nat ind
+R3644:3647 Coq.Init.Datatypes <> bool ind
+R3711:3714 Coq.Init.Datatypes <> bool ind
+rec 3788:3801 <> NamespaceEntry
+proj 3817:3823 <> ns_path
+proj 3837:3845 <> ns_target
+proj 3885:3897 <> ns_translator
+proj 3922:3934 <> ns_capability
+proj 3952:3963 <> ns_synthetic
+R3827:3832 Coq.Strings.String <> string ind
+R3849:3854 Coq.Strings.String <> string ind
+R3901:3906 Coq.Init.Datatypes <> option ind
+R3908:3917 NineP_complete_verification <> Translator rec
+R3938:3947 NineP_complete_verification <> Capability rec
+R3967:3972 Coq.Init.Datatypes <> option ind
+R3974:3986 NineP_complete_verification <> SyntheticFile rec
+rec 4022:4036 <> ConnectionState
+proj 4052:4058 <> conn_id
+proj 4069:4086 <> conn_authenticated
+proj 4098:4114 <> conn_capabilities
+proj 4137:4150 <> conn_namespace
+proj 4177:4192 <> conn_translators
+proj 4215:4234 <> conn_synthetic_files
+proj 4260:4278 <> conn_consensus_node
+proj 4330:4347 <> conn_channel_count
+R4062:4064 Coq.Init.Datatypes <> nat ind
+R4090:4093 Coq.Init.Datatypes <> bool ind
+R4118:4121 Coq.Init.Datatypes <> list ind
+R4123:4132 NineP_complete_verification <> Capability rec
+R4154:4157 Coq.Init.Datatypes <> list ind
+R4159:4172 NineP_complete_verification <> NamespaceEntry rec
+R4196:4199 Coq.Init.Datatypes <> list ind
+R4201:4210 NineP_complete_verification <> Translator rec
+R4238:4241 Coq.Init.Datatypes <> list ind
+R4243:4255 NineP_complete_verification <> SyntheticFile rec
+R4282:4285 Coq.Init.Datatypes <> bool ind
+R4351:4353 Coq.Init.Datatypes <> nat ind
+def 4637:4652 <> capability_valid
+R4661:4670 NineP_complete_verification <> Capability rec
+binder 4655:4657 <> cap:56
+R4689:4691 Coq.Init.Datatypes <> nat ind
+binder 4674:4685 <> current_time:57
+R4696:4699 Coq.Init.Datatypes <> bool ind
+R4706:4712 Coq.Arith.PeanoNat Nat leb def
+R4714:4725 NineP_complete_verification <> current_time:57 var
+R4732:4746 NineP_complete_verification <> cap_valid_until proj
+R4727:4729 NineP_complete_verification <> cap:56 var
+def 4796:4812 <> capability_allows
+R4821:4830 NineP_complete_verification <> Capability rec
+binder 4815:4817 <> cap:58
+R4845:4850 Coq.Strings.String <> string ind
+binder 4834:4841 <> resource:59
+R4861:4863 Coq.Init.Datatypes <> nat ind
+binder 4854:4857 <> perm:60
+R4868:4871 Coq.Init.Datatypes <> bool ind
+R4878:4881 Coq.Init.Datatypes <> andb def
+R4932:4938 Coq.Lists.List <> existsb def
+R4960:4974 NineP_complete_verification <> cap_permissions proj
+R4955:4957 NineP_complete_verification <> cap:58 var
+R4941:4947 Coq.Arith.PeanoNat Nat eqb def
+R4949:4952 NineP_complete_verification <> perm:60 var
+R4884:4893 Coq.Strings.String <> eqb def
+R4900:4911 NineP_complete_verification <> cap_resource proj
+R4895:4897 NineP_complete_verification <> cap:58 var
+R4914:4921 NineP_complete_verification <> resource:59 var
+def 5032:5045 <> has_capability
+R5055:5069 NineP_complete_verification <> ConnectionState rec
+binder 5048:5051 <> conn:61
+R5084:5089 Coq.Strings.String <> string ind
+binder 5073:5080 <> resource:62
+R5100:5102 Coq.Init.Datatypes <> nat ind
+binder 5093:5096 <> perm:63
+R5107:5110 Coq.Init.Datatypes <> bool ind
+R5117:5123 Coq.Lists.List <> existsb def
+R5180:5196 NineP_complete_verification <> conn_capabilities proj
+R5174:5177 NineP_complete_verification <> conn:61 var
+binder 5130:5132 <> cap:64
+R5137:5153 NineP_complete_verification <> capability_allows def
+R5155:5157 NineP_complete_verification <> cap:64 var
+R5159:5166 NineP_complete_verification <> resource:62 var
+R5168:5171 NineP_complete_verification <> perm:63 var
+def 5242:5261 <> translator_sandboxed
+R5272:5281 NineP_complete_verification <> Translator rec
+binder 5264:5268 <> trans:65
+R5323:5328 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R5319:5321 Coq.Init.Peano <> ::nat_scope:x_'>'_x not
+R5303:5317 NineP_complete_verification <> trans_isolation proj
+R5296:5300 NineP_complete_verification <> trans:65 var
+R5359:5364 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R5355:5357 Coq.Init.Peano <> ::nat_scope:x_'>'_x not
+R5336:5353 NineP_complete_verification <> trans_memory_limit proj
+R5329:5333 NineP_complete_verification <> trans:65 var
+R5388:5390 Coq.Init.Peano <> ::nat_scope:x_'>'_x not
+R5372:5386 NineP_complete_verification <> trans_cpu_limit proj
+R5365:5369 NineP_complete_verification <> trans:65 var
+def 5432:5449 <> namespace_isolated
+R5462:5465 Coq.Init.Datatypes <> list ind
+R5467:5480 NineP_complete_verification <> NamespaceEntry rec
+binder 5452:5454 <> ns1:66
+binder 5456:5458 <> ns2:67
+binder 5502:5503 <> e1:68
+binder 5505:5506 <> e2:69
+R5518:5521 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R5509:5510 Coq.Lists.List <> In def
+R5515:5517 NineP_complete_verification <> ns1:66 var
+R5512:5513 NineP_complete_verification <> e1:68 var
+R5531:5538 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R5522:5523 Coq.Lists.List <> In def
+R5528:5530 NineP_complete_verification <> ns2:67 var
+R5525:5526 NineP_complete_verification <> e2:69 var
+R5567:5574 Coq.Init.Logic <> ::type_scope:x_'\/'_x not
+R5551:5554 Coq.Init.Logic <> ::type_scope:x_'<>'_x not
+R5543:5549 NineP_complete_verification <> ns_path proj
+R5539:5540 NineP_complete_verification <> e1:68 var
+R5559:5565 NineP_complete_verification <> ns_path proj
+R5555:5556 NineP_complete_verification <> e2:69 var
+R5593:5596 Coq.Init.Logic <> ::type_scope:x_'<>'_x not
+R5579:5591 NineP_complete_verification <> ns_capability proj
+R5575:5576 NineP_complete_verification <> e1:68 var
+R5601:5613 NineP_complete_verification <> ns_capability proj
+R5597:5598 NineP_complete_verification <> e2:69 var
+def 5855:5872 <> preserves_ordering
+R5882:5885 Coq.Init.Datatypes <> list ind
+R5887:5904 NineP_complete_verification <> NineP_MessageType ind
+binder 5875:5878 <> msgs:70
+binder 5926:5926 <> i:71
+binder 5928:5928 <> j:72
+R5955:5962 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R5932:5934 Coq.Init.Peano <> ::nat_scope:x_'<'_x_'<'_x not
+R5936:5938 Coq.Init.Peano <> ::nat_scope:x_'<'_x_'<'_x not
+R5931:5931 NineP_complete_verification <> i:71 var
+R5935:5935 NineP_complete_verification <> j:72 var
+R5935:5935 NineP_complete_verification <> j:72 var
+R5939:5949 Coq.Lists.List <> length abbrev
+R5951:5954 NineP_complete_verification <> msgs:70 var
+R5963:5969 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+R5981:5982 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+binder 5970:5974 <> msg_i:73
+binder 5976:5980 <> msg_j:74
+R6012:6038 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R5999:6001 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R5983:5991 Coq.Lists.List <> nth_error def
+R5998:5998 NineP_complete_verification <> i:71 var
+R5993:5996 NineP_complete_verification <> msgs:70 var
+R6002:6005 Coq.Init.Datatypes <> Some constr
+R6007:6011 NineP_complete_verification <> msg_i:73 var
+R6055:6057 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R6039:6047 Coq.Lists.List <> nth_error def
+R6054:6054 NineP_complete_verification <> j:72 var
+R6049:6052 NineP_complete_verification <> msgs:70 var
+R6058:6061 Coq.Init.Datatypes <> Some constr
+R6063:6067 NineP_complete_verification <> msg_j:74 var
+def 6117:6134 <> async_non_blocking
+R6160:6177 NineP_complete_verification <> NineP_MessageType ind
+binder 6155:6156 <> op:75
+R6215:6222 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R6196:6199 Coq.Init.Logic <> ::type_scope:x_'\/'_x not
+R6186:6188 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R6184:6185 NineP_complete_verification <> op:75 var
+R6189:6195 NineP_complete_verification <> Tstream constr
+R6202:6204 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R6200:6201 NineP_complete_verification <> op:75 var
+R6205:6214 NineP_complete_verification <> Tmultiplex constr
+R6223:6226 Coq.Init.Logic <> True ind
+def 6331:6349 <> multiplex_isolation
+R6359:6373 NineP_complete_verification <> ConnectionState rec
+binder 6352:6355 <> conn:76
+R6417:6422 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R6413:6415 Coq.Init.Peano <> ::nat_scope:x_'>'_x not
+R6394:6411 NineP_complete_verification <> conn_channel_count proj
+R6388:6391 NineP_complete_verification <> conn:76 var
+R6423:6426 Coq.Init.Logic <> True ind
+def 6718:6741 <> translator_deterministic
+R6752:6761 NineP_complete_verification <> Translator rec
+binder 6744:6748 <> trans:77
+R6791:6794 Coq.Init.Datatypes <> list ind
+R6796:6798 Coq.Init.Datatypes <> nat ind
+binder 6783:6787 <> input:78
+R6805:6811 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+R6829:6836 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+R6821:6824 Coq.Init.Datatypes <> list ind
+R6826:6828 Coq.Init.Datatypes <> nat ind
+binder 6812:6817 <> output:79
+R6837:6840 Coq.Init.Logic <> True ind
+def 6934:6951 <> translator_bounded
+R6962:6971 NineP_complete_verification <> Translator rec
+binder 6954:6958 <> trans:80
+R7023:7042 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R7012:7015 Coq.Init.Peano <> ::nat_scope:x_'<='_x not
+R6993:7010 NineP_complete_verification <> trans_memory_limit proj
+R6986:6990 NineP_complete_verification <> trans:80 var
+R7066:7069 Coq.Init.Peano <> ::nat_scope:x_'<='_x not
+R7050:7064 NineP_complete_verification <> trans_cpu_limit proj
+R7043:7047 NineP_complete_verification <> trans:80 var
+def 7153:7179 <> translator_composition_safe
+R7190:7199 NineP_complete_verification <> Translator rec
+binder 7182:7183 <> t1:81
+binder 7185:7186 <> t2:82
+R7266:7271 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R7237:7242 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R7214:7233 NineP_complete_verification <> translator_sandboxed def
+R7235:7236 NineP_complete_verification <> t1:81 var
+R7243:7262 NineP_complete_verification <> translator_sandboxed def
+R7264:7265 NineP_complete_verification <> t2:82 var
+R7272:7291 NineP_complete_verification <> translator_sandboxed def
+R7293:7294 NineP_complete_verification <> t1:81 var
+def 7590:7606 <> synthetic_bounded
+R7617:7629 NineP_complete_verification <> SyntheticFile rec
+binder 7609:7613 <> synth:83
+R7659:7661 Coq.Init.Datatypes <> nat ind
+binder 7651:7655 <> input:84
+R7711:7714 Coq.Init.Peano <> ::nat_scope:x_'<='_x not
+R7668:7678 Coq.Lists.List <> length abbrev
+R7688:7702 NineP_complete_verification <> synth_generator proj
+R7681:7685 NineP_complete_verification <> synth:83 var
+R7705:7709 NineP_complete_verification <> input:84 var
+def 7794:7813 <> synthetic_consistent
+R7824:7836 NineP_complete_verification <> SyntheticFile rec
+binder 7816:7820 <> synth:85
+R7881:7886 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R7874:7876 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R7858:7872 NineP_complete_verification <> synth_consensus proj
+R7851:7855 NineP_complete_verification <> synth:85 var
+R7877:7880 Coq.Init.Datatypes <> true constr
+R7887:7890 Coq.Init.Logic <> True ind
+def 7985:8006 <> stream_no_accumulation
+R8017:8029 NineP_complete_verification <> SyntheticFile rec
+binder 8009:8013 <> synth:86
+R8071:8076 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R8064:8066 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R8051:8062 NineP_complete_verification <> synth_stream proj
+R8044:8048 NineP_complete_verification <> synth:86 var
+R8067:8070 Coq.Init.Datatypes <> true constr
+R8077:8080 Coq.Init.Logic <> True ind
+def 8355:8372 <> requires_consensus
+R8381:8398 NineP_complete_verification <> NineP_MessageType ind
+binder 8375:8377 <> msg:87
+R8403:8406 Coq.Init.Datatypes <> bool ind
+R8419:8421 NineP_complete_verification <> msg:87 var
+R8432:8441 NineP_complete_verification <> Tconsensus constr
+R8446:8449 Coq.Init.Datatypes <> true constr
+R8455:8460 NineP_complete_verification <> Twrite constr
+R8465:8468 Coq.Init.Datatypes <> true constr
+R8513:8519 NineP_complete_verification <> Tcreate constr
+R8524:8527 Coq.Init.Datatypes <> true constr
+R8573:8579 NineP_complete_verification <> Tremove constr
+R8584:8587 Coq.Init.Datatypes <> true constr
+R8633:8637 Coq.Init.Datatypes <> false constr
+ax 8689:8709 <> consensus_consistency
+R8732:8749 NineP_complete_verification <> NineP_MessageType ind
+binder 8722:8724 <> op1:89
+binder 8726:8728 <> op2:90
+R8785:8792 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R8778:8780 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R8756:8773 NineP_complete_verification <> requires_consensus def
+R8775:8777 NineP_complete_verification <> op1:89 var
+R8781:8784 Coq.Init.Datatypes <> true constr
+R8822:8829 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R8815:8817 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R8793:8810 NineP_complete_verification <> requires_consensus def
+R8812:8814 NineP_complete_verification <> op2:90 var
+R8818:8821 Coq.Init.Datatypes <> true constr
+R8830:8833 Coq.Init.Logic <> True ind
+ax 8918:8950 <> system_enforces_reasonable_limits
+R8971:8980 NineP_complete_verification <> Translator rec
+binder 8963:8967 <> trans:93
+R9014:9021 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R9010:9012 Coq.Init.Peano <> ::nat_scope:x_'>'_x not
+R8994:9008 NineP_complete_verification <> trans_isolation proj
+R8987:8991 NineP_complete_verification <> trans:93 var
+R9059:9066 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R9048:9051 Coq.Init.Peano <> ::nat_scope:x_'<='_x not
+R9029:9046 NineP_complete_verification <> trans_memory_limit proj
+R9022:9026 NineP_complete_verification <> trans:93 var
+R9090:9093 Coq.Init.Peano <> ::nat_scope:x_'<='_x not
+R9074:9088 NineP_complete_verification <> trans_cpu_limit proj
+R9067:9071 NineP_complete_verification <> trans:93 var
+ax 9110:9140 <> capability_validation_invariant
+binder 9153:9155 <> cap:96
+binder 9157:9160 <> conn:97
+R9198:9205 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R9167:9168 Coq.Lists.List <> In def
+R9180:9196 NineP_complete_verification <> conn_capabilities proj
+R9174:9177 NineP_complete_verification <> conn:97 var
+R9170:9172 NineP_complete_verification <> cap:96 var
+R9237:9240 Coq.Init.Peano <> ::nat_scope:x_'>='_x not
+R9206:9216 Coq.Lists.List <> length abbrev
+R9223:9235 NineP_complete_verification <> cap_signature proj
+R9218:9220 NineP_complete_verification <> cap:96 var
+ax 9290:9311 <> namespace_disjointness
+binder 9324:9326 <> ns1:100
+binder 9328:9330 <> ns2:101
+binder 9332:9334 <> ns3:102
+binder 9336:9337 <> e1:103
+binder 9339:9340 <> e3:104
+R9373:9380 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R9347:9364 NineP_complete_verification <> namespace_isolated def
+R9366:9368 NineP_complete_verification <> ns1:100 var
+R9370:9372 NineP_complete_verification <> ns2:101 var
+R9407:9414 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R9381:9398 NineP_complete_verification <> namespace_isolated def
+R9400:9402 NineP_complete_verification <> ns2:101 var
+R9404:9406 NineP_complete_verification <> ns3:102 var
+R9424:9427 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R9415:9416 Coq.Lists.List <> In def
+R9421:9423 NineP_complete_verification <> ns1:100 var
+R9418:9419 NineP_complete_verification <> e1:103 var
+R9437:9444 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R9428:9429 Coq.Lists.List <> In def
+R9434:9436 NineP_complete_verification <> ns3:102 var
+R9431:9432 NineP_complete_verification <> e3:104 var
+R9472:9479 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R9457:9459 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R9449:9455 NineP_complete_verification <> ns_path proj
+R9445:9446 NineP_complete_verification <> e1:103 var
+R9464:9470 NineP_complete_verification <> ns_path proj
+R9460:9461 NineP_complete_verification <> e3:104 var
+R9498:9501 Coq.Init.Logic <> ::type_scope:x_'<>'_x not
+R9484:9496 NineP_complete_verification <> ns_capability proj
+R9480:9481 NineP_complete_verification <> e1:103 var
+R9506:9518 NineP_complete_verification <> ns_capability proj
+R9502:9503 NineP_complete_verification <> e3:104 var
+prf 9828:9861 <> capability_complete_access_control
+binder 9874:9877 <> conn:107
+binder 9879:9886 <> resource:108
+binder 9888:9891 <> perm:109
+R9939:9973 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R9931:9933 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R9898:9911 NineP_complete_verification <> has_capability def
+R9913:9916 NineP_complete_verification <> conn:107 var
+R9918:9925 NineP_complete_verification <> resource:108 var
+R9927:9930 NineP_complete_verification <> perm:109 var
+R9934:9938 Coq.Init.Datatypes <> false constr
+R9974:9977 Coq.Init.Logic <> True ind
+prf 10147:10172 <> translator_resource_safety
+binder 10185:10189 <> trans:110
+R10222:10229 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R10196:10215 NineP_complete_verification <> translator_sandboxed def
+R10217:10221 NineP_complete_verification <> trans:110 var
+R10254:10312 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R10230:10247 NineP_complete_verification <> translator_bounded def
+R10249:10253 NineP_complete_verification <> trans:110 var
+R10339:10342 Coq.Init.Peano <> ::nat_scope:x_'<='_x not
+R10320:10337 NineP_complete_verification <> trans_memory_limit proj
+R10313:10317 NineP_complete_verification <> trans:110 var
+R10406:10423 NineP_complete_verification <> translator_bounded def
+prf 10558:10587 <> namespace_isolation_transitive
+binder 10600:10602 <> ns1:111
+binder 10604:10606 <> ns2:112
+binder 10608:10610 <> ns3:113
+R10643:10650 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R10617:10634 NineP_complete_verification <> namespace_isolated def
+R10636:10638 NineP_complete_verification <> ns1:111 var
+R10640:10642 NineP_complete_verification <> ns2:112 var
+R10677:10684 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R10651:10668 NineP_complete_verification <> namespace_isolated def
+R10670:10672 NineP_complete_verification <> ns2:112 var
+R10674:10676 NineP_complete_verification <> ns3:113 var
+R10685:10702 NineP_complete_verification <> namespace_isolated def
+R10704:10706 NineP_complete_verification <> ns1:111 var
+R10708:10710 NineP_complete_verification <> ns3:113 var
+R10759:10776 NineP_complete_verification <> namespace_isolated def
+R11183:11199 Coq.Strings.String <> string_dec def
+R11205:11211 NineP_complete_verification <> ns_path proj
+R11218:11224 NineP_complete_verification <> ns_path proj
+R11183:11199 Coq.Strings.String <> string_dec def
+R11205:11211 NineP_complete_verification <> ns_path proj
+R11218:11224 NineP_complete_verification <> ns_path proj
+R11368:11389 NineP_complete_verification <> namespace_disjointness prfax
+R11368:11389 NineP_complete_verification <> namespace_disjointness prfax
+prf 11550:11572 <> synthetic_memory_safety
+binder 11585:11589 <> synth:114
+binder 11591:11595 <> input:115
+R11625:11632 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R11602:11618 NineP_complete_verification <> synthetic_bounded def
+R11620:11624 NineP_complete_verification <> synth:114 var
+R11676:11679 Coq.Init.Peano <> ::nat_scope:x_'<='_x not
+R11633:11643 Coq.Lists.List <> length abbrev
+R11653:11667 NineP_complete_verification <> synth_generator proj
+R11646:11650 NineP_complete_verification <> synth:114 var
+R11670:11674 NineP_complete_verification <> input:115 var
+R11737:11753 NineP_complete_verification <> synthetic_bounded def
+prf 11855:11884 <> protocol_ordering_preservation
+binder 11897:11900 <> msgs:116
+R11930:11937 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R11907:11924 NineP_complete_verification <> preserves_ordering def
+R11926:11929 NineP_complete_verification <> msgs:116 var
+binder 11945:11945 <> i:117
+binder 11947:11947 <> j:118
+R11974:12031 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R11951:11953 Coq.Init.Peano <> ::nat_scope:x_'<'_x_'<'_x not
+R11955:11957 Coq.Init.Peano <> ::nat_scope:x_'<'_x_'<'_x not
+R11950:11950 NineP_complete_verification <> i:117 var
+R11954:11954 NineP_complete_verification <> j:118 var
+R11954:11954 NineP_complete_verification <> j:118 var
+R11958:11968 Coq.Lists.List <> length abbrev
+R11970:11973 NineP_complete_verification <> msgs:116 var
+R12032:12035 Coq.Init.Logic <> True ind
+R12086:12103 NineP_complete_verification <> preserves_ordering def
+prf 12259:12282 <> async_truly_non_blocking
+binder 12295:12296 <> op:119
+R12334:12341 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R12315:12318 Coq.Init.Logic <> ::type_scope:x_'\/'_x not
+R12305:12307 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R12303:12304 NineP_complete_verification <> op:119 var
+R12308:12314 NineP_complete_verification <> Tstream constr
+R12321:12323 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R12319:12320 NineP_complete_verification <> op:119 var
+R12324:12333 NineP_complete_verification <> Tmultiplex constr
+R12342:12359 NineP_complete_verification <> async_non_blocking def
+R12399:12416 NineP_complete_verification <> async_non_blocking def
+prf 12521:12559 <> translator_composition_preserves_safety
+binder 12572:12573 <> t1:120
+binder 12575:12576 <> t2:121
+R12606:12613 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R12583:12602 NineP_complete_verification <> translator_sandboxed def
+R12604:12605 NineP_complete_verification <> t1:120 var
+R12637:12644 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R12614:12633 NineP_complete_verification <> translator_sandboxed def
+R12635:12636 NineP_complete_verification <> t2:121 var
+R12645:12671 NineP_complete_verification <> translator_composition_safe def
+R12673:12674 NineP_complete_verification <> t1:120 var
+R12676:12677 NineP_complete_verification <> t2:121 var
+R12722:12748 NineP_complete_verification <> translator_composition_safe def
+prf 12851:12872 <> consensus_linearizable
+R12891:12894 Coq.Init.Datatypes <> list ind
+R12896:12913 NineP_complete_verification <> NineP_MessageType ind
+binder 12885:12887 <> ops:122
+R12971:13048 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R12920:12925 Coq.Lists.List <> Forall ind
+R12968:12970 NineP_complete_verification <> ops:122 var
+binder 12932:12933 <> op:123
+R12959:12961 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R12938:12955 NineP_complete_verification <> requires_consensus def
+R12957:12958 NineP_complete_verification <> op:123 var
+R12962:12965 Coq.Init.Datatypes <> true constr
+R13049:13055 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+R13094:13101 Coq.Init.Logic <> ::type_scope:'exists'_x_'..'_x_','_x not
+R13071:13074 Coq.Init.Datatypes <> list ind
+R13076:13093 NineP_complete_verification <> NineP_MessageType ind
+binder 13056:13067 <> linear_order:124
+R13102:13112 Coq.Sorting.Permutation <> Permutation ind
+R13118:13129 NineP_complete_verification <> linear_order:124 var
+R13114:13116 NineP_complete_verification <> ops:122 var
+R13242:13257 Coq.Sorting.Permutation <> Permutation_refl thm
+R13242:13257 Coq.Sorting.Permutation <> Permutation_refl thm
+prf 13321:13342 <> capability_unforgeable
+binder 13355:13357 <> cap:125
+binder 13359:13362 <> conn:126
+R13400:13448 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R13369:13370 Coq.Lists.List <> In def
+R13382:13398 NineP_complete_verification <> conn_capabilities proj
+R13376:13379 NineP_complete_verification <> conn:126 var
+R13372:13374 NineP_complete_verification <> cap:125 var
+R13480:13482 Coq.Init.Peano <> ::nat_scope:x_'>'_x not
+R13449:13459 Coq.Lists.List <> length abbrev
+R13466:13478 NineP_complete_verification <> cap_signature proj
+R13461:13463 NineP_complete_verification <> cap:125 var
+R13607:13637 NineP_complete_verification <> capability_validation_invariant prfax
+R13607:13637 NineP_complete_verification <> capability_validation_invariant prfax
+R13735:13749 Coq.Arith.PeanoNat Nat lt_le_trans thm
+R13757:13767 Coq.Lists.List <> length abbrev
+R13774:13786 NineP_complete_verification <> cap_signature proj
+R13735:13749 Coq.Arith.PeanoNat Nat lt_le_trans thm
+R13757:13767 Coq.Lists.List <> length abbrev
+R13774:13786 NineP_complete_verification <> cap_signature proj
+R13819:13831 Coq.Arith.PeanoNat Nat lt_0_succ thm
+R13819:13831 Coq.Arith.PeanoNat Nat lt_0_succ thm
+prf 13931:13952 <> NineP_complete_safety
+binder 13965:13968 <> conn:127
+R14007:14014 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R14000:14002 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R13981:13998 NineP_complete_verification <> conn_authenticated proj
+R13975:13978 NineP_complete_verification <> conn:127 var
+R14003:14006 Coq.Init.Datatypes <> true constr
+R14066:14073 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R14015:14020 Coq.Lists.List <> Forall ind
+R14049:14064 NineP_complete_verification <> conn_translators proj
+R14043:14046 NineP_complete_verification <> conn:127 var
+R14022:14041 NineP_complete_verification <> translator_sandboxed def
+R14126:14158 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R14074:14079 Coq.Lists.List <> Forall ind
+R14105:14124 NineP_complete_verification <> conn_synthetic_files proj
+R14099:14102 NineP_complete_verification <> conn:127 var
+R14081:14097 NineP_complete_verification <> synthetic_bounded def
+R14189:14196 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R14184:14187 Coq.Init.Peano <> ::nat_scope:x_'>='_x not
+R14165:14182 NineP_complete_verification <> conn_channel_count proj
+R14159:14162 NineP_complete_verification <> conn:127 var
+R14233:14236 Coq.Init.Peano <> ::nat_scope:x_'>='_x not
+R14197:14207 Coq.Lists.List <> length abbrev
+R14215:14231 NineP_complete_verification <> conn_capabilities proj
+R14209:14212 NineP_complete_verification <> conn:127 var
+R14300:14309 Coq.Arith.PeanoNat Nat le_0_l thm
+R14300:14309 Coq.Arith.PeanoNat Nat le_0_l thm
+R14300:14309 Coq.Arith.PeanoNat Nat le_0_l thm
+prf 14571:14590 <> multiplex_throughput
+binder 14603:14606 <> conn:128
+R14642:14691 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R14638:14640 Coq.Init.Peano <> ::nat_scope:x_'>'_x not
+R14619:14636 NineP_complete_verification <> conn_channel_count proj
+R14613:14616 NineP_complete_verification <> conn:128 var
+R14692:14695 Coq.Init.Logic <> True ind
+prf 14797:14813 <> streaming_latency
+binder 14826:14830 <> synth:129
+R14864:14911 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R14857:14859 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R14844:14855 NineP_complete_verification <> synth_stream proj
+R14837:14841 NineP_complete_verification <> synth:129 var
+R14860:14863 Coq.Init.Datatypes <> true constr
+R14912:14915 Coq.Init.Logic <> True ind
+prf 15176:15198 <> NineP_protocol_correct
+R15323:15323 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R15390:15440 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+binder 15331:15334 <> conn:130
+binder 15336:15338 <> res:131
+binder 15340:15343 <> perm:132
+R15382:15385 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R15374:15376 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R15346:15359 NineP_complete_verification <> has_capability def
+R15361:15364 NineP_complete_verification <> conn:130 var
+R15366:15368 NineP_complete_verification <> res:131 var
+R15370:15373 NineP_complete_verification <> perm:132 var
+R15377:15381 Coq.Init.Datatypes <> false constr
+R15386:15389 Coq.Init.Logic <> True ind
+R15441:15441 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R15510:15567 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+binder 15449:15453 <> trans:133
+R15482:15485 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R15456:15475 NineP_complete_verification <> translator_sandboxed def
+R15477:15481 NineP_complete_verification <> trans:133 var
+R15486:15503 NineP_complete_verification <> translator_bounded def
+R15505:15509 NineP_complete_verification <> trans:133 var
+R15568:15568 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R15616:15673 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+binder 15576:15577 <> op:134
+R15608:15611 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R15601:15603 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R15580:15597 NineP_complete_verification <> requires_consensus def
+R15599:15600 NineP_complete_verification <> op:134 var
+R15604:15607 Coq.Init.Datatypes <> true constr
+R15612:15615 Coq.Init.Logic <> True ind
+R15674:15674 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R15693:15751 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R15807:15807 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R15675:15692 NineP_complete_verification <> async_non_blocking def
+binder 15759:15760 <> t1:135
+binder 15762:15763 <> t2:136
+R15799:15802 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R15766:15792 NineP_complete_verification <> translator_composition_safe def
+R15794:15795 NineP_complete_verification <> t1:135 var
+R15797:15798 NineP_complete_verification <> t2:136 var
+R15803:15806 Coq.Init.Logic <> True ind
+R15934:15951 NineP_complete_verification <> translator_bounded def
+R15965:15984 NineP_complete_verification <> translator_sandboxed def
+R16129:16161 NineP_complete_verification <> system_enforces_reasonable_limits prfax
+R16129:16161 NineP_complete_verification <> system_enforces_reasonable_limits prfax
+R16219:16236 NineP_complete_verification <> async_non_blocking def

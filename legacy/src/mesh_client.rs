@@ -10,7 +10,7 @@ use anyhow::Result;
 use tracing::{info, warn, error};
 
 use crate::mesh::MeshMessage;
-use crate::client::NinePeeClient;
+use crate::client::NinePClient;
 use tokio::sync::mpsc;
 
 /// Re-export from mesh module
@@ -19,7 +19,7 @@ pub use crate::mesh::DiscoveredPeer;
 /// Mesh-aware 9P.e client with automatic discovery
 pub struct MeshClient {
     /// Active connections to peers
-    connections: Arc<RwLock<HashMap<String, NinePeeClient>>>,
+    connections: Arc<RwLock<HashMap<String, NinePClient>>>,
     /// Sender for mesh messages
     mesh_sender: Option<mpsc::UnboundedSender<MeshMessage>>,
     /// Reference to mesh network's discovered peers
@@ -102,7 +102,7 @@ impl MeshClient {
 
         if !connections.contains_key(server) {
             info!("🔗 Connecting to {}", server);
-            let client = NinePeeClient::connect(server).await?;
+            let client = NinePClient::connect(server).await?;
             connections.insert(server.to_string(), client);
         }
 
@@ -198,7 +198,7 @@ impl MeshClient {
         // Get connection
         let mut connections = self.connections.write().await;
         if !connections.contains_key(&server) {
-            let client = NinePeeClient::connect(&server).await?;
+            let client = NinePClient::connect(&server).await?;
             connections.insert(server.clone(), client);
         }
 

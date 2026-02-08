@@ -15,7 +15,7 @@ def 551:561 <> WasmPointer
 R566:568 Coq.Init.Datatypes <> nat ind
 def 582:589 <> WasmSize
 R594:596 Coq.Init.Datatypes <> nat ind
-ind 633:650 <> NinePeeMessageType
+ind 633:650 <> NinePMessageType
 constr 666:673 <> Tversion
 constr 677:684 <> Rversion
 constr 690:694 <> Tauth
@@ -34,17 +34,17 @@ constr 804:809 <> Tclunk
 constr 813:818 <> Rclunk
 constr 824:829 <> Terror
 constr 833:838 <> Rerror
-scheme 633:650 <> NinePeeMessageType_rect
-scheme 633:650 <> NinePeeMessageType_ind
-scheme 633:650 <> NinePeeMessageType_rec
-scheme 633:650 <> NinePeeMessageType_sind
-rec 876:889 <> NinePeeMessage
+scheme 633:650 <> NinePMessageType_rect
+scheme 633:650 <> NinePMessageType_ind
+scheme 633:650 <> NinePMessageType_rec
+scheme 633:650 <> NinePMessageType_sind
+rec 876:889 <> NinePMessage
 proj 905:912 <> msg_type
 proj 938:944 <> msg_fid
 proj 955:964 <> msg_offset
 proj 975:983 <> msg_count
 proj 994:1001 <> msg_data
-R916:933 WasmTranslatorInterface <> NinePeeMessageType ind
+R916:933 WasmTranslatorInterface <> NinePMessageType ind
 R948:950 Coq.Init.Datatypes <> nat ind
 R968:970 Coq.Init.Datatypes <> nat ind
 R987:989 Coq.Init.Datatypes <> nat ind
@@ -58,7 +58,7 @@ R1102:1111 WasmTranslatorInterface <> WasmMemory def
 R1132:1134 Coq.Init.Datatypes <> nat ind
 R1153:1156 Coq.Init.Datatypes <> bool ind
 def 1313:1329 <> serialize_message
-R1338:1351 WasmTranslatorInterface <> NinePeeMessage rec
+R1338:1351 WasmTranslatorInterface <> NinePMessage rec
 binder 1332:1334 <> msg:13
 R1356:1359 Coq.Init.Datatypes <> list ind
 R1361:1363 Coq.Init.Datatypes <> nat ind
@@ -146,7 +146,7 @@ R1888:1891 Coq.Init.Datatypes <> list ind
 R1893:1895 Coq.Init.Datatypes <> nat ind
 binder 1880:1884 <> bytes:14
 R1900:1905 Coq.Init.Datatypes <> option ind
-R1907:1920 WasmTranslatorInterface <> NinePeeMessage rec
+R1907:1920 WasmTranslatorInterface <> NinePMessage rec
 R1933:1937 WasmTranslatorInterface <> bytes:14 var
 R1951:1954 Coq.Init.Datatypes <> ::list_scope:x_'::'_x not
 R1958:1961 Coq.Init.Datatypes <> ::list_scope:x_'::'_x not
@@ -355,12 +355,12 @@ R4244:4246 WasmTranslatorInterface <> len:39 var
 def 4293:4315 <> execute_wasm_translator
 R4326:4344 WasmTranslatorInterface <> WasmTranslatorState rec
 binder 4318:4322 <> state:40
-R4354:4367 WasmTranslatorInterface <> NinePeeMessage rec
+R4354:4367 WasmTranslatorInterface <> NinePMessage rec
 binder 4348:4350 <> msg:41
 R4374:4379 Coq.Init.Datatypes <> option ind
 R4401:4403 Coq.Init.Datatypes <> ::type_scope:x_'*'_x not
 R4382:4400 WasmTranslatorInterface <> WasmTranslatorState rec
-R4404:4417 WasmTranslatorInterface <> NinePeeMessage rec
+R4404:4417 WasmTranslatorInterface <> NinePMessage rec
 R4435:4445 WasmTranslatorInterface <> wasm_active proj
 R4428:4432 WasmTranslatorInterface <> state:40 var
 R4903:4906 Coq.Init.Datatypes <> None constr
@@ -417,7 +417,7 @@ R5365:5373 WasmTranslatorInterface <> new_state:52 var
 R5405:5417 WasmTranslatorInterface <> wasm_heap_ptr proj
 R5394:5402 WasmTranslatorInterface <> old_state:51 var
 def 5486:5502 <> message_integrity
-R5511:5524 WasmTranslatorInterface <> NinePeeMessage rec
+R5511:5524 WasmTranslatorInterface <> NinePMessage rec
 binder 5505:5507 <> msg:53
 R5545:5563 WasmTranslatorInterface <> deserialize_message def
 R5566:5582 WasmTranslatorInterface <> serialize_message def

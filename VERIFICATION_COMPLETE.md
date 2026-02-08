@@ -26,12 +26,12 @@ The 9P.e server implementation has been formally verified using Coq theorem prov
 
 ## Proof Files
 
-- `/home/scott/Repo/9pe-server/proofs/NinePE_Server_Verification.v` - Main verification (292 lines)
+- `/home/scott/Repo/9pe-server/proofs/NineP_Server_Verification.v` - Main verification (292 lines)
 - Successfully compiled with Coq 8.20.1
 
 ## Key Achievements
 
-### Renamed from "ninepee" to "plan9e"
+### Renamed from "ninep" to "plan9e"
 - Updated all package references to use cleaner naming
 - Maintained backward compatibility with core protocol
 
@@ -52,7 +52,7 @@ The 9P.e server implementation has been formally verified using Coq theorem prov
 ```bash
 # Compile proofs
 cd /home/scott/Repo/9pe-server/proofs
-/home/scott/.opam/coq-8.19/bin/coqc NinePE_Server_Verification.v
+/home/scott/.opam/coq-8.19/bin/coqc NineP_Server_Verification.v
 
 # Build server
 cargo build --release

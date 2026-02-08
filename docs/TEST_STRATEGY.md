@@ -11,7 +11,7 @@ With the legacy integration and property suites disabled, we need a focused, mod
 ## Test Backlog (New Suites Required)
 
 ### Protocol / Messaging
-- Property tests for `NinePeeMessage` covering all variants (replacing the old suite but aligned with current fields)
+- Property tests for `NinePMessage` covering all variants (replacing the old suite but aligned with current fields)
 - Fuzz harness for 9P message parser and encoder
 
 ### Synthetic Filesystem

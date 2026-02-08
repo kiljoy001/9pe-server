@@ -6,7 +6,7 @@
 
 use libfuzzer_sys::fuzz_target;
 use arbitrary::Arbitrary;
-use ninepee_server::*;
+use ninepe_server::*;
 
 #[derive(Arbitrary, Debug)]
 struct MessageInput {

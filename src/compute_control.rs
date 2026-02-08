@@ -50,6 +50,55 @@ pub struct ComputeJob {
     pub device_id: Option<String>,
     pub requested_vram: u64,
     pub allocated_vram: u64,
+    pub shm_handle: Option<crate::ipc::SharedMemoryHandle>,
+    /// Job priority
+    pub priority: JobPriority,
+    /// Timeout in seconds
+    pub timeout_secs: u64,
+}
+
+/// Job priority level
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum JobPriority {
+    /// Critical jobs - system operations
+    Critical,
+    /// High priority - interactive user operations
+    High,
+    /// Normal priority - standard compute jobs
+    #[default]
+    Normal,
+    /// Low priority - batch operations
+    Low,
+    /// Idle - only runs when no other jobs are pending
+    Idle,
+}
+
+impl From<u8> for JobPriority {
+    fn from(value: u8) -> Self {
+        match value {
+            0 => JobPriority::Critical,
+            1 => JobPriority::High,
+            2 => JobPriority::Normal,
+            3 => JobPriority::Low,
+            _ => JobPriority::Idle,
+        }
+    }
+}
+
+/// Fog computing options for job submission
+#[derive(Clone, Debug, Default)]
+pub struct FogJobOptions {
+    /// Allow job to execute on remote nodes
+    pub allow_remote: bool,
+    /// Data IDs this job needs (for locality-aware routing)
+    pub data_locality: Vec<String>,
+    /// Maximum delegation hops (prevents infinite forwarding)
+    pub max_hops: u8,
+    /// Assigned remote node (set by router, None = local)
+    pub assigned_node: Option<String>,
+    /// Number of retry attempts on failure
+    pub max_retries: u8,
 }
 
 #[derive(Clone, Debug)]
@@ -59,6 +108,13 @@ pub struct JobSubmission {
     pub payload: Vec<u8>,
     pub requested_vram: u64,
     pub device_hint: Option<usize>,
+    pub shm_handle: Option<crate::ipc::SharedMemoryHandle>,
+    /// Job priority level
+    pub priority: JobPriority,
+    /// Timeout in seconds (0 = default 300s)
+    pub timeout_secs: u64,
+    /// Fog computing options
+    pub fog: FogJobOptions,
 }
 
 #[derive(Clone, Debug)]
@@ -67,7 +123,7 @@ struct JobExecutionRequest {
     submission: JobSubmission,
 }
 
-/// Compute job manager
+/// Compute job manager with fog computing support
 pub struct ComputeManager {
     jobs: Arc<RwLock<HashMap<String, ComputeJob>>>,
     sycl_available: bool,
@@ -77,6 +133,10 @@ pub struct ComputeManager {
     started: AtomicBool,
     translator_registry: RwLock<Option<Arc<ThreadSafeTranslatorRegistry>>>,
     allocations: RwLock<HashMap<String, (Arc<GpuRuntime>, u64)>>,
+    /// Fog router for distributed job execution (optional)
+    fog_router: RwLock<Option<Arc<dyn crate::fog::router::FogRouter>>>,
+    /// Local node ID for fog networking
+    local_node_id: RwLock<Option<String>>,
 }
 
 impl ComputeManager {
@@ -97,7 +157,27 @@ impl ComputeManager {
             started: AtomicBool::new(false),
             translator_registry: RwLock::new(None),
             allocations: RwLock::new(HashMap::new()),
+            fog_router: RwLock::new(None),
+            local_node_id: RwLock::new(None),
         }
+    }
+
+    /// Set the fog router for distributed job execution
+    pub async fn set_fog_router(&self, router: Arc<dyn crate::fog::router::FogRouter>) {
+        let mut guard = self.fog_router.write().await;
+        *guard = Some(router);
+        info!("Fog router configured for distributed job execution");
+    }
+
+    /// Set the local node ID for fog networking
+    pub async fn set_local_node_id(&self, node_id: String) {
+        let mut guard = self.local_node_id.write().await;
+        *guard = Some(node_id);
+    }
+
+    /// Check if fog computing is enabled
+    pub async fn is_fog_enabled(&self) -> bool {
+        self.fog_router.read().await.is_some()
     }
 
     fn detect_sycl_availability() -> bool {
@@ -309,6 +389,64 @@ impl ComputeManager {
 
     pub async fn submit_job(&self, submission: JobSubmission) -> Result<String> {
         let job_id = Uuid::new_v4().to_string();
+        let timeout_secs = if submission.timeout_secs == 0 { 300 } else { submission.timeout_secs };
+
+        // Check if fog routing should be used
+        if submission.fog.allow_remote {
+            if let Some(router) = self.fog_router.read().await.as_ref() {
+                // Convert to fog job spec and route
+                let fog_spec = crate::fog::protocol::FogJobSpec {
+                    job_type: submission.job_type.clone(),
+                    operation: submission.operation.clone(),
+                    input: submission.payload.clone(),
+                    required_vram: submission.requested_vram,
+                    device_hint: submission.device_hint,
+                    fog_options: crate::fog::FogOptions {
+                        allow_remote: true,
+                        data_locality: submission.fog.data_locality.iter().map(|s| crate::fog::DataId::new(s.clone())).collect(),
+                        max_hops: submission.fog.max_hops,
+                        max_retries: submission.fog.max_retries,
+                        ..Default::default()
+                    },
+                    priority: submission.priority as u8,
+                    timeout: std::time::Duration::from_secs(timeout_secs),
+                    required_data: submission.fog.data_locality.iter().map(|s| crate::fog::DataId::new(s.clone())).collect(),
+                    params: submission.payload.clone(),
+                };
+
+                match router.submit(fog_spec).await {
+                    Ok(fog_job_id) => {
+                        info!(
+                            "Job {} routed via fog computing as {}",
+                            job_id, fog_job_id
+                        );
+                        // Create local tracking job
+                        let job = ComputeJob {
+                            id: fog_job_id.clone(),
+                            job_type: submission.job_type.clone(),
+                            operation: submission.operation.clone(),
+                            input: submission.payload.clone(),
+                            status: JobStatus::Pending,
+                            submitted_at: std::time::SystemTime::now(),
+                            device_id: Some("fog".to_string()),
+                            requested_vram: submission.requested_vram,
+                            allocated_vram: 0,
+                            shm_handle: submission.shm_handle.clone(),
+                            priority: submission.priority,
+                            timeout_secs,
+                        };
+                        self.jobs.write().await.insert(fog_job_id.clone(), job);
+                        return Ok(fog_job_id);
+                    }
+                    Err(e) => {
+                        warn!("Fog routing failed, falling back to local: {}", e);
+                        // Fall through to local execution
+                    }
+                }
+            }
+        }
+
+        // Local execution
         let job = ComputeJob {
             id: job_id.clone(),
             job_type: submission.job_type.clone(),
@@ -319,7 +457,15 @@ impl ComputeManager {
             device_id: None,
             requested_vram: submission.requested_vram,
             allocated_vram: 0,
+            shm_handle: submission.shm_handle.clone(),
+            priority: submission.priority,
+            timeout_secs,
         };
+
+        info!(
+            "Submitting job {} locally with priority {:?}, timeout {}s",
+            job_id, submission.priority, timeout_secs
+        );
 
         self.jobs.write().await.insert(job_id.clone(), job);
 
@@ -910,8 +1056,10 @@ impl ControlHandler for SubmitHandler {
                \"type\": \"sycl\" | \"wasm\",\n\
                \"operation\": \"vector_add\" | \"matrix_multiply\" | \"custom\",\n\
                \"data\": \"base64-encoded-input\",\n\
-               \"vram_bytes\": 1048576,        // optional hint\n\
-               \"device\": 0                   // optional GPU index\n\
+               \"vram_bytes\": 1048576,        // optional VRAM hint\n\
+               \"device\": 0,                  // optional GPU index\n\
+               \"priority\": \"normal\",       // optional: critical|high|normal|low|idle\n\
+               \"timeout\": 300                // optional: seconds (default 300)\n\
              }\n"
         .to_vec())
     }
@@ -949,12 +1097,57 @@ impl ControlHandler for SubmitHandler {
             .and_then(|v| v.as_u64())
             .map(|v| v as usize);
 
+        // Parse priority (default: normal)
+        let priority = spec
+            .get("priority")
+            .and_then(|v| v.as_str())
+            .map(|s| match s.to_lowercase().as_str() {
+                "critical" => JobPriority::Critical,
+                "high" => JobPriority::High,
+                "normal" => JobPriority::Normal,
+                "low" => JobPriority::Low,
+                "idle" => JobPriority::Idle,
+                _ => JobPriority::Normal,
+            })
+            .unwrap_or(JobPriority::Normal);
+
+        // Parse timeout (default: 300 seconds)
+        let timeout_secs = spec
+            .get("timeout")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(300);
+
+        // Parse fog options
+        let allow_remote = spec
+            .get("allow_remote")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
+        let data_locality: Vec<String> = spec
+            .get("data_locality")
+            .and_then(|v| v.as_array())
+            .map(|arr| arr.iter().filter_map(|v| v.as_str().map(String::from)).collect())
+            .unwrap_or_default();
+        let max_hops = spec
+            .get("max_hops")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(3) as u8;
+
         let submission = JobSubmission {
             job_type,
             operation,
             payload,
             requested_vram,
             device_hint,
+            shm_handle: None,
+            priority,
+            timeout_secs,
+            fog: FogJobOptions {
+                allow_remote,
+                data_locality,
+                max_hops,
+                assigned_node: None,
+                max_retries: 2,
+            },
         };
 
         let job_id = futures::executor::block_on(self.manager.submit_job(submission))?;
@@ -963,7 +1156,7 @@ impl ControlHandler for SubmitHandler {
             publish_job_files(Arc::clone(&self.synth), Arc::clone(&self.manager), &job_id).await
         })?;
 
-        info!("compute job queued: {}", job_id);
+        info!("compute job queued: {} (priority: {:?})", job_id, priority);
         Ok(())
     }
 }
@@ -1370,6 +1563,10 @@ mod tests {
             payload,
             requested_vram: 0,
             device_hint: None,
+            shm_handle: None,
+            priority: JobPriority::Normal,
+            timeout_secs: 300,
+            fog: FogJobOptions::default(),
         };
         let job_id = manager
             .submit_job(submission)
@@ -1429,6 +1626,10 @@ mod tests {
             payload,
             requested_vram: 0,
             device_hint: Some(0),
+            shm_handle: None,
+            priority: JobPriority::Normal,
+            timeout_secs: 300,
+            fog: FogJobOptions::default(),
         };
 
         let job_id = manager
@@ -1545,6 +1746,10 @@ mod tests {
             payload,
             requested_vram: 0,
             device_hint: Some(0),
+            shm_handle: None,
+            priority: JobPriority::Normal,
+            timeout_secs: 300,
+            fog: FogJobOptions::default(),
         };
 
         let job_id = manager
@@ -1610,6 +1815,10 @@ mod tests {
             payload,
             requested_vram: 0,
             device_hint: Some(0),
+            shm_handle: None,
+            priority: JobPriority::Normal,
+            timeout_secs: 300,
+            fog: FogJobOptions::default(),
         };
 
         let job_id = manager

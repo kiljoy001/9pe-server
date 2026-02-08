@@ -8,9 +8,9 @@ use std::sync::Arc;
 use std::collections::HashMap;
 use tokio::sync::RwLock;
 use tracing::{debug, error, warn, info};
-use ninepee::protocol::{
-    NinePeeMessage, ConnectionState, FileHandle,
-    NINEPEE_VERSION, LEGACY_VERSION, MAX_MESSAGE_SIZE
+use ninep::protocol::{
+    NinePMessage, ConnectionState, FileHandle,
+    NINEP_VERSION, LEGACY_VERSION, MAX_MESSAGE_SIZE
 };
 use crate::wasm::ThreadSafeTranslatorRegistry;
 use crate::settrans::VirtualSettransSystem;
@@ -213,7 +213,7 @@ impl MessageHandler {
     ) -> Result<Self> {
         let connection_state = ConnectionState::new(
             0, // connection_id will be set by server
-            NINEPEE_VERSION,
+            NINEP_VERSION,
             max_message_size.min(MAX_MESSAGE_SIZE)
         );
 
@@ -256,98 +256,98 @@ impl MessageHandler {
     }
 
     /// Process a 9P.e message and return response
-    pub async fn handle_message(&mut self, message: NinePeeMessage) -> Result<NinePeeMessage> {
+    pub async fn handle_message(&mut self, message: NinePMessage) -> Result<NinePMessage> {
         debug!("Processing message: {:?}", message);
 
         match message {
-            NinePeeMessage::Version { msize, version } => {
+            NinePMessage::Version { msize, version } => {
                 self.handle_version(msize, version).await
             }
-            NinePeeMessage::Auth { afid, uname, aname, password } => {
+            NinePMessage::Auth { afid, uname, aname, password } => {
                 self.handle_auth(afid, uname, aname, password).await
             }
-            NinePeeMessage::Attach { fid, afid, uname, aname } => {
+            NinePMessage::Attach { fid, afid, uname, aname } => {
                 self.handle_attach(fid, afid, uname, aname).await
             }
-            NinePeeMessage::Walk { fid, newfid, wnames } => {
+            NinePMessage::Walk { fid, newfid, wnames } => {
                 self.handle_walk(fid, newfid, wnames).await
             }
-            NinePeeMessage::Open { fid, mode } => {
+            NinePMessage::Open { fid, mode } => {
                 self.handle_open(fid, mode).await
             }
-            NinePeeMessage::Create { fid, name, perm, mode } => {
+            NinePMessage::Create { fid, name, perm, mode } => {
                 self.handle_create(fid, name, perm, mode).await
             }
-            NinePeeMessage::Read { fid, offset, count } => {
+            NinePMessage::Read { fid, offset, count } => {
                 self.handle_read(fid, offset, count).await
             }
-            NinePeeMessage::Write { fid, offset, data } => {
+            NinePMessage::Write { fid, offset, data } => {
                 self.handle_write(fid, offset, data).await
             }
-            NinePeeMessage::Clunk { fid } => {
+            NinePMessage::Clunk { fid } => {
                 self.handle_clunk(fid).await
             }
-            NinePeeMessage::Remove { fid } => {
+            NinePMessage::Remove { fid } => {
                 self.handle_remove(fid).await
             }
-            NinePeeMessage::Stat { fid } => {
+            NinePMessage::Stat { fid } => {
                 self.handle_stat(fid).await
             }
-            NinePeeMessage::Wstat { fid, stat } => {
+            NinePMessage::Wstat { fid, stat } => {
                 self.handle_wstat(fid, stat).await
             }
             // 9P.e extensions
-            NinePeeMessage::StreamInit { stream_id, fid, mode } => {
+            NinePMessage::StreamInit { stream_id, fid, mode } => {
                 self.handle_stream_init(stream_id, fid, mode).await
             }
-            NinePeeMessage::StreamData { stream_id, chunk_id, data } => {
+            NinePMessage::StreamData { stream_id, chunk_id, data } => {
                 self.handle_stream_data(stream_id, chunk_id, data).await
             }
-            NinePeeMessage::StreamEnd { stream_id, final_chunk } => {
+            NinePMessage::StreamEnd { stream_id, final_chunk } => {
                 self.handle_stream_end(stream_id, final_chunk).await
             }
-            NinePeeMessage::MultiplexChannel { channel_id, priority } => {
+            NinePMessage::MultiplexChannel { channel_id, priority } => {
                 self.handle_multiplex_channel(channel_id, priority).await
             }
-            NinePeeMessage::CapabilityGrant { cap_id, fid, permissions } => {
+            NinePMessage::CapabilityGrant { cap_id, fid, permissions } => {
                 self.handle_capability_grant(cap_id, fid, permissions).await
             }
-            NinePeeMessage::CapabilityRevoke { cap_id } => {
+            NinePMessage::CapabilityRevoke { cap_id } => {
                 self.handle_capability_revoke(cap_id).await
             }
-            NinePeeMessage::CapabilityCheck { cap_id } => {
+            NinePMessage::CapabilityCheck { cap_id } => {
                 self.handle_capability_check(cap_id).await
             }
-            NinePeeMessage::SyntheticCreate { fid, generator, params } => {
+            NinePMessage::SyntheticCreate { fid, generator, params } => {
                 self.handle_synthetic_create(fid, generator, params).await
             }
-            NinePeeMessage::SyntheticUpdate { fid, new_params } => {
+            NinePMessage::SyntheticUpdate { fid, new_params } => {
                 self.handle_synthetic_update(fid, new_params).await
             }
-            NinePeeMessage::SyntheticRefresh { fid, force } => {
+            NinePMessage::SyntheticRefresh { fid, force } => {
                 self.handle_synthetic_refresh(fid, force).await
             }
-            NinePeeMessage::TranslatorSpawn { translator_id, code, config } => {
+            NinePMessage::TranslatorSpawn { translator_id, code, config } => {
                 self.handle_translator_spawn(translator_id, code, config).await
             }
-            NinePeeMessage::TranslatorMessage { translator_id, data } => {
+            NinePMessage::TranslatorMessage { translator_id, data } => {
                 self.handle_translator_message(translator_id, data).await
             }
-            NinePeeMessage::TranslatorKill { translator_id } => {
+            NinePMessage::TranslatorKill { translator_id } => {
                 self.handle_translator_kill(translator_id).await
             }
-            NinePeeMessage::ConsensusPropose { block_hash, parent_hashes } => {
+            NinePMessage::ConsensusPropose { block_hash, parent_hashes } => {
                 self.handle_consensus_propose(block_hash, parent_hashes).await
             }
-            NinePeeMessage::ConsensusVote { block_hash, vote } => {
+            NinePMessage::ConsensusVote { block_hash, vote } => {
                 self.handle_consensus_vote(block_hash, vote).await
             }
-            NinePeeMessage::ConsensusCommit { block_hash, blue_score } => {
+            NinePMessage::ConsensusCommit { block_hash, blue_score } => {
                 self.handle_consensus_commit(block_hash, blue_score).await
             }
             _ => {
                 error!("Unimplemented message type");
-                Ok(NinePeeMessage::Error {
+                Ok(NinePMessage::Error {
                     ename: "Operation not implemented".to_string(),
                     errno: 95, // EOPNOTSUPP
                 })
@@ -356,11 +356,11 @@ impl MessageHandler {
     }
 
     /// Handle version negotiation
-    async fn handle_version(&mut self, msize: u32, version: String) -> Result<NinePeeMessage> {
+    async fn handle_version(&mut self, msize: u32, version: String) -> Result<NinePMessage> {
         debug!("Version negotiation: msize={}, version={}", msize, version);
 
         // Negotiate protocol version
-        let negotiated_version = if version == NINEPEE_VERSION || version == LEGACY_VERSION {
+        let negotiated_version = if version == NINEP_VERSION || version == LEGACY_VERSION {
             version
         } else {
             LEGACY_VERSION.to_string() // Fall back to 9P2000
@@ -373,28 +373,28 @@ impl MessageHandler {
         self.connection_state.protocol_version = negotiated_version.clone();
         self.connection_state.max_message_size = negotiated_msize;
 
-        Ok(NinePeeMessage::Version {
+        Ok(NinePMessage::Version {
             msize: negotiated_msize,
             version: negotiated_version,
         })
     }
 
     /// Handle authentication (simplified for now)
-    async fn handle_auth(&mut self, afid: u32, uname: String, aname: String, _password: Option<String>) -> Result<NinePeeMessage> {
+    async fn handle_auth(&mut self, afid: u32, uname: String, aname: String, _password: Option<String>) -> Result<NinePMessage> {
         debug!("Auth request: afid={}, uname={}, aname={}", afid, uname, aname);
 
         // For now, just mark as authenticated
         // In real implementation: verify credentials, create auth fid
         self.connection_state.authenticated = true;
 
-        Ok(NinePeeMessage::Version {
+        Ok(NinePMessage::Version {
             msize: self.connection_state.max_message_size,
             version: self.connection_state.protocol_version.clone(),
         })
     }
 
     /// Handle attach to filesystem root
-    async fn handle_attach(&mut self, fid: u32, afid: u32, uname: String, aname: String) -> Result<NinePeeMessage> {
+    async fn handle_attach(&mut self, fid: u32, afid: u32, uname: String, aname: String) -> Result<NinePMessage> {
         debug!("Attach: fid={}, afid={}, uname={}, aname={}", fid, afid, uname, aname);
 
         // Create file handle for root directory
@@ -412,24 +412,24 @@ impl MessageHandler {
         // Get root directory stats
         let root_metadata = match std::fs::metadata(&self.root) {
             Ok(meta) => meta,
-            Err(e) => return Ok(NinePeeMessage::Error {
+            Err(e) => return Ok(NinePMessage::Error {
                 ename: format!("Failed to stat root: {}", e),
                 errno: 2, // ENOENT
             }),
         };
 
         let stat_data = self.format_stat_data(&root_metadata, "/", "/");
-        Ok(NinePeeMessage::Stat { fid })
+        Ok(NinePMessage::Stat { fid })
     }
 
     /// Handle walk through directory tree
-    async fn handle_walk(&mut self, fid: u32, newfid: u32, wnames: Vec<String>) -> Result<NinePeeMessage> {
+    async fn handle_walk(&mut self, fid: u32, newfid: u32, wnames: Vec<String>) -> Result<NinePMessage> {
         debug!("Walk: fid={}, newfid={}, wnames={:?}", fid, newfid, wnames);
 
         // Get the starting file handle
         let start_handle = match self.connection_state.get_fid(fid) {
             Some(handle) => handle.clone(),
-            None => return Ok(NinePeeMessage::Error {
+            None => return Ok(NinePMessage::Error {
                 ename: "Invalid fid".to_string(),
                 errno: 9, // EBADF
             }),
@@ -448,7 +448,7 @@ impl MessageHandler {
             // Check if path exists
             let full_path = self.root.join(current_path.strip_prefix("/").unwrap_or(&current_path));
             if !full_path.exists() {
-                return Ok(NinePeeMessage::Error {
+                return Ok(NinePMessage::Error {
                     ename: format!("No such file: {}", wname),
                     errno: 2, // ENOENT
                 });
@@ -467,7 +467,7 @@ impl MessageHandler {
 
         self.connection_state.add_fid(newfid, new_handle);
 
-        Ok(NinePeeMessage::Walk {
+        Ok(NinePMessage::Walk {
             fid,
             newfid,
             wnames,
@@ -475,7 +475,7 @@ impl MessageHandler {
     }
 
     /// Handle open file
-    async fn handle_open(&mut self, fid: u32, mode: u8) -> Result<NinePeeMessage> {
+    async fn handle_open(&mut self, fid: u32, mode: u8) -> Result<NinePMessage> {
         debug!("Open: fid={}, mode={}", fid, mode);
 
         // Update file handle with open mode
@@ -483,9 +483,9 @@ impl MessageHandler {
             handle.mode = mode;
             self.connection_state.add_fid(fid, handle);
 
-            Ok(NinePeeMessage::Open { fid, mode })
+            Ok(NinePMessage::Open { fid, mode })
         } else {
-            Ok(NinePeeMessage::Error {
+            Ok(NinePMessage::Error {
                 ename: "Invalid fid".to_string(),
                 errno: 9, // EBADF
             })
@@ -493,12 +493,12 @@ impl MessageHandler {
     }
 
     /// Handle create file with capability checking
-    async fn handle_create(&mut self, fid: u32, name: String, perm: u32, mode: u8) -> Result<NinePeeMessage> {
+    async fn handle_create(&mut self, fid: u32, name: String, perm: u32, mode: u8) -> Result<NinePMessage> {
         debug!("Create: fid={}, name={}, perm={:#o}, mode={}", fid, name, perm, mode);
 
         let handle = match self.connection_state.get_fid(fid) {
             Some(h) => h.clone(),
-            None => return Ok(NinePeeMessage::Error {
+            None => return Ok(NinePMessage::Error {
                 ename: "Invalid fid".to_string(),
                 errno: 9, // EBADF
             }),
@@ -506,7 +506,7 @@ impl MessageHandler {
 
         // Check create capability
         if !self.check_capability(fid, CapabilityPermissions::can_create).await? {
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: "Permission denied: create capability required".to_string(),
                 errno: 13, // EACCES
             });
@@ -536,11 +536,11 @@ impl MessageHandler {
 
                 self.connection_state.add_fid(fid, new_handle);
 
-                Ok(NinePeeMessage::Create { fid, name, perm, mode })
+                Ok(NinePMessage::Create { fid, name, perm, mode })
             }
             Err(e) => {
                 warn!("Failed to create file {}: {}", name, e);
-                Ok(NinePeeMessage::Error {
+                Ok(NinePMessage::Error {
                     ename: format!("Create failed: {}", e),
                     errno: 1, // EPERM
                 })
@@ -549,12 +549,12 @@ impl MessageHandler {
     }
 
     /// Handle read from file with capability checking
-    async fn handle_read(&mut self, fid: u32, offset: u64, count: u32) -> Result<NinePeeMessage> {
+    async fn handle_read(&mut self, fid: u32, offset: u64, count: u32) -> Result<NinePMessage> {
         debug!("Read: fid={}, offset={}, count={}", fid, offset, count);
 
         let handle = match self.connection_state.get_fid(fid) {
             Some(h) => h.clone(),
-            None => return Ok(NinePeeMessage::Error {
+            None => return Ok(NinePMessage::Error {
                 ename: "Invalid fid".to_string(),
                 errno: 9, // EBADF
             }),
@@ -562,7 +562,7 @@ impl MessageHandler {
 
         // Check read capability
         if !self.check_capability(fid, CapabilityPermissions::can_read).await? {
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: "Permission denied: read capability required".to_string(),
                 errno: 13, // EACCES
             });
@@ -577,13 +577,13 @@ impl MessageHandler {
                         let start = offset as usize;
                         let end = (start + count as usize).min(data.len());
                         let slice = if start < data.len() { &data[start..end] } else { &[] };
-                        return Ok(NinePeeMessage::Write {
+                        return Ok(NinePMessage::Write {
                             fid,
                             offset,
                             data: slice.to_vec(),
                         });
                     }
-                    Err(e) => return Ok(NinePeeMessage::Error {
+                    Err(e) => return Ok(NinePMessage::Error {
                         ename: format!("Virtual file read failed: {}", e),
                         errno: 5, // EIO
                     })
@@ -599,13 +599,13 @@ impl MessageHandler {
                             let start = offset as usize;
                             let end = (start + count as usize).min(data.len());
                             let slice = if start < data.len() { &data[start..end] } else { &[] };
-                            return Ok(NinePeeMessage::Write {
+                            return Ok(NinePMessage::Write {
                                 fid,
                                 offset,
                                 data: slice.to_vec(),
                             });
                         }
-                        Err(e) => return Ok(NinePeeMessage::Error {
+                        Err(e) => return Ok(NinePMessage::Error {
                             ename: format!("Translator read failed: {}", e),
                             errno: 5, // EIO
                         })
@@ -614,7 +614,7 @@ impl MessageHandler {
             }
 
             // Virtual path not found
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: "File not found in virtual filesystem".to_string(),
                 errno: 2, // ENOENT
             });
@@ -634,7 +634,7 @@ impl MessageHandler {
                     match fs::File::open(&file_path) {
                         Ok(mut file) => {
                             if let Err(e) = file.seek(SeekFrom::Start(offset)) {
-                                return Ok(NinePeeMessage::Error {
+                                return Ok(NinePMessage::Error {
                                     ename: format!("Seek failed: {}", e),
                                     errno: 22, // EINVAL
                                 });
@@ -644,26 +644,26 @@ impl MessageHandler {
                             match file.read(&mut buffer) {
                                 Ok(bytes_read) => {
                                     buffer.truncate(bytes_read);
-                                    Ok(NinePeeMessage::Write {
+                                    Ok(NinePMessage::Write {
                                         fid,
                                         offset,
                                         data: buffer,
                                     })
                                 }
-                                Err(e) => Ok(NinePeeMessage::Error {
+                                Err(e) => Ok(NinePMessage::Error {
                                     ename: format!("Read failed: {}", e),
                                     errno: 5, // EIO
                                 })
                             }
                         }
-                        Err(e) => Ok(NinePeeMessage::Error {
+                        Err(e) => Ok(NinePMessage::Error {
                             ename: format!("Open failed: {}", e),
                             errno: 2, // ENOENT
                         })
                     }
                 }
             }
-            Err(e) => Ok(NinePeeMessage::Error {
+            Err(e) => Ok(NinePMessage::Error {
                 ename: format!("Metadata failed: {}", e),
                 errno: 2, // ENOENT
             })
@@ -671,12 +671,12 @@ impl MessageHandler {
     }
 
     /// Handle write to file with capability checking
-    async fn handle_write(&mut self, fid: u32, offset: u64, data: Vec<u8>) -> Result<NinePeeMessage> {
+    async fn handle_write(&mut self, fid: u32, offset: u64, data: Vec<u8>) -> Result<NinePMessage> {
         debug!("Write: fid={}, offset={}, len={}", fid, offset, data.len());
 
         let handle = match self.connection_state.get_fid(fid) {
             Some(h) => h.clone(),
-            None => return Ok(NinePeeMessage::Error {
+            None => return Ok(NinePMessage::Error {
                 ename: "Invalid fid".to_string(),
                 errno: 9, // EBADF
             }),
@@ -684,7 +684,7 @@ impl MessageHandler {
 
         // Check write capability
         if !self.check_capability(fid, CapabilityPermissions::can_write).await? {
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: "Permission denied: write capability required".to_string(),
                 errno: 13, // EACCES
             });
@@ -695,7 +695,7 @@ impl MessageHandler {
         match OpenOptions::new().write(true).open(&file_path) {
             Ok(mut file) => {
                 if let Err(e) = file.seek(SeekFrom::Start(offset)) {
-                    return Ok(NinePeeMessage::Error {
+                    return Ok(NinePMessage::Error {
                         ename: format!("Seek failed: {}", e),
                         errno: 22, // EINVAL
                     });
@@ -703,19 +703,19 @@ impl MessageHandler {
 
                 match file.write(&data) {
                     Ok(bytes_written) => {
-                        Ok(NinePeeMessage::Write {
+                        Ok(NinePMessage::Write {
                             fid,
                             offset,
                             data: vec![0u8; bytes_written], // Response data not typically needed
                         })
                     }
-                    Err(e) => Ok(NinePeeMessage::Error {
+                    Err(e) => Ok(NinePMessage::Error {
                         ename: format!("Write failed: {}", e),
                         errno: 5, // EIO
                     })
                 }
             }
-            Err(e) => Ok(NinePeeMessage::Error {
+            Err(e) => Ok(NinePMessage::Error {
                 ename: format!("Open for write failed: {}", e),
                 errno: 13, // EACCES
             })
@@ -723,13 +723,13 @@ impl MessageHandler {
     }
 
     /// Handle close file
-    async fn handle_clunk(&mut self, fid: u32) -> Result<NinePeeMessage> {
+    async fn handle_clunk(&mut self, fid: u32) -> Result<NinePMessage> {
         debug!("Clunk: fid={}", fid);
 
         if self.connection_state.remove_fid(fid).is_some() {
-            Ok(NinePeeMessage::Clunk { fid })
+            Ok(NinePMessage::Clunk { fid })
         } else {
-            Ok(NinePeeMessage::Error {
+            Ok(NinePMessage::Error {
                 ename: "Invalid fid".to_string(),
                 errno: 9, // EBADF
             })
@@ -737,12 +737,12 @@ impl MessageHandler {
     }
 
     /// Handle remove file with capability checking
-    async fn handle_remove(&mut self, fid: u32) -> Result<NinePeeMessage> {
+    async fn handle_remove(&mut self, fid: u32) -> Result<NinePMessage> {
         debug!("Remove: fid={}", fid);
 
         // Check delete capability before removing fid
         if !self.check_capability(fid, CapabilityPermissions::can_delete).await? {
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: "Permission denied: delete capability required".to_string(),
                 errno: 13, // EACCES
             });
@@ -750,7 +750,7 @@ impl MessageHandler {
 
         let handle = match self.connection_state.remove_fid(fid) {
             Some(h) => h,
-            None => return Ok(NinePeeMessage::Error {
+            None => return Ok(NinePMessage::Error {
                 ename: "Invalid fid".to_string(),
                 errno: 9, // EBADF
             }),
@@ -765,8 +765,8 @@ impl MessageHandler {
         };
 
         match result {
-            Ok(()) => Ok(NinePeeMessage::Remove { fid }),
-            Err(e) => Ok(NinePeeMessage::Error {
+            Ok(()) => Ok(NinePMessage::Remove { fid }),
+            Err(e) => Ok(NinePMessage::Error {
                 ename: format!("Remove failed: {}", e),
                 errno: 1, // EPERM
             })
@@ -860,13 +860,13 @@ impl MessageHandler {
         fid: u32,
         offset: u64,
         count: u32,
-    ) -> Result<NinePeeMessage> {
+    ) -> Result<NinePMessage> {
         debug!("Directory read: path={:?}, offset={}, count={}", dir_path, offset, count);
 
         // Read directory entries
         let entries = match fs::read_dir(dir_path) {
             Ok(entries) => entries,
-            Err(e) => return Ok(NinePeeMessage::Error {
+            Err(e) => return Ok(NinePMessage::Error {
                 ename: format!("Failed to read directory: {}", e),
                 errno: 2, // ENOENT
             }),
@@ -908,7 +908,7 @@ impl MessageHandler {
         let end = (start + count as usize).min(dir_data.len());
         let slice = if start < dir_data.len() { &dir_data[start..end] } else { &[] };
 
-        Ok(NinePeeMessage::Write {
+        Ok(NinePMessage::Write {
             fid,
             offset,
             data: slice.to_vec(),
@@ -916,12 +916,12 @@ impl MessageHandler {
     }
 
     /// Handle stat file
-    async fn handle_stat(&mut self, fid: u32) -> Result<NinePeeMessage> {
+    async fn handle_stat(&mut self, fid: u32) -> Result<NinePMessage> {
         debug!("Stat: fid={}", fid);
 
         let handle = match self.connection_state.get_fid(fid) {
             Some(h) => h.clone(),
-            None => return Ok(NinePeeMessage::Error {
+            None => return Ok(NinePMessage::Error {
                 ename: "Invalid fid".to_string(),
                 errno: 9, // EBADF
             }),
@@ -968,7 +968,7 @@ impl MessageHandler {
                     stat.extend_from_slice(user_bytes);
                 }
 
-                return Ok(NinePeeMessage::Write {
+                return Ok(NinePMessage::Write {
                     fid,
                     offset: 0,
                     data: stat,
@@ -976,7 +976,7 @@ impl MessageHandler {
             }
 
             // Virtual path not found
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: "File not found in virtual filesystem".to_string(),
                 errno: 2, // ENOENT
             });
@@ -992,13 +992,13 @@ impl MessageHandler {
                     .to_string_lossy();
                 let stat_data = self.format_stat_data(&metadata, &name, &handle.path);
 
-                Ok(NinePeeMessage::Write {
+                Ok(NinePMessage::Write {
                     fid,
                     offset: 0,
                     data: stat_data,
                 })
             }
-            Err(e) => Ok(NinePeeMessage::Error {
+            Err(e) => Ok(NinePMessage::Error {
                 ename: format!("Stat failed: {}", e),
                 errno: 2, // ENOENT
             })
@@ -1006,20 +1006,20 @@ impl MessageHandler {
     }
 
     /// Handle set file attributes
-    async fn handle_wstat(&mut self, fid: u32, stat: Vec<u8>) -> Result<NinePeeMessage> {
+    async fn handle_wstat(&mut self, fid: u32, stat: Vec<u8>) -> Result<NinePMessage> {
         debug!("Wstat: fid={}, stat_len={}", fid, stat.len());
 
         // For now, just acknowledge the wstat operation
         // In real implementation: parse stat data and apply changes
-        Ok(NinePeeMessage::Wstat { fid, stat })
+        Ok(NinePMessage::Wstat { fid, stat })
     }
 
     /// Handle stream initialization (9P.e extension)
-    async fn handle_stream_init(&mut self, stream_id: u32, fid: u32, mode: u8) -> Result<NinePeeMessage> {
+    async fn handle_stream_init(&mut self, stream_id: u32, fid: u32, mode: u8) -> Result<NinePMessage> {
         debug!("StreamInit: stream_id={}, fid={}, mode={}", stream_id, fid, mode);
 
         if !self.connection_state.supports_extensions() {
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: "Extensions not supported".to_string(),
                 errno: 95, // EOPNOTSUPP
             });
@@ -1027,7 +1027,7 @@ impl MessageHandler {
 
         // Validate fid exists
         if self.connection_state.get_fid(fid).is_none() {
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: "Invalid fid for stream".to_string(),
                 errno: 9, // EBADF
             });
@@ -1036,7 +1036,7 @@ impl MessageHandler {
         // Check if stream already exists
         let streams = self.streams.read().await;
         if streams.contains_key(&stream_id) {
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: "Stream already exists".to_string(),
                 errno: 17, // EEXIST
             });
@@ -1063,27 +1063,27 @@ impl MessageHandler {
         drop(streams);
 
         info!("Initialized stream {} for fid {} with mode {}", stream_id, fid, mode);
-        Ok(NinePeeMessage::StreamInit { stream_id, fid, mode })
+        Ok(NinePMessage::StreamInit { stream_id, fid, mode })
     }
 
     /// Serialize message to bytes for transmission
-    pub async fn serialize_message(&self, message: &NinePeeMessage) -> Result<Vec<u8>> {
+    pub async fn serialize_message(&self, message: &NinePMessage) -> Result<Vec<u8>> {
         message.serialize().map_err(|e| anyhow::anyhow!("Serialization failed: {}", e))
     }
 
     /// Deserialize message from bytes
-    pub async fn deserialize_message(&self, data: Vec<u8>) -> Result<NinePeeMessage> {
-        NinePeeMessage::deserialize(data).map_err(|e| anyhow::anyhow!("Deserialization failed: {}", e))
+    pub async fn deserialize_message(&self, data: Vec<u8>) -> Result<NinePMessage> {
+        NinePMessage::deserialize(data).map_err(|e| anyhow::anyhow!("Deserialization failed: {}", e))
     }
 
     // ========== 9P.e Extension Handlers ==========
 
     /// Handle stream data chunk with flow control and validation
-    async fn handle_stream_data(&mut self, stream_id: u32, chunk_id: u32, data: Vec<u8>) -> Result<NinePeeMessage> {
+    async fn handle_stream_data(&mut self, stream_id: u32, chunk_id: u32, data: Vec<u8>) -> Result<NinePMessage> {
         debug!("StreamData: stream_id={}, chunk_id={}, data_len={}", stream_id, chunk_id, data.len());
 
         if !self.connection_state.supports_extensions() {
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: "Extensions not supported".to_string(),
                 errno: 95, // EOPNOTSUPP
             });
@@ -1091,7 +1091,7 @@ impl MessageHandler {
 
         // Validate data size
         if data.len() > 65536 { // 64KB max chunk size
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: "Chunk too large".to_string(),
                 errno: 90, // EMSGSIZE
             });
@@ -1105,12 +1105,12 @@ impl MessageHandler {
             // Check for duplicate chunks
             if stream_state.chunks_received.contains(&chunk_id) {
                 debug!("Duplicate chunk {} for stream {}", chunk_id, stream_id);
-                return Ok(NinePeeMessage::StreamData { stream_id, chunk_id, data: vec![] });
+                return Ok(NinePMessage::StreamData { stream_id, chunk_id, data: vec![] });
             }
 
             // Check buffer limit
             if stream_state.data_buffer.len() + data.len() > stream_state.buffer_limit {
-                return Ok(NinePeeMessage::Error {
+                return Ok(NinePMessage::Error {
                     ename: "Stream buffer overflow".to_string(),
                     errno: 12, // ENOMEM
                 });
@@ -1118,7 +1118,7 @@ impl MessageHandler {
 
             // Check flow control window
             if stream_state.chunks_received.len() as u32 >= stream_state.flow_control_window {
-                return Ok(NinePeeMessage::Error {
+                return Ok(NinePMessage::Error {
                     ename: "Flow control limit exceeded".to_string(),
                     errno: 11, // EAGAIN
                 });
@@ -1133,9 +1133,9 @@ impl MessageHandler {
             debug!("Received chunk {} for stream {} ({} chunks total)",
                    chunk_id, stream_id, stream_state.chunks_received.len());
 
-            Ok(NinePeeMessage::StreamData { stream_id, chunk_id, data: vec![] }) // Echo with empty data
+            Ok(NinePMessage::StreamData { stream_id, chunk_id, data: vec![] }) // Echo with empty data
         } else {
-            Ok(NinePeeMessage::Error {
+            Ok(NinePMessage::Error {
                 ename: "Invalid stream ID".to_string(),
                 errno: 22, // EINVAL
             })
@@ -1143,11 +1143,11 @@ impl MessageHandler {
     }
 
     /// Handle stream end with data integrity validation
-    async fn handle_stream_end(&mut self, stream_id: u32, final_chunk: u32) -> Result<NinePeeMessage> {
+    async fn handle_stream_end(&mut self, stream_id: u32, final_chunk: u32) -> Result<NinePMessage> {
         debug!("StreamEnd: stream_id={}, final_chunk={}", stream_id, final_chunk);
 
         if !self.connection_state.supports_extensions() {
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: "Extensions not supported".to_string(),
                 errno: 95,
             });
@@ -1161,7 +1161,7 @@ impl MessageHandler {
 
             if !missing_chunks.is_empty() {
                 warn!("Stream {} incomplete: missing chunks {:?}", stream_id, missing_chunks);
-                return Ok(NinePeeMessage::Error {
+                return Ok(NinePMessage::Error {
                     ename: format!("Missing chunks: {:?}", missing_chunks),
                     errno: 5, // EIO
                 });
@@ -1174,7 +1174,7 @@ impl MessageHandler {
                     let file_path = self.root.join(handle.path.strip_prefix("/").unwrap_or(&handle.path));
                     if let Err(e) = std::fs::write(&file_path, &stream_state.data_buffer) {
                         error!("Failed to write stream data to file: {}", e);
-                        return Ok(NinePeeMessage::Error {
+                        return Ok(NinePMessage::Error {
                             ename: format!("Write failed: {}", e),
                             errno: 5, // EIO
                         });
@@ -1186,9 +1186,9 @@ impl MessageHandler {
 
             info!("Stream {} completed with {} chunks ({} bytes total)",
                   stream_id, final_chunk + 1, stream_state.data_buffer.len());
-            Ok(NinePeeMessage::StreamEnd { stream_id, final_chunk })
+            Ok(NinePMessage::StreamEnd { stream_id, final_chunk })
         } else {
-            Ok(NinePeeMessage::Error {
+            Ok(NinePMessage::Error {
                 ename: "Invalid stream ID".to_string(),
                 errno: 22,
             })
@@ -1196,11 +1196,11 @@ impl MessageHandler {
     }
 
     /// Handle multiplex channel creation
-    async fn handle_multiplex_channel(&mut self, channel_id: u32, priority: u8) -> Result<NinePeeMessage> {
+    async fn handle_multiplex_channel(&mut self, channel_id: u32, priority: u8) -> Result<NinePMessage> {
         debug!("MultiplexChannel: channel_id={}, priority={}", channel_id, priority);
 
         if !self.connection_state.supports_extensions() {
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: "Extensions not supported".to_string(),
                 errno: 95,
             });
@@ -1214,15 +1214,15 @@ impl MessageHandler {
         });
 
         info!("Created multiplex channel {} with priority {}", channel_id, priority);
-        Ok(NinePeeMessage::MultiplexChannel { channel_id, priority })
+        Ok(NinePMessage::MultiplexChannel { channel_id, priority })
     }
 
     /// Handle capability grant
-    async fn handle_capability_grant(&mut self, cap_id: u64, fid: u32, permissions: u32) -> Result<NinePeeMessage> {
+    async fn handle_capability_grant(&mut self, cap_id: u64, fid: u32, permissions: u32) -> Result<NinePMessage> {
         debug!("CapabilityGrant: cap_id={}, fid={}, permissions={}", cap_id, fid, permissions);
 
         if !self.connection_state.supports_extensions() {
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: "Extensions not supported".to_string(),
                 errno: 95,
             });
@@ -1256,15 +1256,15 @@ impl MessageHandler {
         });
 
         info!("Granted capability {} for fid {} with permissions {}", cap_id, fid, permissions);
-        Ok(NinePeeMessage::CapabilityGrant { cap_id, fid, permissions })
+        Ok(NinePMessage::CapabilityGrant { cap_id, fid, permissions })
     }
 
     /// Handle capability revoke
-    async fn handle_capability_revoke(&mut self, cap_id: u64) -> Result<NinePeeMessage> {
+    async fn handle_capability_revoke(&mut self, cap_id: u64) -> Result<NinePMessage> {
         debug!("CapabilityRevoke: cap_id={}", cap_id);
 
         if !self.connection_state.supports_extensions() {
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: "Extensions not supported".to_string(),
                 errno: 95,
             });
@@ -1273,9 +1273,9 @@ impl MessageHandler {
         let mut capabilities = self.capabilities.write().await;
         if capabilities.remove(&cap_id).is_some() {
             info!("Revoked capability {}", cap_id);
-            Ok(NinePeeMessage::CapabilityRevoke { cap_id })
+            Ok(NinePMessage::CapabilityRevoke { cap_id })
         } else {
-            Ok(NinePeeMessage::Error {
+            Ok(NinePMessage::Error {
                 ename: "Invalid capability ID".to_string(),
                 errno: 22,
             })
@@ -1283,11 +1283,11 @@ impl MessageHandler {
     }
 
     /// Handle capability check
-    async fn handle_capability_check(&mut self, cap_id: u64) -> Result<NinePeeMessage> {
+    async fn handle_capability_check(&mut self, cap_id: u64) -> Result<NinePMessage> {
         debug!("CapabilityCheck: cap_id={}", cap_id);
 
         if !self.connection_state.supports_extensions() {
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: "Extensions not supported".to_string(),
                 errno: 95,
             });
@@ -1299,7 +1299,7 @@ impl MessageHandler {
             if let Some(expires_at) = capability.expires_at {
                 if std::time::Instant::now() > expires_at {
                     capabilities.remove(&cap_id);
-                    return Ok(NinePeeMessage::Error {
+                    return Ok(NinePMessage::Error {
                         ename: "Capability expired".to_string(),
                         errno: 13, // EACCES
                     });
@@ -1307,9 +1307,9 @@ impl MessageHandler {
             }
 
             info!("Capability {} is valid (expires: {:?})", cap_id, capability.expires_at);
-            Ok(NinePeeMessage::CapabilityCheck { cap_id })
+            Ok(NinePMessage::CapabilityCheck { cap_id })
         } else {
-            Ok(NinePeeMessage::Error {
+            Ok(NinePMessage::Error {
                 ename: "Capability not found".to_string(),
                 errno: 2, // ENOENT
             })
@@ -1317,11 +1317,11 @@ impl MessageHandler {
     }
 
     /// Handle synthetic file creation
-    async fn handle_synthetic_create(&mut self, fid: u32, generator: String, params: Vec<u8>) -> Result<NinePeeMessage> {
+    async fn handle_synthetic_create(&mut self, fid: u32, generator: String, params: Vec<u8>) -> Result<NinePMessage> {
         debug!("SyntheticCreate: fid={}, generator={}, params_len={}", fid, generator, params.len());
 
         if !self.connection_state.supports_extensions() {
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: "Extensions not supported".to_string(),
                 errno: 95,
             });
@@ -1332,7 +1332,7 @@ impl MessageHandler {
         let content = format!("Generated by {} with {} bytes of params", generator, params.len());
 
         if let Err(e) = self.synth_fs.create_file(Path::new(&path), content.as_bytes().to_vec(), true).await {
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: format!("Failed to create synthetic file: {}", e),
                 errno: 5, // EIO
             });
@@ -1346,15 +1346,15 @@ impl MessageHandler {
         }
 
         info!("Created synthetic file for fid {} with generator {}", fid, generator);
-        Ok(NinePeeMessage::SyntheticCreate { fid, generator, params })
+        Ok(NinePMessage::SyntheticCreate { fid, generator, params })
     }
 
     /// Handle synthetic file update
-    async fn handle_synthetic_update(&mut self, fid: u32, new_params: Vec<u8>) -> Result<NinePeeMessage> {
+    async fn handle_synthetic_update(&mut self, fid: u32, new_params: Vec<u8>) -> Result<NinePMessage> {
         debug!("SyntheticUpdate: fid={}, new_params_len={}", fid, new_params.len());
 
         if !self.connection_state.supports_extensions() {
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: "Extensions not supported".to_string(),
                 errno: 95,
             });
@@ -1366,20 +1366,20 @@ impl MessageHandler {
                 // Update synthetic file content
                 let new_content = format!("Updated with {} bytes of params", new_params.len());
                 if let Err(e) = self.synth_fs.write_file(Path::new(&handle.path), new_content.as_bytes().to_vec()).await {
-                    return Ok(NinePeeMessage::Error {
+                    return Ok(NinePMessage::Error {
                         ename: format!("Failed to update synthetic file: {}", e),
                         errno: 5,
                     });
                 }
-                Ok(NinePeeMessage::SyntheticUpdate { fid, new_params })
+                Ok(NinePMessage::SyntheticUpdate { fid, new_params })
             } else {
-                Ok(NinePeeMessage::Error {
+                Ok(NinePMessage::Error {
                     ename: "Not a synthetic file".to_string(),
                     errno: 22,
                 })
             }
         } else {
-            Ok(NinePeeMessage::Error {
+            Ok(NinePMessage::Error {
                 ename: "Invalid fid".to_string(),
                 errno: 9,
             })
@@ -1387,11 +1387,11 @@ impl MessageHandler {
     }
 
     /// Handle synthetic file refresh
-    async fn handle_synthetic_refresh(&mut self, fid: u32, force: bool) -> Result<NinePeeMessage> {
+    async fn handle_synthetic_refresh(&mut self, fid: u32, force: bool) -> Result<NinePMessage> {
         debug!("SyntheticRefresh: fid={}, force={}", fid, force);
 
         if !self.connection_state.supports_extensions() {
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: "Extensions not supported".to_string(),
                 errno: 95,
             });
@@ -1403,21 +1403,21 @@ impl MessageHandler {
                 // Trigger refresh of synthetic content
                 let refreshed_content = format!("Refreshed at {:?} (force={})", std::time::SystemTime::now(), force);
                 if let Err(e) = self.synth_fs.write_file(Path::new(&handle.path), refreshed_content.as_bytes().to_vec()).await {
-                    return Ok(NinePeeMessage::Error {
+                    return Ok(NinePMessage::Error {
                         ename: format!("Failed to refresh synthetic file: {}", e),
                         errno: 5,
                     });
                 }
                 info!("Refreshed synthetic file fid {} (force={})", fid, force);
-                Ok(NinePeeMessage::SyntheticRefresh { fid, force })
+                Ok(NinePMessage::SyntheticRefresh { fid, force })
             } else {
-                Ok(NinePeeMessage::Error {
+                Ok(NinePMessage::Error {
                     ename: "Not a synthetic file".to_string(),
                     errno: 22,
                 })
             }
         } else {
-            Ok(NinePeeMessage::Error {
+            Ok(NinePMessage::Error {
                 ename: "Invalid fid".to_string(),
                 errno: 9,
             })
@@ -1425,12 +1425,12 @@ impl MessageHandler {
     }
 
     /// Handle translator spawn
-    async fn handle_translator_spawn(&mut self, translator_id: u32, code: Vec<u8>, config: Vec<u8>) -> Result<NinePeeMessage> {
+    async fn handle_translator_spawn(&mut self, translator_id: u32, code: Vec<u8>, config: Vec<u8>) -> Result<NinePMessage> {
         debug!("TranslatorSpawn: translator_id={}, code_len={}, config_len={}",
                translator_id, code.len(), config.len());
 
         if !self.connection_state.supports_extensions() {
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: "Extensions not supported".to_string(),
                 errno: 95,
             });
@@ -1446,7 +1446,7 @@ impl MessageHandler {
             mount_point.clone(),
             code.clone()
         ).await {
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: format!("Failed to spawn translator: {}", e),
                 errno: 5,
             });
@@ -1457,15 +1457,15 @@ impl MessageHandler {
         active.insert(translator_id, mount_point.clone());
 
         info!("Spawned translator {} at {:?}", translator_id, mount_point);
-        Ok(NinePeeMessage::TranslatorSpawn { translator_id, code, config })
+        Ok(NinePMessage::TranslatorSpawn { translator_id, code, config })
     }
 
     /// Handle translator message
-    async fn handle_translator_message(&mut self, translator_id: u32, data: Vec<u8>) -> Result<NinePeeMessage> {
+    async fn handle_translator_message(&mut self, translator_id: u32, data: Vec<u8>) -> Result<NinePMessage> {
         debug!("TranslatorMessage: translator_id={}, data_len={}", translator_id, data.len());
 
         if !self.connection_state.supports_extensions() {
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: "Extensions not supported".to_string(),
                 errno: 95,
             });
@@ -1482,21 +1482,21 @@ impl MessageHandler {
                     .as_secs());
 
                 if let Err(e) = translator.write_file(&path, data.clone()).await {
-                    return Ok(NinePeeMessage::Error {
+                    return Ok(NinePMessage::Error {
                         ename: format!("Failed to send message to translator: {}", e),
                         errno: 5,
                     });
                 }
 
-                Ok(NinePeeMessage::TranslatorMessage { translator_id, data })
+                Ok(NinePMessage::TranslatorMessage { translator_id, data })
             } else {
-                Ok(NinePeeMessage::Error {
+                Ok(NinePMessage::Error {
                     ename: "Translator not found in registry".to_string(),
                     errno: 2,
                 })
             }
         } else {
-            Ok(NinePeeMessage::Error {
+            Ok(NinePMessage::Error {
                 ename: "Invalid translator ID".to_string(),
                 errno: 22,
             })
@@ -1504,11 +1504,11 @@ impl MessageHandler {
     }
 
     /// Handle translator kill
-    async fn handle_translator_kill(&mut self, translator_id: u32) -> Result<NinePeeMessage> {
+    async fn handle_translator_kill(&mut self, translator_id: u32) -> Result<NinePMessage> {
         debug!("TranslatorKill: translator_id={}", translator_id);
 
         if !self.connection_state.supports_extensions() {
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: "Extensions not supported".to_string(),
                 errno: 95,
             });
@@ -1522,9 +1522,9 @@ impl MessageHandler {
             }
 
             info!("Killed translator {}", translator_id);
-            Ok(NinePeeMessage::TranslatorKill { translator_id })
+            Ok(NinePMessage::TranslatorKill { translator_id })
         } else {
-            Ok(NinePeeMessage::Error {
+            Ok(NinePMessage::Error {
                 ename: "Invalid translator ID".to_string(),
                 errno: 22,
             })
@@ -1532,12 +1532,12 @@ impl MessageHandler {
     }
 
     /// Handle consensus propose (GHOSTDAG)
-    async fn handle_consensus_propose(&mut self, block_hash: [u8; 32], parent_hashes: Vec<[u8; 32]>) -> Result<NinePeeMessage> {
+    async fn handle_consensus_propose(&mut self, block_hash: [u8; 32], parent_hashes: Vec<[u8; 32]>) -> Result<NinePMessage> {
         debug!("ConsensusPropose: block_hash={:?}, parents={}",
                hex::encode(&block_hash[..8]), parent_hashes.len());
 
         if !self.connection_state.supports_extensions() {
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: "Extensions not supported".to_string(),
                 errno: 95,
             });
@@ -1547,7 +1547,7 @@ impl MessageHandler {
 
         // Check if block already exists
         if consensus.blocks.contains_key(&block_hash) {
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: "Block already proposed".to_string(),
                 errno: 17, // EEXIST
             });
@@ -1556,7 +1556,7 @@ impl MessageHandler {
         // Validate parent blocks exist
         for parent in &parent_hashes {
             if !parent.iter().all(|&b| b == 0) && !consensus.blocks.contains_key(parent) {
-                return Ok(NinePeeMessage::Error {
+                return Ok(NinePMessage::Error {
                     ename: "Unknown parent block".to_string(),
                     errno: 2, // ENOENT
                 });
@@ -1585,16 +1585,16 @@ impl MessageHandler {
         info!("Proposed block {:?} with blue score {} and {} parents",
               hex::encode(&block_hash[..8]), blue_score, parent_hashes.len());
 
-        Ok(NinePeeMessage::ConsensusPropose { block_hash, parent_hashes })
+        Ok(NinePMessage::ConsensusPropose { block_hash, parent_hashes })
     }
 
     /// Handle consensus vote
-    async fn handle_consensus_vote(&mut self, block_hash: [u8; 32], vote: bool) -> Result<NinePeeMessage> {
+    async fn handle_consensus_vote(&mut self, block_hash: [u8; 32], vote: bool) -> Result<NinePMessage> {
         debug!("ConsensusVote: block_hash={:?}, vote={}",
                hex::encode(&block_hash[..8]), vote);
 
         if !self.connection_state.supports_extensions() {
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: "Extensions not supported".to_string(),
                 errno: 95,
             });
@@ -1606,7 +1606,7 @@ impl MessageHandler {
         // Find the block to vote on
         let block = match consensus.blocks.get_mut(&block_hash) {
             Some(b) => b,
-            None => return Ok(NinePeeMessage::Error {
+            None => return Ok(NinePMessage::Error {
                 ename: "Block not found".to_string(),
                 errno: 2, // ENOENT
             }),
@@ -1614,7 +1614,7 @@ impl MessageHandler {
 
         // Check if block is still in voting phase
         if block.status != BlockStatus::Proposed && block.status != BlockStatus::Voting {
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: "Block not in voting phase".to_string(),
                 errno: 22, // EINVAL
             });
@@ -1654,16 +1654,16 @@ impl MessageHandler {
               if vote { "positive" } else { "negative" },
               hex::encode(&block_hash[..8]), block.votes_for, block.votes_against);
 
-        Ok(NinePeeMessage::ConsensusVote { block_hash, vote })
+        Ok(NinePMessage::ConsensusVote { block_hash, vote })
     }
 
     /// Handle consensus commit
-    async fn handle_consensus_commit(&mut self, block_hash: [u8; 32], blue_score: u64) -> Result<NinePeeMessage> {
+    async fn handle_consensus_commit(&mut self, block_hash: [u8; 32], blue_score: u64) -> Result<NinePMessage> {
         debug!("ConsensusCommit: block_hash={:?}, blue_score={}",
                hex::encode(&block_hash[..8]), blue_score);
 
         if !self.connection_state.supports_extensions() {
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: "Extensions not supported".to_string(),
                 errno: 95,
             });
@@ -1678,7 +1678,7 @@ impl MessageHandler {
         // Find the block to commit
         let block = match consensus.blocks.get_mut(&block_hash) {
             Some(b) => b,
-            None => return Ok(NinePeeMessage::Error {
+            None => return Ok(NinePMessage::Error {
                 ename: "Block not found".to_string(),
                 errno: 2, // ENOENT
             }),
@@ -1686,7 +1686,7 @@ impl MessageHandler {
 
         // Check if block is ready to commit (must be accepted)
         if block.status != BlockStatus::Accepted {
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: "Block not ready for commit".to_string(),
                 errno: 22, // EINVAL
             });
@@ -1694,7 +1694,7 @@ impl MessageHandler {
 
         // Validate blue score matches expected value
         if blue_score != block.blue_score {
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: "Blue score mismatch".to_string(),
                 errno: 22, // EINVAL
             });
@@ -1702,7 +1702,7 @@ impl MessageHandler {
 
         // Check finality depth - ensure block has enough confirmations
         if confirmation_depth < finality_depth {
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: format!("Insufficient confirmations: {} < {}", confirmation_depth, finality_depth),
                 errno: 11, // EAGAIN
             });
@@ -1715,7 +1715,7 @@ impl MessageHandler {
         info!("COMMITTED block {:?} with blue score {} (depth: {})",
               hex::encode(&block_hash[..8]), blue_score, confirmation_depth);
 
-        Ok(NinePeeMessage::ConsensusCommit { block_hash, blue_score })
+        Ok(NinePMessage::ConsensusCommit { block_hash, blue_score })
     }
 
     /// Calculate blue score using GHOSTDAG algorithm

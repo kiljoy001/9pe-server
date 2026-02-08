@@ -102,7 +102,7 @@ Everything else via WASM translators!
 ### Phase 1: Port 9PE to Your Microkernel
 ```rust
 // 9PE server runs as first userspace process
-impl RootServer for NinePEServer {
+impl RootServer for NinePServer {
     fn init(cap: ThreadCap) {
         // Map 9PE's needs to your 3 syscalls
         self.setup_endpoints();  // Uses Call syscall

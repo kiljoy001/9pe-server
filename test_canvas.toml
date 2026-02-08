@@ -1,0 +1,9 @@
+[server]
+root = "./test_root"
+listen_addr = "127.0.0.1:5640"
+node_id = "test-canvas-node"
+node_name = "Canvas Test Server"
+auto_mount_enabled = true
+
+[transport]
+type = "tcp"

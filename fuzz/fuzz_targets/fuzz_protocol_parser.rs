@@ -5,7 +5,7 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use ninepee_server::*;
+use ninepe_server::*;
 
 fuzz_target!(|data: &[u8]| {
     // Fuzz the 9P message parser

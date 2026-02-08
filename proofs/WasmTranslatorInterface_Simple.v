@@ -14,12 +14,12 @@ Import ListNotations.
 (** * Basic Types *)
 
 (* 9P message types *)
-Inductive NinePeeMessageType : Type :=
+Inductive NinePMessageType : Type :=
   | Tread | Rread | Twrite | Rwrite | Terror | Rerror.
 
 (* 9P message structure *)
-Record NinePeeMessage : Type := {
-  msg_type : NinePeeMessageType;
+Record NinePMessage : Type := {
+  msg_type : NinePMessageType;
   msg_fid : nat;
   msg_data : list nat;
 }.
@@ -38,7 +38,7 @@ Record WasmTranslatorState : Type := {
 (** * Core Interface Functions *)
 
 (* Serialize 9P message to bytes *)
-Definition serialize_message (msg : NinePeeMessage) : list nat :=
+Definition serialize_message (msg : NinePMessage) : list nat :=
   match msg.(msg_type) with
   | Tread => [116] ++ [msg.(msg_fid)] ++ msg.(msg_data)
   | Rread => [117] ++ [msg.(msg_fid)] ++ msg.(msg_data)
@@ -49,7 +49,7 @@ Definition serialize_message (msg : NinePeeMessage) : list nat :=
   end.
 
 (* Deserialize bytes to 9P message *)
-Definition deserialize_message (bytes : list nat) : option NinePeeMessage :=
+Definition deserialize_message (bytes : list nat) : option NinePMessage :=
   match bytes with
   | 116 :: fid :: data => Some {| msg_type := Tread; msg_fid := fid; msg_data := data |}
   | 117 :: fid :: data => Some {| msg_type := Rread; msg_fid := fid; msg_data := data |}
@@ -61,8 +61,8 @@ Definition deserialize_message (bytes : list nat) : option NinePeeMessage :=
   end.
 
 (* WASM translator execution (simplified) *)
-Definition execute_wasm_translator (state : WasmTranslatorState) (msg : NinePeeMessage) :
-  option (WasmTranslatorState * NinePeeMessage) :=
+Definition execute_wasm_translator (state : WasmTranslatorState) (msg : NinePMessage) :
+  option (WasmTranslatorState * NinePMessage) :=
   if state.(wasm_active) then
     let serialized := serialize_message msg in
     (* Simulate WASM execution - transform input message *)
@@ -78,14 +78,14 @@ Definition execute_wasm_translator (state : WasmTranslatorState) (msg : NinePeeM
 (** * Safety and Correctness Properties *)
 
 (* Message integrity: serialization preserves essential data *)
-Definition message_integrity (msg : NinePeeMessage) : Prop :=
+Definition message_integrity (msg : NinePMessage) : Prop :=
   match deserialize_message (serialize_message msg) with
   | Some msg' => msg.(msg_type) = msg'.(msg_type) /\ msg.(msg_fid) = msg'.(msg_fid)
   | None => False
   end.
 
 (* Protocol correctness: requests map to correct responses *)
-Definition protocol_correct (request response : NinePeeMessage) : Prop :=
+Definition protocol_correct (request response : NinePMessage) : Prop :=
   (request.(msg_type) = Tread -> response.(msg_type) = Rread) /\
   (request.(msg_type) = Twrite -> response.(msg_type) = Rwrite) /\
   response.(msg_fid) = request.(msg_fid).

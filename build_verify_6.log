@@ -1,0 +1,4 @@
+error: failed to parse manifest at `/home/scott/Repo/9pe-server/Cargo.toml`
+
+Caused by:
+  dev-dependencies are not allowed to be optional: `arbitrary`

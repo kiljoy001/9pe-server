@@ -15,7 +15,7 @@ use anyhow::{Result, Context};
 use tracing::{info, warn, error, debug};
 use std::time::Instant;
 
-use plan9e::protocol::{NinePeeMessage, ProtocolError, NINEPEE_VERSION, LEGACY_VERSION};
+use plan9e::protocol::{NinePMessage, ProtocolError, NINEP_VERSION, LEGACY_VERSION};
 use crate::metrics;
 use crate::synthetic::{SyntheticGenerator, CpuInfoGenerator, MemInfoGenerator};
 use crate::function_files::{FunctionFile, FunctionFileManager, IdentityFunction, Base64EncodeFunction};
@@ -212,51 +212,51 @@ impl EnhancedFileSystemServer {
     }
 
     /// Enhanced message processing with all features
-    pub async fn process_message(&self, msg: NinePeeMessage) -> Result<NinePeeMessage> {
+    pub async fn process_message(&self, msg: NinePMessage) -> Result<NinePMessage> {
         debug!("Processing enhanced message: {:?}", msg);
         let start = Instant::now();
         let msg_type = format!("{:?}", msg);
 
         let result = match msg {
-            NinePeeMessage::Version { msize, version } => {
+            NinePMessage::Version { msize, version } => {
                 self.handle_version(msize, version).await
             }
 
-            NinePeeMessage::Attach { fid, afid: _, uname, aname } => {
+            NinePMessage::Attach { fid, afid: _, uname, aname } => {
                 self.handle_attach(fid, uname, aname).await
             }
 
-            NinePeeMessage::Walk { fid, newfid, wnames } => {
+            NinePMessage::Walk { fid, newfid, wnames } => {
                 self.handle_enhanced_walk(fid, newfid, wnames).await
             }
 
-            NinePeeMessage::Open { fid, mode } => {
+            NinePMessage::Open { fid, mode } => {
                 self.handle_enhanced_open(fid, mode).await
             }
 
-            NinePeeMessage::Read { fid, offset, count } => {
+            NinePMessage::Read { fid, offset, count } => {
                 self.handle_enhanced_read(fid, offset, count).await
             }
 
-            NinePeeMessage::Write { fid, offset, data } => {
+            NinePMessage::Write { fid, offset, data } => {
                 self.handle_enhanced_write(fid, offset, data).await
             }
 
-            NinePeeMessage::Clunk { fid } => {
+            NinePMessage::Clunk { fid } => {
                 self.handle_clunk(fid).await
             }
 
-            NinePeeMessage::Stat { fid } => {
+            NinePMessage::Stat { fid } => {
                 self.handle_stat(fid).await
             }
 
-            NinePeeMessage::Remove { fid } => {
+            NinePMessage::Remove { fid } => {
                 self.handle_remove(fid).await
             }
 
             _ => {
                 warn!("Unhandled message type in enhanced server");
-                Ok(NinePeeMessage::Error {
+                Ok(NinePMessage::Error {
                     ename: "Not implemented".to_string(),
                     errno: 1,
                 })
@@ -272,15 +272,15 @@ impl EnhancedFileSystemServer {
     }
 
     /// Handle version negotiation
-    async fn handle_version(&self, msize: u32, version: String) -> Result<NinePeeMessage> {
+    async fn handle_version(&self, msize: u32, version: String) -> Result<NinePMessage> {
         info!("Enhanced version negotiation: {} with msize {}", version, msize);
 
         let negotiated_version = if version.starts_with("9P.e") {
-            NINEPEE_VERSION.to_string()
+            NINEP_VERSION.to_string()
         } else if version == LEGACY_VERSION {
             LEGACY_VERSION.to_string()
         } else {
-            return Ok(NinePeeMessage::Error {
+            return Ok(NinePMessage::Error {
                 ename: format!("Unknown version: {}", version),
                 errno: 1,
             });
@@ -288,24 +288,24 @@ impl EnhancedFileSystemServer {
 
         let negotiated_msize = msize.min(self.max_message_size);
 
-        Ok(NinePeeMessage::Version {
+        Ok(NinePMessage::Version {
             msize: negotiated_msize,
             version: negotiated_version,
         })
     }
 
     /// Handle attach request
-    async fn handle_attach(&self, fid: u32, uname: String, aname: String) -> Result<NinePeeMessage> {
+    async fn handle_attach(&self, fid: u32, uname: String, aname: String) -> Result<NinePMessage> {
         info!("Enhanced attach: fid={}, user={}, aname={}", fid, uname, aname);
 
         let mut fids = self.fids.write().await;
         fids.insert(fid, EnhancedFidTarget::RealFile(self.root.clone()));
 
-        Ok(NinePeeMessage::Stat { fid })
+        Ok(NinePMessage::Stat { fid })
     }
 
     /// Enhanced walk that handles all namespaces
-    async fn handle_enhanced_walk(&self, fid: u32, newfid: u32, wnames: Vec<String>) -> Result<NinePeeMessage> {
+    async fn handle_enhanced_walk(&self, fid: u32, newfid: u32, wnames: Vec<String>) -> Result<NinePMessage> {
         debug!("Enhanced walk: fid={}, newfid={}, path={:?}", fid, newfid, wnames);
 
         let fids = self.fids.read().await;
@@ -314,7 +314,7 @@ impl EnhancedFileSystemServer {
 
         let base_path = match base_target {
             EnhancedFidTarget::RealFile(path) => path.clone(),
-            _ => return Ok(NinePeeMessage::Error {
+            _ => return Ok(NinePMessage::Error {
                 ename: "Cannot walk from non-file FID".to_string(),
                 errno: 1,
             })
@@ -356,7 +356,7 @@ impl EnhancedFileSystemServer {
                 if let Some(func) = func_manager.get_function(function_name) {
                     EnhancedFidTarget::FunctionFile(function_name.to_string(), func)
                 } else {
-                    return Ok(NinePeeMessage::Error {
+                    return Ok(NinePMessage::Error {
                         ename: format!("Function not found: {}", function_name),
                         errno: 2,
                     });
@@ -372,7 +372,7 @@ impl EnhancedFileSystemServer {
                     .unwrap_or_else(|_| current_path.clone());
 
                 if !canonical.starts_with(&self.root) {
-                    return Ok(NinePeeMessage::Error {
+                    return Ok(NinePMessage::Error {
                         ename: "Path outside root".to_string(),
                         errno: 2,
                     });
@@ -386,7 +386,7 @@ impl EnhancedFileSystemServer {
         let mut fids = self.fids.write().await;
         fids.insert(newfid, target);
 
-        Ok(NinePeeMessage::Walk {
+        Ok(NinePMessage::Walk {
             fid: newfid,
             newfid,
             wnames: vec![],
@@ -394,7 +394,7 @@ impl EnhancedFileSystemServer {
     }
 
     /// Enhanced open that handles all file types
-    async fn handle_enhanced_open(&self, fid: u32, mode: u8) -> Result<NinePeeMessage> {
+    async fn handle_enhanced_open(&self, fid: u32, mode: u8) -> Result<NinePMessage> {
         debug!("Enhanced open: fid={}, mode={}", fid, mode);
 
         let fids = self.fids.read().await;
@@ -404,7 +404,7 @@ impl EnhancedFileSystemServer {
         match target {
             EnhancedFidTarget::RealFile(path) => {
                 if !path.exists() {
-                    return Ok(NinePeeMessage::Error {
+                    return Ok(NinePMessage::Error {
                         ename: "File not found".to_string(),
                         errno: 2,
                     });
@@ -421,11 +421,11 @@ impl EnhancedFileSystemServer {
             }
         }
 
-        Ok(NinePeeMessage::Open { fid, mode })
+        Ok(NinePMessage::Open { fid, mode })
     }
 
     /// Enhanced read that handles all file types
-    async fn handle_enhanced_read(&self, fid: u32, offset: u64, count: u32) -> Result<NinePeeMessage> {
+    async fn handle_enhanced_read(&self, fid: u32, offset: u64, count: u32) -> Result<NinePMessage> {
         debug!("Enhanced read: fid={}, offset={}, count={}", fid, offset, count);
 
         let fids = self.fids.read().await;
@@ -451,7 +451,7 @@ impl EnhancedFileSystemServer {
     }
 
     /// Handle real file reads
-    async fn handle_real_file_read(&self, fid: u32, path: &Path, offset: u64, count: u32) -> Result<NinePeeMessage> {
+    async fn handle_real_file_read(&self, fid: u32, path: &Path, offset: u64, count: u32) -> Result<NinePMessage> {
         if path.is_dir() {
             let entries = self.read_enhanced_directory(path).await?;
             let data = entries.join("\n").into_bytes();
@@ -461,7 +461,7 @@ impl EnhancedFileSystemServer {
 
             metrics::record_file_op("read_directory", true, Some((end - start) as u64));
 
-            Ok(NinePeeMessage::Read {
+            Ok(NinePMessage::Read {
                 fid,
                 offset,
                 count: (end - start) as u32,
@@ -474,7 +474,7 @@ impl EnhancedFileSystemServer {
 
             metrics::record_file_op("read_file", true, Some((end - start) as u64));
 
-            Ok(NinePeeMessage::Write {
+            Ok(NinePMessage::Write {
                 fid,
                 offset,
                 data: data[start..end].to_vec(),
@@ -483,14 +483,14 @@ impl EnhancedFileSystemServer {
     }
 
     /// Handle synthetic file reads (proven correct)
-    async fn handle_synthetic_file_read(&self, fid: u32, _name: &str, generator: Box<dyn SyntheticGenerator>, offset: u64, count: u32) -> Result<NinePeeMessage> {
+    async fn handle_synthetic_file_read(&self, fid: u32, _name: &str, generator: Box<dyn SyntheticGenerator>, offset: u64, count: u32) -> Result<NinePMessage> {
         let data = generator.generate(offset, count).await
             .unwrap_or_else(|_| vec![]);
 
         let bytes_read = data.len() as u64;
         metrics::record_file_op("read_synthetic", true, Some(bytes_read));
 
-        Ok(NinePeeMessage::Write {
+        Ok(NinePMessage::Write {
             fid,
             offset,
             data,
@@ -498,7 +498,7 @@ impl EnhancedFileSystemServer {
     }
 
     /// Handle function file reads
-    async fn handle_function_file_read(&self, fid: u32, name: &str, function: Arc<dyn FunctionFile>, offset: u64, count: u32) -> Result<NinePeeMessage> {
+    async fn handle_function_file_read(&self, fid: u32, name: &str, function: Arc<dyn FunctionFile>, offset: u64, count: u32) -> Result<NinePMessage> {
         // For function files, reading returns their signature and state
         let signature = function.signature().await;
         let state_info = format!("Function: {}\nSignature: {}\nComposable: {}\n",
@@ -510,7 +510,7 @@ impl EnhancedFileSystemServer {
 
         metrics::record_file_op("read_function", true, Some((end - start) as u64));
 
-        Ok(NinePeeMessage::Write {
+        Ok(NinePMessage::Write {
             fid,
             offset,
             data: data[start..end].to_vec(),
@@ -518,7 +518,7 @@ impl EnhancedFileSystemServer {
     }
 
     /// Handle pipeline reads
-    async fn handle_pipeline_read(&self, fid: u32, name: &str, pipeline: Vec<Arc<dyn FunctionFile>>, offset: u64, count: u32) -> Result<NinePeeMessage> {
+    async fn handle_pipeline_read(&self, fid: u32, name: &str, pipeline: Vec<Arc<dyn FunctionFile>>, offset: u64, count: u32) -> Result<NinePMessage> {
         let pipeline_info = format!("Pipeline: {}\nStages: {}\n", name, pipeline.len());
         let data = pipeline_info.into_bytes();
 
@@ -527,7 +527,7 @@ impl EnhancedFileSystemServer {
 
         metrics::record_file_op("read_pipeline", true, Some((end - start) as u64));
 
-        Ok(NinePeeMessage::Write {
+        Ok(NinePMessage::Write {
             fid,
             offset,
             data: data[start..end].to_vec(),
@@ -535,7 +535,7 @@ impl EnhancedFileSystemServer {
     }
 
     /// Enhanced write that handles function file execution
-    async fn handle_enhanced_write(&self, fid: u32, offset: u64, data: Vec<u8>) -> Result<NinePeeMessage> {
+    async fn handle_enhanced_write(&self, fid: u32, offset: u64, data: Vec<u8>) -> Result<NinePMessage> {
         debug!("Enhanced write: fid={}, offset={}, len={}", fid, offset, data.len());
 
         let fids = self.fids.read().await;
@@ -547,7 +547,7 @@ impl EnhancedFileSystemServer {
         match target {
             EnhancedFidTarget::RealFile(path) => {
                 if path.is_dir() {
-                    return Ok(NinePeeMessage::Error {
+                    return Ok(NinePMessage::Error {
                         ename: "Cannot write to directory".to_string(),
                         errno: 21,
                     });
@@ -568,14 +568,14 @@ impl EnhancedFileSystemServer {
 
                 metrics::record_file_op("write_file", true, Some(data.len() as u64));
 
-                Ok(NinePeeMessage::Write {
+                Ok(NinePMessage::Write {
                     fid,
                     offset,
                     data: vec![],
                 })
             }
             EnhancedFidTarget::SyntheticFile(_, _) => {
-                Ok(NinePeeMessage::Error {
+                Ok(NinePMessage::Error {
                     ename: "Cannot write to synthetic file".to_string(),
                     errno: 30,
                 })
@@ -589,7 +589,7 @@ impl EnhancedFileSystemServer {
 
                         // Store result for subsequent read
                         // For now, return success
-                        Ok(NinePeeMessage::Write {
+                        Ok(NinePMessage::Write {
                             fid,
                             offset,
                             data: vec![],
@@ -599,7 +599,7 @@ impl EnhancedFileSystemServer {
                         error!("Function {} execution failed: {}", name, e);
                         metrics::record_file_op("execute_function", false, None);
 
-                        Ok(NinePeeMessage::Error {
+                        Ok(NinePMessage::Error {
                             ename: format!("Function execution failed: {}", e),
                             errno: 1,
                         })
@@ -618,7 +618,7 @@ impl EnhancedFileSystemServer {
                         }
                         Err(e) => {
                             error!("Pipeline {} stage {} failed: {}", name, i, e);
-                            return Ok(NinePeeMessage::Error {
+                            return Ok(NinePMessage::Error {
                                 ename: format!("Pipeline stage {} failed: {}", i, e),
                                 errno: 1,
                             });
@@ -629,7 +629,7 @@ impl EnhancedFileSystemServer {
                 info!("Pipeline {} executed successfully", name);
                 metrics::record_file_op("execute_pipeline", true, Some(current_data.len() as u64));
 
-                Ok(NinePeeMessage::Write {
+                Ok(NinePMessage::Write {
                     fid,
                     offset,
                     data: vec![],
@@ -687,24 +687,24 @@ impl EnhancedFileSystemServer {
     }
 
     /// Handle clunk (close) request
-    async fn handle_clunk(&self, fid: u32) -> Result<NinePeeMessage> {
+    async fn handle_clunk(&self, fid: u32) -> Result<NinePMessage> {
         debug!("Enhanced clunk: fid={}", fid);
 
         let mut fids = self.fids.write().await;
         fids.remove(&fid);
 
-        Ok(NinePeeMessage::Clunk { fid })
+        Ok(NinePMessage::Clunk { fid })
     }
 
     /// Handle stat request
-    async fn handle_stat(&self, fid: u32) -> Result<NinePeeMessage> {
+    async fn handle_stat(&self, fid: u32) -> Result<NinePMessage> {
         debug!("Enhanced stat: fid={}", fid);
         // For now, return simple stat
-        Ok(NinePeeMessage::Stat { fid })
+        Ok(NinePMessage::Stat { fid })
     }
 
     /// Handle remove request
-    async fn handle_remove(&self, fid: u32) -> Result<NinePeeMessage> {
+    async fn handle_remove(&self, fid: u32) -> Result<NinePMessage> {
         debug!("Enhanced remove: fid={}", fid);
 
         let fids = self.fids.read().await;
@@ -721,7 +721,7 @@ impl EnhancedFileSystemServer {
                 metrics::record_file_op("remove_file", true, None);
             }
             _ => {
-                return Ok(NinePeeMessage::Error {
+                return Ok(NinePMessage::Error {
                     ename: "Cannot remove synthetic/function files".to_string(),
                     errno: 1,
                 });
@@ -732,7 +732,7 @@ impl EnhancedFileSystemServer {
         let mut fids = self.fids.write().await;
         fids.remove(&fid);
 
-        Ok(NinePeeMessage::Remove { fid })
+        Ok(NinePMessage::Remove { fid })
     }
 }
 

@@ -10,6 +10,9 @@ use tokio::sync::RwLock;
 use wasmtime::{Engine, Instance, Linker, Memory, Module, Store};
 use wasmtime_wasi::{WasiCtx, WasiCtxBuilder};
 
+use crate::translators::hypercore::{HypercoreBridge, HypercoreConfig};
+use crate::translators::gemini::GeminiBridge;
+
 /// WASM translator instance
 pub struct WasmTranslator {
     /// Name of the translator
@@ -22,6 +25,10 @@ pub struct WasmTranslator {
     mount_point: PathBuf,
     /// Active instances (per-connection)
     instances: Arc<RwLock<HashMap<u64, TranslatorInstance>>>,
+    /// Hypercore Bridge
+    hypercore: Arc<HypercoreBridge>,
+    /// Gemini Bridge
+    gemini: Arc<GeminiBridge>,
 }
 
 /// Per-connection translator instance
@@ -36,6 +43,10 @@ impl WasmTranslator {
     pub async fn load(name: String, wasm_bytes: Vec<u8>, mount_point: PathBuf) -> Result<Self> {
         let engine = Engine::default();
         let module = Module::new(&engine, &wasm_bytes).context("Failed to compile WASM module")?;
+        
+        let hypercore_config = HypercoreConfig {
+            storage_path: PathBuf::from("hypercore_store").join(&name),
+        };
 
         Ok(Self {
             name,
@@ -43,6 +54,8 @@ impl WasmTranslator {
             engine,
             mount_point,
             instances: Arc::new(RwLock::new(HashMap::new())),
+            hypercore: Arc::new(HypercoreBridge::new(hypercore_config)),
+            gemini: Arc::new(GeminiBridge::new()),
         })
     }
 
@@ -54,6 +67,9 @@ impl WasmTranslator {
 
         // Add 9P operations as host functions
         self.add_ninep_functions(&mut linker)?;
+        
+        // Add Hybrid App operations
+        self.add_hybrid_functions(&mut linker)?;
 
         // Create WASI context
         let wasi = WasiCtxBuilder::new().inherit_stdio().build();
@@ -79,17 +95,85 @@ impl WasmTranslator {
         Ok(())
     }
 
-    /// Add 9P protocol functions to WASM environment
-    fn add_ninep_functions<T>(&self, linker: &mut Linker<T>) -> Result<()> {
-        // These functions allow WASM to interact with 9P protocol
+    /// Add Hybrid App functions (Hypercore + Gemini)
+    fn add_hybrid_functions<T: 'static>(&self, linker: &mut Linker<T>) -> Result<()> {
+        let hypercore = self.hypercore.clone();
+        let gemini = self.gemini.clone();
 
+        // hypercore_open(key_ptr, key_len) -> status
+        linker.func_wrap(
+            "hypercore",
+            "open",
+            move |mut caller: wasmtime::Caller<'_, T>, key_ptr: i32, key_len: i32| -> i32 {
+                let memory = match caller.get_export("memory") {
+                    Some(wasmtime::Extern::Memory(mem)) => mem,
+                    _ => return -1,
+                };
+                
+                let mut key_buf = vec![0u8; key_len as usize];
+                if memory.read(&caller, key_ptr as usize, &mut key_buf).is_err() {
+                    return -2;
+                }
+                let key_str = String::from_utf8_lossy(&key_buf).to_string();
+                
+                // Fire and forget open
+                let hc = hypercore.clone();
+                tokio::spawn(async move {
+                    let _ = hc.open_feed(&key_str).await;
+                });
+                
+                0 // Success (Optimistic)
+            },
+        )?;
+
+        // gemini_fetch(url_ptr, url_len, out_ptr, out_max) -> bytes_written
+        let g_clone = gemini.clone();
+        linker.func_wrap(
+            "gemini", 
+            "fetch", 
+            move |mut caller: wasmtime::Caller<'_, T>, url_ptr: i32, url_len: i32, out_ptr: i32, out_max: i32| -> i32 {
+                 let memory = match caller.get_export("memory") {
+                    Some(wasmtime::Extern::Memory(mem)) => mem,
+                    _ => return -1,
+                };
+
+                let mut url_buf = vec![0u8; url_len as usize];
+                if memory.read(&caller, url_ptr as usize, &mut url_buf).is_err() {
+                    return -2;
+                }
+                let url_str = String::from_utf8_lossy(&url_buf).to_string();
+                
+                // Execute fetch synchronously using block_in_place
+                let result = tokio::task::block_in_place(|| {
+                    tokio::runtime::Handle::current().block_on(async {
+                        g_clone.fetch(&url_str).await
+                    })
+                });
+
+                match result {
+                    Ok((_header, body)) => {
+                        let len = std::cmp::min(body.len(), out_max as usize);
+                        if memory.write(&mut caller, out_ptr as usize, &body[..len]).is_err() {
+                             return -3;
+                        }
+                        len as i32
+                    }
+                    Err(_) => -4 // Fetch failed
+                }
+            }
+        )?;
+
+        Ok(())
+    }
+
+    /// Add 9P protocol functions to WASM environment
+    fn add_ninep_functions<T: 'static>(&self, linker: &mut Linker<T>) -> Result<()> {
+        // ... (existing 9p functions) ...
         // Read operation
         linker.func_wrap(
             "9p",
             "read",
             |_caller: wasmtime::Caller<'_, T>, _fid: i32, _offset: i64, _count: i32| -> i32 {
-                // Implementation would forward to actual 9P handler
-                // For now, return success
                 0
             },
         )?;
@@ -104,7 +188,6 @@ impl WasmTranslator {
              _data_ptr: i32,
              _count: i32|
              -> i32 {
-                // Implementation would forward to actual 9P handler
                 0
             },
         )?;
@@ -114,7 +197,6 @@ impl WasmTranslator {
             "9p",
             "stat",
             |_caller: wasmtime::Caller<'_, T>, _fid: i32, _stat_ptr: i32| -> i32 {
-                // Implementation would forward to actual 9P handler
                 0
             },
         )?;

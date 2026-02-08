@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use honggfuzz::fuzz;
-use ninepee_server::*;
+use ninepe_server::*;
 
 fn main() {
     loop {

@@ -1,0 +1,1632 @@
+ Downloading crates ...
+  Downloaded serde_with_macros v3.16.1
+  Downloaded mio v1.1.1
+  Downloaded libloading v0.9.0
+  Downloaded schemars v1.2.0
+  Downloaded serde_with v3.16.1
+  Downloaded mdns-sd v0.17.2
+    Checking mio v1.1.1
+   Compiling darling_core v0.21.3
+    Checking spin v0.9.8
+    Checking socket-pktinfo v0.3.2
+    Checking if-addrs v0.14.0
+   Compiling ninepe-server v1.0.0 (/home/scott/Repo/9pe-server)
+    Checking libloading v0.9.0
+warning: unused variable: `out_dir`
+   --> build.rs:176:9
+    |
+176 |     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+    |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_out_dir`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+    Checking flume v0.11.1
+    Checking tokio v1.49.0
+warning: `ninepe-server` (build script) generated 1 warning
+    Checking mdns-sd v0.17.2
+warning: ninepe-server@1.0.0: Using pre-built Intel oneAPI SYCL library
+warning: ninepe-server@1.0.0: Using pre-built AdaptiveCpp SYCL library
+warning: ninepe-server@1.0.0: SYCL backends available: Intel oneAPI, AdaptiveCpp
+warning: ninepe-server@1.0.0: Both backends built as separate shared libraries
+warning: ninepe-server@1.0.0: Runtime will dynamically load appropriate backend per GPU
+warning: ninepe-server@1.0.0: No static linking - using dlopen via libloading crate
+   Compiling darling_macro v0.21.3
+   Compiling darling v0.21.3
+   Compiling serde_with_macros v3.16.1
+    Checking serde_with v3.16.1
+    Checking libp2p-swarm v0.43.7
+    Checking netlink-sys v0.8.8
+    Checking trust-dns-proto v0.22.0
+    Checking wasmtime-wasi v41.0.1
+    Checking quinn v0.10.2
+    Checking netlink-proto v0.11.5
+    Checking rtnetlink v0.13.1
+    Checking if-watch v3.2.1
+    Checking libp2p-request-response v0.25.3
+    Checking libp2p-relay v0.16.2
+    Checking libp2p-gossipsub v0.45.2
+    Checking libp2p-allow-block-list v0.2.0
+    Checking libp2p-dcutr v0.10.0
+    Checking libp2p-connection-limits v0.2.1
+    Checking libp2p-identify v0.43.1
+    Checking libp2p-kad v0.44.6
+    Checking libp2p-tcp v0.40.1
+    Checking libp2p-autonat v0.11.0
+    Checking libp2p-mdns v0.44.0
+    Checking libp2p v0.52.4
+error[E0583]: file not found for module `xmx_impl`
+ --> src/gpu/xmx.rs:7:1
+  |
+7 | pub mod xmx_impl;
+  | ^^^^^^^^^^^^^^^^^
+  |
+  = help: to create the module `xmx_impl`, create file "src/gpu/xmx/xmx_impl.rs" or "src/gpu/xmx/xmx_impl/mod.rs"
+  = note: if there is a `mod xmx_impl` elsewhere in the crate already, import it with `use crate::...` instead
+
+error[E0428]: the name `detect_xmx_capability` is defined multiple times
+   --> src/gpu/xmx.rs:183:1
+    |
+ 49 | pub fn detect_xmx_capability() -> XmxHardware {
+    | --------------------------------------------- previous definition of the value `detect_xmx_capability` here
+...
+183 | pub fn detect_xmx_capability() -> XmxHardware {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `detect_xmx_capability` redefined here
+    |
+    = note: `detect_xmx_capability` must be defined only once in the value namespace of this module
+
+error[E0428]: the name `matmul_xmx` is defined multiple times
+   --> src/gpu/xmx.rs:210:1
+    |
+ 75 | / pub fn matmul_xmx(
+ 76 | |     a: &[f32],
+ 77 | |     b: &[f32],
+ 78 | |     precision: XmxPrecision,
+...   |
+ 97 | | }
+    | |_- previous definition of the value `matmul_xmx` here
+...
+210 | / pub fn matmul_xmx(
+211 | |     a: &[f32],
+212 | |     b: &[f32],
+213 | |     precision: XmxPrecision,
+...   |
+233 | | }
+    | |_^ `matmul_xmx` redefined here
+    |
+    = note: `matmul_xmx` must be defined only once in the value namespace of this module
+
+error[E0428]: the name `matmul_xmx_impl` is defined multiple times
+   --> src/gpu/xmx.rs:236:1
+    |
+100 | / fn matmul_xmx_impl(
+101 | |     a: &[f32],
+102 | |     b: &[f32],
+103 | |     precision: XmxPrecision,
+...   |
+106 | |     Ok(vec![0.0; a.len()]) // Placeholder
+107 | | }
+    | |_- previous definition of the value `matmul_xmx_impl` here
+...
+236 | / fn matmul_xmx_impl(
+237 | |     a: &[f32],
+238 | |     b: &[f32],
+239 | |     precision: XmxPrecision,
+...   |
+269 | | }
+    | |_^ `matmul_xmx_impl` redefined here
+    |
+    = note: `matmul_xmx_impl` must be defined only once in the value namespace of this module
+
+error[E0428]: the name `matmul_fallback` is defined multiple times
+   --> src/gpu/xmx.rs:525:1
+    |
+118 | / fn matmul_fallback(
+119 | |     a: &[f32],
+120 | |     b: &[f32],
+121 | |     precision: XmxPrecision,
+...   |
+137 | |     Ok(result)
+138 | | }
+    | |_- previous definition of the value `matmul_fallback` here
+...
+525 | / fn matmul_fallback(
+526 | |     a: &[f32],
+527 | |     b: &[f32],
+528 | |     precision: XmxPrecision,
+...   |
+544 | |     Ok(result)
+545 | | }
+    | |_^ `matmul_fallback` redefined here
+    |
+    = note: `matmul_fallback` must be defined only once in the value namespace of this module
+
+error[E0428]: the name `optimize_for_ai_workload` is defined multiple times
+   --> src/gpu/xmx.rs:559:1
+    |
+152 | / pub fn optimize_for_ai_workload(
+153 | |     weights: &[f32],
+154 | |     activations: &[f32],
+155 | |     precision: XmxPrecision,
+...   |
+166 | |     matmul_xmx(weights, activations, effective_precision)
+167 | | }
+    | |_- previous definition of the value `optimize_for_ai_workload` here
+...
+559 | / pub fn optimize_for_ai_workload(
+560 | |     weights: &[f32],
+561 | |     activations: &[f32],
+562 | |     precision: XmxPrecision,
+...   |
+573 | |     matmul_xmx(weights, activations, effective_precision)
+574 | | }
+    | |_^ `optimize_for_ai_workload` redefined here
+    |
+    = note: `optimize_for_ai_workload` must be defined only once in the value namespace of this module
+
+error[E0428]: the name `XmxPrecision` is defined multiple times
+   --> src/gpu/xmx.rs:171:1
+    |
+ 37 | pub enum XmxPrecision {
+    | --------------------- previous definition of the type `XmxPrecision` here
+...
+171 | pub enum XmxPrecision {
+    | ^^^^^^^^^^^^^^^^^^^^^ `XmxPrecision` redefined here
+    |
+    = note: `XmxPrecision` must be defined only once in the type namespace of this module
+
+error[E0428]: the name `XmxError` is defined multiple times
+   --> src/gpu/xmx.rs:549:1
+    |
+142 | pub enum XmxError {
+    | ----------------- previous definition of the type `XmxError` here
+...
+549 | pub enum XmxError {
+    | ^^^^^^^^^^^^^^^^^ `XmxError` redefined here
+    |
+    = note: `XmxError` must be defined only once in the type namespace of this module
+
+error[E0432]: unresolved imports `crate::protocol::Qid`, `crate::protocol::Stat`
+ --> src/server/handler/basic_ops.rs:5:23
+  |
+5 | use crate::protocol::{Qid, Stat};
+  |                       ^^^  ^^^^ no `Stat` in `protocol`
+  |                       |
+  |                       no `Qid` in `protocol`
+  |                       help: a similar name exists in the module: `Fid`
+  |
+  = help: consider importing this variant instead:
+          crate::NinePMessage::Stat
+
+error[E0432]: unresolved import `crate::consensus::Block`
+   --> src/namespace_manager.rs:396:17
+    |
+396 |             use crate::consensus::Block;
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^ no `Block` in `consensus`
+    |
+help: consider importing this struct through its public re-export instead
+    |
+396 -             use crate::consensus::Block;
+396 +             use crate::bounded_ghostdag::Block;
+    |
+
+error[E0432]: unresolved import `crate::consensus::Block`
+   --> src/namespace_manager.rs:585:17
+    |
+585 |             use crate::consensus::Block;
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^ no `Block` in `consensus`
+    |
+help: consider importing this struct through its public re-export instead
+    |
+585 -             use crate::consensus::Block;
+585 +             use crate::bounded_ghostdag::Block;
+    |
+
+error[E0433]: failed to resolve: could not find `GpuHardware` in `gpu`
+   --> src/server/handler/ninep_extensions.rs:128:25
+    |
+128 |             crate::gpu::GpuHardware::IntelArc | crate::gpu::GpuHardware::IntelAmx => {
+    |                         ^^^^^^^^^^^
+    |                         |
+    |                         could not find `GpuHardware` in `gpu`
+    |                         help: an enum with a similar name exists: `XmxHardware`
+
+error[E0433]: failed to resolve: could not find `GpuHardware` in `gpu`
+   --> src/server/handler/ninep_extensions.rs:128:61
+    |
+128 |             crate::gpu::GpuHardware::IntelArc | crate::gpu::GpuHardware::IntelAmx => {
+    |                                                             ^^^^^^^^^^^
+    |                                                             |
+    |                                                             could not find `GpuHardware` in `gpu`
+    |                                                             help: an enum with a similar name exists: `XmxHardware`
+
+error[E0433]: failed to resolve: could not find `GpuHardware` in `gpu`
+   --> src/server/handler/ninep_extensions.rs:130:57
+    |
+130 |                       if matches!(hardware, crate::gpu::GpuHardware::IntelArc) { 
+    |                                                         ^^^^^^^^^^^
+    |                                                         |
+    |                                                         could not find `GpuHardware` in `gpu`
+    |                                                         help: an enum with a similar name exists: `XmxHardware`
+
+error[E0433]: failed to resolve: could not find `connection_state` in `super`
+   --> src/server/handler/mod.rs:153:42
+    |
+153 |                 let auth_handle = super::connection_state::FileHandle {
+    |                                          ^^^^^^^^^^^^^^^^ could not find `connection_state` in `super`
+
+error[E0433]: failed to resolve: unresolved import
+  --> src/server/mod.rs:90:16
+   |
+90 |         crate::util::log_execution_mode();
+   |                ^^^^
+   |                |
+   |                unresolved import
+   |                help: a similar path exists: `tracing_subscriber::util`
+
+error[E0433]: failed to resolve: unresolved import
+   --> src/server/mod.rs:350:36
+    |
+350 |         let settrans_path = crate::util::get_settrans_directory();
+    |                                    ^^^^
+    |                                    |
+    |                                    unresolved import
+    |                                    help: a similar path exists: `tracing_subscriber::util`
+
+error[E0433]: failed to resolve: unresolved import
+  --> src/auto_mount.rs:95:28
+   |
+95 |         let n_dir = crate::util::get_n_directory();
+   |                            ^^^^
+   |                            |
+   |                            unresolved import
+   |                            help: a similar path exists: `tracing_subscriber::util`
+
+error[E0433]: failed to resolve: unresolved import
+   --> src/auto_mount.rs:101:29
+    |
+101 |         let n_path = crate::util::get_n_directory();
+    |                             ^^^^
+    |                             |
+    |                             unresolved import
+    |                             help: a similar path exists: `tracing_subscriber::util`
+
+error[E0433]: failed to resolve: unresolved import
+   --> src/auto_mount.rs:158:29
+    |
+158 |         let n_path = crate::util::get_n_directory();
+    |                             ^^^^
+    |                             |
+    |                             unresolved import
+    |                             help: a similar path exists: `tracing_subscriber::util`
+
+error[E0433]: failed to resolve: unresolved import
+   --> src/auto_mount.rs:319:33
+    |
+319 |             mount_point: crate::util::get_n_directory(),
+    |                                 ^^^^
+    |                                 |
+    |                                 unresolved import
+    |                                 help: a similar path exists: `tracing_subscriber::util`
+
+error[E0433]: failed to resolve: unresolved import
+   --> src/auto_mount.rs:372:44
+    |
+372 |                         let n_dir = crate::util::get_n_directory();
+    |                                            ^^^^
+    |                                            |
+    |                                            unresolved import
+    |                                            help: a similar path exists: `tracing_subscriber::util`
+
+error[E0433]: failed to resolve: could not find `PublicKey` in `consensus`
+   --> src/server/mod.rs:234:45
+    |
+234 |                     match crate::consensus::PublicKey::from_hex(
+    |                                             ^^^^^^^^^ could not find `PublicKey` in `consensus`
+    |
+help: consider importing one of these items
+    |
+  3 + use k256::PublicKey;
+    |
+  3 + use p256::PublicKey;
+    |
+  3 + use rcgen::PublicKey;
+    |
+  3 + use x25519_dalek::PublicKey;
+    |
+help: if you import `PublicKey`, refer to it directly
+    |
+234 -                     match crate::consensus::PublicKey::from_hex(
+234 +                     match PublicKey::from_hex(
+    |
+
+error[E0425]: cannot find function `add_to_linker` in crate `wasmtime_wasi`
+   --> src/wasm/threadsafe.rs:303:24
+    |
+303 |         wasmtime_wasi::add_to_linker(&mut linker, |data: &mut StoreData| &mut data.wasi)?;
+    |                        ^^^^^^^^^^^^^ not found in `wasmtime_wasi`
+    |
+help: consider importing one of these functions
+    |
+  6 + use wasmtime_wasi::p0::wasi_unstable::add_to_linker;
+    |
+  6 + use wasmtime_wasi::p1::wasi_snapshot_preview1::add_to_linker;
+    |
+  6 + use wasmtime_wasi::p2::bindings::cli::environment::add_to_linker;
+    |
+  6 + use wasmtime_wasi::p2::bindings::cli::exit::add_to_linker;
+    |
+    = and 35 other candidates
+help: if you import `add_to_linker`, refer to it directly
+    |
+303 -         wasmtime_wasi::add_to_linker(&mut linker, |data: &mut StoreData| &mut data.wasi)?;
+303 +         add_to_linker(&mut linker, |data: &mut StoreData| &mut data.wasi)?;
+    |
+
+error[E0425]: cannot find function `_mm_prefetch` in this scope
+   --> src/gpu/xmx.rs:296:9
+    |
+296 |         _mm_prefetch(a_bf16.as_ptr(), _MM_HINT_T0);
+    |         ^^^^^^^^^^^^ not found in this scope
+    |
+help: consider importing this function
+    |
+  9 + use std::arch::x86_64::_mm_prefetch;
+    |
+
+error[E0425]: cannot find value `_MM_HINT_T0` in this scope
+   --> src/gpu/xmx.rs:296:39
+    |
+296 |         _mm_prefetch(a_bf16.as_ptr(), _MM_HINT_T0);
+    |                                       ^^^^^^^^^^^ not found in this scope
+    |
+help: consider importing this constant
+    |
+  9 + use std::arch::x86_64::_MM_HINT_T0;
+    |
+
+error[E0425]: cannot find function `_mm_prefetch` in this scope
+   --> src/gpu/xmx.rs:297:9
+    |
+297 |         _mm_prefetch(b_bf16.as_ptr(), _MM_HINT_T0);
+    |         ^^^^^^^^^^^^ not found in this scope
+    |
+help: consider importing this function
+    |
+  9 + use std::arch::x86_64::_mm_prefetch;
+    |
+
+error[E0425]: cannot find value `_MM_HINT_T0` in this scope
+   --> src/gpu/xmx.rs:297:39
+    |
+297 |         _mm_prefetch(b_bf16.as_ptr(), _MM_HINT_T0);
+    |                                       ^^^^^^^^^^^ not found in this scope
+    |
+help: consider importing this constant
+    |
+  9 + use std::arch::x86_64::_MM_HINT_T0;
+    |
+
+error[E0532]: expected tuple struct or tuple variant, found unit variant `XmxError::MemoryAllocation`
+   --> src/gpu/xmx.rs:548:10
+    |
+148 |     MemoryAllocation,
+    |     ---------------- `XmxError::MemoryAllocation` defined here
+...
+548 | #[derive(Debug, thiserror::Error)]
+    |          ^^^^^
+
+error[E0532]: expected tuple struct or tuple variant, found unit variant `XmxError::MemoryAllocation`
+   --> src/gpu/xmx.rs:548:17
+    |
+148 |     MemoryAllocation,
+    |     ---------------- `XmxError::MemoryAllocation` defined here
+...
+548 | #[derive(Debug, thiserror::Error)]
+    |                 ^^^^^^^^^^^^^^^^
+    |
+    = note: this error originates in the derive macro `thiserror::Error` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0425]: cannot find value `VERSION` in the crate root
+   --> src/stats.rs:187:35
+    |
+187 |         Ok(format!("{}\n", crate::VERSION).into_bytes())
+    |                                   ^^^^^^^ not found in the crate root
+
+error[E0425]: cannot find value `VERSION` in the crate root
+   --> src/stats.rs:257:20
+    |
+257 |             crate::VERSION
+    |                    ^^^^^^^ not found in the crate root
+
+warning: unexpected `cfg` condition value: `testing`
+ --> src/protocol.rs:8:7
+  |
+8 | #[cfg(feature = "testing")]
+  |       ^^^^^^^^^^^^^^^^^^^
+  |
+  = note: expected values for `feature` are: `base64`, `blake3`, `chacha20poly1305`, `default`, `ecc`, `ed25519-dalek`, `fuse`, `fuser`, `gpu`, `hkdf`, `hmac`, `k256`, `p256`, `quic`, `quinn`, `rcgen`, `reqwest`, `rustls`, `serde_arrays`, `sha2`, `synthetic`, `translators`, `wasm`, `webpki-roots`, `x25519-dalek`, and `xmx`
+  = help: consider adding `testing` as a feature in `Cargo.toml`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: `#[warn(unexpected_cfgs)]` on by default
+
+warning: unexpected `cfg` condition value: `testing`
+  --> src/protocol.rs:28:12
+   |
+28 | #[cfg_attr(feature = "testing", derive(Arbitrary))]
+   |            ^^^^^^^^^^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `base64`, `blake3`, `chacha20poly1305`, `default`, `ecc`, `ed25519-dalek`, `fuse`, `fuser`, `gpu`, `hkdf`, `hmac`, `k256`, `p256`, `quic`, `quinn`, `rcgen`, `reqwest`, `rustls`, `serde_arrays`, `sha2`, `synthetic`, `translators`, `wasm`, `webpki-roots`, `x25519-dalek`, and `xmx`
+   = help: consider adding `testing` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `testing`
+  --> src/consensus.rs:13:7
+   |
+13 | #[cfg(feature = "testing")]
+   |       ^^^^^^^^^^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `base64`, `blake3`, `chacha20poly1305`, `default`, `ecc`, `ed25519-dalek`, `fuse`, `fuser`, `gpu`, `hkdf`, `hmac`, `k256`, `p256`, `quic`, `quinn`, `rcgen`, `reqwest`, `rustls`, `serde_arrays`, `sha2`, `synthetic`, `translators`, `wasm`, `webpki-roots`, `x25519-dalek`, and `xmx`
+   = help: consider adding `testing` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `testing`
+  --> src/consensus.rs:15:7
+   |
+15 | #[cfg(feature = "testing")]
+   |       ^^^^^^^^^^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `base64`, `blake3`, `chacha20poly1305`, `default`, `ecc`, `ed25519-dalek`, `fuse`, `fuser`, `gpu`, `hkdf`, `hmac`, `k256`, `p256`, `quic`, `quinn`, `rcgen`, `reqwest`, `rustls`, `serde_arrays`, `sha2`, `synthetic`, `translators`, `wasm`, `webpki-roots`, `x25519-dalek`, and `xmx`
+   = help: consider adding `testing` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `testing`
+  --> src/consensus.rs:25:12
+   |
+25 | #[cfg_attr(feature = "testing", derive(Arbitrary))]
+   |            ^^^^^^^^^^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `base64`, `blake3`, `chacha20poly1305`, `default`, `ecc`, `ed25519-dalek`, `fuse`, `fuser`, `gpu`, `hkdf`, `hmac`, `k256`, `p256`, `quic`, `quinn`, `rcgen`, `reqwest`, `rustls`, `serde_arrays`, `sha2`, `synthetic`, `translators`, `wasm`, `webpki-roots`, `x25519-dalek`, and `xmx`
+   = help: consider adding `testing` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `testing`
+  --> src/consensus.rs:55:7
+   |
+55 | #[cfg(feature = "testing")]
+   |       ^^^^^^^^^^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `base64`, `blake3`, `chacha20poly1305`, `default`, `ecc`, `ed25519-dalek`, `fuse`, `fuser`, `gpu`, `hkdf`, `hmac`, `k256`, `p256`, `quic`, `quinn`, `rcgen`, `reqwest`, `rustls`, `serde_arrays`, `sha2`, `synthetic`, `translators`, `wasm`, `webpki-roots`, `x25519-dalek`, and `xmx`
+   = help: consider adding `testing` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `testing`
+    --> src/consensus.rs:1188:12
+     |
+1188 | #[cfg_attr(feature = "testing", derive(Arbitrary))]
+     |            ^^^^^^^^^^^^^^^^^^^
+     |
+     = note: expected values for `feature` are: `base64`, `blake3`, `chacha20poly1305`, `default`, `ecc`, `ed25519-dalek`, `fuse`, `fuser`, `gpu`, `hkdf`, `hmac`, `k256`, `p256`, `quic`, `quinn`, `rcgen`, `reqwest`, `rustls`, `serde_arrays`, `sha2`, `synthetic`, `translators`, `wasm`, `webpki-roots`, `x25519-dalek`, and `xmx`
+     = help: consider adding `testing` as a feature in `Cargo.toml`
+     = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `testing`
+    --> src/consensus.rs:1198:12
+     |
+1198 | #[cfg_attr(feature = "testing", derive(Arbitrary))]
+     |            ^^^^^^^^^^^^^^^^^^^
+     |
+     = note: expected values for `feature` are: `base64`, `blake3`, `chacha20poly1305`, `default`, `ecc`, `ed25519-dalek`, `fuse`, `fuser`, `gpu`, `hkdf`, `hmac`, `k256`, `p256`, `quic`, `quinn`, `rcgen`, `reqwest`, `rustls`, `serde_arrays`, `sha2`, `synthetic`, `translators`, `wasm`, `webpki-roots`, `x25519-dalek`, and `xmx`
+     = help: consider adding `testing` as a feature in `Cargo.toml`
+     = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unused import: `Context`
+ --> src/consensus/crypto.rs:1:14
+  |
+1 | use anyhow::{Context, Result};
+  |              ^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `RngCore`
+ --> src/consensus/crypto.rs:3:25
+  |
+3 | use rand::{rngs::OsRng, RngCore};
+  |                         ^^^^^^^
+
+warning: unused import: `rustls::server::AllowAnyAuthenticatedClient`
+  --> src/transport.rs:10:5
+   |
+10 | use rustls::server::AllowAnyAuthenticatedClient;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `rustls::Error as RustlsError`
+  --> src/transport.rs:12:5
+   |
+12 | use rustls::Error as RustlsError;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `SystemTime`
+  --> src/transport.rs:17:27
+   |
+17 | use std::time::{Duration, SystemTime};
+   |                           ^^^^^^^^^^
+
+warning: unused import: `NistP256`
+  --> src/identity.rs:12:12
+   |
+12 | use p256::{NistP256, PublicKey as P256PublicKey, SecretKey as P256SecretKey};
+   |            ^^^^^^^^
+
+warning: ambiguous glob re-exports
+   --> src/lib.rs:54:9
+    |
+ 54 | pub use protocol::*;
+    |         ^^^^^^^^^^^ the name `ProtocolError` in the type namespace is first re-exported here
+...
+133 | pub use error::*;
+    |         -------- but the name `ProtocolError` in the type namespace is also re-exported here
+    |
+    = note: `#[warn(ambiguous_glob_reexports)]` on by default
+
+warning: ambiguous glob re-exports
+  --> src/lib.rs:56:9
+   |
+56 | pub use translators::*;
+   |         ^^^^^^^^^^^^^^ the name `TranslatorInfo` in the type namespace is first re-exported here
+...
+85 | pub use settrans::*;
+   |         ----------- but the name `TranslatorInfo` in the type namespace is also re-exported here
+
+warning: ambiguous glob re-exports
+   --> src/lib.rs:83:9
+    |
+ 83 | pub use server::*;
+    |         ^^^^^^^^^ the name `ServerConfig` in the type namespace is first re-exported here
+...
+124 | pub use config::*;
+    |         --------- but the name `ServerConfig` in the type namespace is also re-exported here
+
+warning: unused import: `WorkReceipt`
+  --> src/mesh.rs:25:67
+   |
+25 | use crate::identity::{NodeId, NodePermissions, SovereignIdentity, WorkReceipt};
+   |                                                                   ^^^^^^^^^^^
+
+warning: unused import: `std::arch::x86_64::*`
+   --> src/gpu/xmx.rs:241:9
+    |
+241 |     use std::arch::x86_64::*;
+    |         ^^^^^^^^^^^^^^^^^^^^
+
+error[E0728]: `await` is only allowed inside `async` functions and blocks
+   --> src/gpu/xmx.rs:220:50
+    |
+210 | / pub fn matmul_xmx(
+211 | |     a: &[f32],
+212 | |     b: &[f32],
+213 | |     precision: XmxPrecision,
+214 | | ) -> Result<Vec<f32>, XmxError> {
+    | |_______________________________- this is not `async`
+...
+220 |                   matmul_xmx_impl(a, b, precision).await
+    |                                                    ^^^^^ only allowed inside `async` functions and blocks
+
+error[E0658]: use of unstable library feature `allocator_api`
+   --> src/gpu/xmx.rs:555:30
+    |
+555 |     MemoryAllocation(#[from] std::alloc::AllocError),
+    |                              ^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: see issue #32838 <https://github.com/rust-lang/rust/issues/32838> for more information
+
+error[E0119]: conflicting implementations of trait `std::fmt::Debug` for type `xmx::XmxPrecision`
+   --> src/gpu/xmx.rs:170:10
+    |
+ 36 | #[derive(Debug, Clone, Serialize, Deserialize)]
+    |          ----- first implementation here
+...
+170 | #[derive(Debug, Clone, Serialize, Deserialize)]
+    |          ^^^^^ conflicting implementation for `xmx::XmxPrecision`
+
+error[E0119]: conflicting implementations of trait `std::fmt::Debug` for type `xmx::XmxError`
+   --> src/gpu/xmx.rs:548:10
+    |
+141 | #[derive(Debug, thiserror::Error)]
+    |          ----- first implementation here
+...
+548 | #[derive(Debug, thiserror::Error)]
+    |          ^^^^^ conflicting implementation for `xmx::XmxError`
+
+error[E0119]: conflicting implementations of trait `Clone` for type `xmx::XmxPrecision`
+   --> src/gpu/xmx.rs:170:17
+    |
+ 36 | #[derive(Debug, Clone, Serialize, Deserialize)]
+    |                 ----- first implementation here
+...
+170 | #[derive(Debug, Clone, Serialize, Deserialize)]
+    |                 ^^^^^ conflicting implementation for `xmx::XmxPrecision`
+
+error[E0119]: conflicting implementations of trait `protocol::_::_serde::Serialize` for type `xmx::XmxPrecision`
+   --> src/gpu/xmx.rs:170:24
+    |
+ 36 | #[derive(Debug, Clone, Serialize, Deserialize)]
+    |                        --------- first implementation here
+...
+170 | #[derive(Debug, Clone, Serialize, Deserialize)]
+    |                        ^^^^^^^^^ conflicting implementation for `xmx::XmxPrecision`
+    |
+    = note: this error originates in the derive macro `Serialize` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0119]: conflicting implementations of trait `Deserialize<'_>` for type `xmx::XmxPrecision`
+   --> src/gpu/xmx.rs:170:35
+    |
+ 36 | #[derive(Debug, Clone, Serialize, Deserialize)]
+    |                                   ----------- first implementation here
+...
+170 | #[derive(Debug, Clone, Serialize, Deserialize)]
+    |                                   ^^^^^^^^^^^ conflicting implementation for `xmx::XmxPrecision`
+    |
+    = note: this error originates in the derive macro `Deserialize` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0119]: conflicting implementations of trait `StdError` for type `xmx::XmxError`
+   --> src/gpu/xmx.rs:548:17
+    |
+141 | #[derive(Debug, thiserror::Error)]
+    |                 ---------------- first implementation here
+...
+548 | #[derive(Debug, thiserror::Error)]
+    |                 ^^^^^^^^^^^^^^^^ conflicting implementation for `xmx::XmxError`
+    |
+    = note: this error originates in the derive macro `thiserror::Error` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0119]: conflicting implementations of trait `std::fmt::Display` for type `xmx::XmxError`
+   --> src/gpu/xmx.rs:548:17
+    |
+141 | #[derive(Debug, thiserror::Error)]
+    |                 ---------------- first implementation here
+...
+548 | #[derive(Debug, thiserror::Error)]
+    |                 ^^^^^^^^^^^^^^^^ conflicting implementation for `xmx::XmxError`
+    |
+    = note: this error originates in the derive macro `thiserror::Error` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0425]: cannot find function `configure_client_pinned` in this scope
+   --> src/transport.rs:325:29
+    |
+325 |         let client_config = configure_client_pinned(record.certificate_der)?;
+    |                             ^^^^^^^^^^^^^^^^^^^^^^^ help: a function with a similar name exists: `configure_client`
+...
+377 | fn configure_client() -> Result<ClientConfig, ProtocolError> {
+    | ------------------------------------------------------------ similarly named function `configure_client` defined here
+
+error[E0425]: cannot find function `configure_client_pinned` in this scope
+   --> src/transport.rs:343:29
+    |
+343 |         let client_config = configure_client_pinned(record.certificate_der)?;
+    |                             ^^^^^^^^^^^^^^^^^^^^^^^ help: a function with a similar name exists: `configure_client`
+...
+377 | fn configure_client() -> Result<ClientConfig, ProtocolError> {
+    | ------------------------------------------------------------ similarly named function `configure_client` defined here
+
+error[E0599]: no method named `upgrade` found for struct `libp2p::libp2p_tcp::Transport` in the current scope
+   --> src/dht.rs:209:14
+    |
+208 |           let transport = libp2p::tcp::tokio::Transport::new(libp2p::tcp::Config::default())
+    |  _________________________-
+209 | |             .upgrade(libp2p::core::upgrade::Version::V1)
+    | |             -^^^^^^^ method not found in `libp2p::libp2p_tcp::Transport<libp2p::libp2p_tcp::tokio::Tcp>`
+    | |_____________|
+    |
+    |
+   ::: /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libp2p-core-0.40.1/src/transport.rs:240:8
+    |
+240 |       fn upgrade(self, version: upgrade::Version) -> upgrade::Builder<Self>
+    |          ------- the method is available for `libp2p::libp2p_tcp::Transport<libp2p::libp2p_tcp::tokio::Tcp>` here
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: trait `Transport` which provides `upgrade` is implemented but not in scope; perhaps you want to import it
+    |
+  6 + use libp2p::Transport;
+    |
+
+error[E0599]: no variant named `OutboundQueryCompleted` found for enum `libp2p::libp2p_kad::Event`
+   --> src/dht.rs:252:66
+    |
+252 | ...                   SwarmEvent::Behaviour(KademliaEvent::OutboundQueryCompleted { id, result, .. }) => {
+    |                                                            ^^^^^^^^^^^^^^^^^^^^^^
+    |
+help: there is a variant with a similar name
+    |
+252 -                             SwarmEvent::Behaviour(KademliaEvent::OutboundQueryCompleted { id, result, .. }) => {
+252 +                             SwarmEvent::Behaviour(KademliaEvent::OutboundQueryProgressed { id, result, .. }) => {
+    |
+
+error[E0609]: no field `value` on type `std::option::Option<libp2p::libp2p_kad::Record>`
+   --> src/dht.rs:284:101
+    |
+284 | ...                   if let Ok(parsed) = serde_cbor::from_slice::<DhtRecord>(&record.value) {
+    |                                                                                       ^^^^^ unknown field
+    |
+help: one of the expressions' fields has a field of the same name
+    |
+284 |                                     if let Ok(parsed) = serde_cbor::from_slice::<DhtRecord>(&record.unwrap().value) {
+    |                                                                                                     +++++++++
+
+error[E0559]: variant `NamespaceOp::Create` has no field named `path`
+   --> src/server/handler/basic_ops.rs:194:17
+    |
+194 |                 path: format!("{}/{}", handle.path.trim_end_matches('/'), name),
+    |                 ^^^^ `NamespaceOp::Create` does not have this field
+    |
+    = note: all struct fields are already assigned
+
+error[E0559]: variant `NamespaceOp::Create` has no field named `mode`
+   --> src/server/handler/basic_ops.rs:195:17
+    |
+195 |                 mode: perm,
+    |                 ^^^^ `NamespaceOp::Create` does not have this field
+    |
+    = note: all struct fields are already assigned
+
+error[E0559]: variant `NamespaceOp::Create` has no field named `is_dir`
+   --> src/server/handler/basic_ops.rs:196:17
+    |
+196 |                 is_dir: perm & 0o040000 != 0,
+    |                 ^^^^^^ `NamespaceOp::Create` does not have this field
+    |
+    = note: all struct fields are already assigned
+
+error[E0277]: `std::result::Result<ConsensusResult, ConsensusError>` is not a future
+   --> src/server/handler/basic_ops.rs:219:42
+    |
+219 |             let _ = dag.add_block(block).await;
+    |                                          ^^^^^ `std::result::Result<ConsensusResult, ConsensusError>` is not a future
+    |
+    = help: the trait `futures::Future` is not implemented for `std::result::Result<ConsensusResult, ConsensusError>`
+    = note: std::result::Result<ConsensusResult, ConsensusError> must be a future or must implement `IntoFuture` to be awaited
+    = note: required for `std::result::Result<ConsensusResult, ConsensusError>` to implement `std::future::IntoFuture`
+help: remove the `.await`
+    |
+219 -             let _ = dag.add_block(block).await;
+219 +             let _ = dag.add_block(block);
+    |
+
+error[E0599]: no variant named `Write` found for enum `NamespaceOp`
+    --> src/server/handler/basic_ops.rs:420:35
+     |
+ 420 |             let op = NamespaceOp::Write {
+     |                                   ^^^^^ variant not found in `NamespaceOp`
+     |
+    ::: src/consensus.rs:1199:1
+     |
+1199 | pub enum NamespaceOp {
+     | -------------------- variant `Write` not found here
+
+error[E0277]: `std::result::Result<ConsensusResult, ConsensusError>` is not a future
+   --> src/server/handler/basic_ops.rs:446:42
+    |
+446 |             let _ = dag.add_block(block).await;
+    |                                          ^^^^^ `std::result::Result<ConsensusResult, ConsensusError>` is not a future
+    |
+    = help: the trait `futures::Future` is not implemented for `std::result::Result<ConsensusResult, ConsensusError>`
+    = note: std::result::Result<ConsensusResult, ConsensusError> must be a future or must implement `IntoFuture` to be awaited
+    = note: required for `std::result::Result<ConsensusResult, ConsensusError>` to implement `std::future::IntoFuture`
+help: remove the `.await`
+    |
+446 -             let _ = dag.add_block(block).await;
+446 +             let _ = dag.add_block(block);
+    |
+
+error[E0559]: variant `NamespaceOp::Delete` has no field named `path`
+   --> src/server/handler/basic_ops.rs:494:25
+    |
+494 |                         path: handle.path.clone(),
+    |                         ^^^^ `NamespaceOp::Delete` does not have this field
+    |
+    = note: all struct fields are already assigned
+
+error[E0277]: `std::result::Result<ConsensusResult, ConsensusError>` is not a future
+   --> src/server/handler/basic_ops.rs:526:50
+    |
+526 |             if let Err(e) = dag.add_block(block).await {
+    |                                                  ^^^^^ `std::result::Result<ConsensusResult, ConsensusError>` is not a future
+    |
+    = help: the trait `futures::Future` is not implemented for `std::result::Result<ConsensusResult, ConsensusError>`
+    = note: std::result::Result<ConsensusResult, ConsensusError> must be a future or must implement `IntoFuture` to be awaited
+    = note: required for `std::result::Result<ConsensusResult, ConsensusError>` to implement `std::future::IntoFuture`
+help: remove the `.await`
+    |
+526 -             if let Err(e) = dag.add_block(block).await {
+526 +             if let Err(e) = dag.add_block(block) {
+    |
+
+error[E0599]: no variant named `Rename` found for enum `NamespaceOp`
+    --> src/server/handler/basic_ops.rs:649:47
+     |
+ 649 |                         let op = NamespaceOp::Rename {
+     |                                               ^^^^^^ variant not found in `NamespaceOp`
+     |
+    ::: src/consensus.rs:1199:1
+     |
+1199 | pub enum NamespaceOp {
+     | -------------------- variant `Rename` not found here
+
+error[E0277]: `std::result::Result<ConsensusResult, ConsensusError>` is not a future
+   --> src/server/handler/basic_ops.rs:674:54
+    |
+674 |                         let _ = dag.add_block(block).await;
+    |                                                      ^^^^^ `std::result::Result<ConsensusResult, ConsensusError>` is not a future
+    |
+    = help: the trait `futures::Future` is not implemented for `std::result::Result<ConsensusResult, ConsensusError>`
+    = note: std::result::Result<ConsensusResult, ConsensusError> must be a future or must implement `IntoFuture` to be awaited
+    = note: required for `std::result::Result<ConsensusResult, ConsensusError>` to implement `std::future::IntoFuture`
+help: remove the `.await`
+    |
+674 -                         let _ = dag.add_block(block).await;
+674 +                         let _ = dag.add_block(block);
+    |
+
+error[E0061]: this function takes 1 argument but 2 arguments were supplied
+    --> src/server/mod.rs:223:40
+     |
+ 223 |             let coordinator = Arc::new(crate::consensus::ConsensusCoordinator::new(
+     |                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 224 |                 config.node_id.clone(),
+ 225 |                 crypto,
+     |                 ------ unexpected argument #2 of type `Arc<Ed25519Provider>`
+     |
+note: associated function defined here
+    --> src/consensus.rs:1154:12
+     |
+1154 |     pub fn new(node_id: String) -> Self {
+     |            ^^^
+help: remove the extra argument
+     |
+ 224 -                 config.node_id.clone(),
+ 225 -                 crypto,
+ 224 +                 config.node_id.clone(),
+     |
+
+error[E0599]: no method named `initialize` found for struct `Arc<ConsensusCoordinator>` in the current scope
+   --> src/server/mod.rs:229:25
+    |
+229 |             coordinator.initialize().await?;
+    |                         ^^^^^^^^^^ method not found in `Arc<ConsensusCoordinator>`
+    |
+    = help: items from traits can only be used if the trait is implemented and in scope
+    = note: the following trait defines an item `initialize`, perhaps you need to implement it:
+            candidate #1: `lazy_static::LazyStatic`
+
+error[E0599]: no method named `trust_node` found for struct `Arc<ConsensusCoordinator>` in the current scope
+   --> src/server/mod.rs:240:34
+    |
+239 | / ...                   coordinator
+240 | | ...                       .trust_node(trusted.node_id.clone(), public_key)
+    | |                           -^^^^^^^^^^ method not found in `Arc<ConsensusCoordinator>`
+    | |___________________________|
+    |
+
+error[E0599]: no variant named `RegisterNamespace` found for enum `NamespaceOp`
+    --> src/namespace_manager.rs:399:35
+     |
+ 399 |             let op = NamespaceOp::RegisterNamespace {
+     |                                   ^^^^^^^^^^^^^^^^^ variant not found in `NamespaceOp`
+     |
+    ::: src/consensus.rs:1199:1
+     |
+1199 | pub enum NamespaceOp {
+     | -------------------- variant `RegisterNamespace` not found here
+
+error[E0277]: `std::result::Result<ConsensusResult, ConsensusError>` is not a future
+   --> src/namespace_manager.rs:426:40
+    |
+426 |             consensus.add_block(block).await?;
+    |                                        ^^^^^ `std::result::Result<ConsensusResult, ConsensusError>` is not a future
+    |
+    = help: the trait `futures::Future` is not implemented for `std::result::Result<ConsensusResult, ConsensusError>`
+    = note: std::result::Result<ConsensusResult, ConsensusError> must be a future or must implement `IntoFuture` to be awaited
+    = note: required for `std::result::Result<ConsensusResult, ConsensusError>` to implement `std::future::IntoFuture`
+help: remove the `.await`
+    |
+426 -             consensus.add_block(block).await?;
+426 +             consensus.add_block(block)?;
+    |
+
+error[E0559]: variant `NamespaceOp::Delete` has no field named `path`
+   --> src/namespace_manager.rs:589:17
+    |
+589 |                 path: path.to_string(),
+    |                 ^^^^ `NamespaceOp::Delete` does not have this field
+    |
+    = note: all struct fields are already assigned
+
+error[E0277]: `std::result::Result<ConsensusResult, ConsensusError>` is not a future
+   --> src/namespace_manager.rs:613:40
+    |
+613 |             consensus.add_block(block).await?;
+    |                                        ^^^^^ `std::result::Result<ConsensusResult, ConsensusError>` is not a future
+    |
+    = help: the trait `futures::Future` is not implemented for `std::result::Result<ConsensusResult, ConsensusError>`
+    = note: std::result::Result<ConsensusResult, ConsensusError> must be a future or must implement `IntoFuture` to be awaited
+    = note: required for `std::result::Result<ConsensusResult, ConsensusError>` to implement `std::future::IntoFuture`
+help: remove the `.await`
+    |
+613 -             consensus.add_block(block).await?;
+613 +             consensus.add_block(block)?;
+    |
+
+error[E0308]: mismatched types
+   --> src/mesh.rs:295:49
+    |
+295 |                     let self_clone = Arc::clone(&self);
+    |                                      ---------- ^^^^^ expected `&Arc<_, _>`, found `&&MeshNetwork`
+    |                                      |
+    |                                      arguments to this function are incorrect
+    |
+    = note: expected reference `&Arc<_, _>`
+               found reference `&&MeshNetwork`
+note: method defined here
+   --> /rustc/1159e78c4747b02ef996e55082b704c09b970588/library/core/src/clone.rs:204:8
+
+error[E0282]: type annotations needed for `Arc<_, _>`
+   --> src/mesh.rs:295:25
+    |
+295 |                     let self_clone = Arc::clone(&self);
+    |                         ^^^^^^^^^^
+...
+298 |                         self_clone.listen_for_peer_messages(peer_id, connection).await;
+    |                                    ------------------------ type must be known at this point
+    |
+help: consider giving `self_clone` an explicit type, where the type for type parameter `T` is specified
+    |
+295 |                     let self_clone: Arc<T, A> = Arc::clone(&self);
+    |                                   +++++++++++
+
+error[E0308]: mismatched types
+    --> src/mesh.rs:1115:49
+     |
+1115 |                     let self_clone = Arc::clone(&self);
+     |                                      ---------- ^^^^^ expected `&Arc<_, _>`, found `&&MeshNetwork`
+     |                                      |
+     |                                      arguments to this function are incorrect
+     |
+     = note: expected reference `&Arc<_, _>`
+                found reference `&&MeshNetwork`
+note: method defined here
+    --> /rustc/1159e78c4747b02ef996e55082b704c09b970588/library/core/src/clone.rs:204:8
+
+error[E0282]: type annotations needed for `Arc<_, _>`
+    --> src/mesh.rs:1115:25
+     |
+1115 |                     let self_clone = Arc::clone(&self);
+     |                         ^^^^^^^^^^
+...
+1118 |                         self_clone.listen_for_peer_messages(peer_id, connection).await;
+     |                                    ------------------------ type must be known at this point
+     |
+help: consider giving `self_clone` an explicit type, where the type for type parameter `T` is specified
+     |
+1115 |                     let self_clone: Arc<T, A> = Arc::clone(&self);
+     |                                   +++++++++++
+
+error[E0599]: no function or associated item named `generate` found for struct `ed25519_dalek::SigningKey` in the current scope
+   --> src/consensus/crypto.rs:16:35
+    |
+ 16 |         let keypair = SigningKey::generate(&mut csprng);
+    |                                   ^^^^^^^^ function or associated item not found in `ed25519_dalek::SigningKey`
+    |
+note: if you're trying to build a new `ed25519_dalek::SigningKey` consider using one of the following associated functions:
+      ed25519_dalek::SigningKey::from_bytes
+      ed25519_dalek::SigningKey::from_keypair_bytes
+   --> /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ed25519-dalek-2.2.0/src/signing.rs:104:5
+    |
+104 |     pub fn from_bytes(secret_key: &SecretKey) -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+138 |     pub fn from_keypair_bytes(bytes: &[u8; 64]) -> Result<SigningKey, SignatureError> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `accept` found for struct `Connecting` in the current scope
+   --> src/transport.rs:199:53
+    |
+199 |                     let connection = match incoming.accept().await {
+    |                                                     ^^^^^^ method not found in `Connecting`
+    |
+    = help: items from traits can only be used if the trait is implemented and in scope
+note: `ConnectionListener` defines an item `accept`, perhaps you need to implement it
+   --> src/transport.rs:46:1
+    |
+ 46 | pub trait ConnectionListener: Send + Sync {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `extend` found for struct `RootCertStore` in the current scope
+   --> src/transport.rs:379:11
+    |
+379 |     roots.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
+    |           ^^^^^^ method not found in `RootCertStore`
+    |
+help: one of the expressions' fields has a method of the same name
+    |
+379 |     roots.roots.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
+    |           ++++++
+
+error[E0308]: mismatched types
+   --> src/transport.rs:381:62
+    |
+381 |     let client_config = ClientConfig::with_root_certificates(Arc::new(roots))
+    |                         ------------------------------------ ^^^^^^^^^^^^^^^ expected `RootCertStore`, found `Arc<RootCertStore>`
+    |                         |
+    |                         arguments to this function are incorrect
+    |
+    = note: expected struct `RootCertStore`
+               found struct `Arc<RootCertStore>`
+note: associated function defined here
+   --> /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quinn-proto-0.10.6/src/config.rs:824:12
+    |
+824 |     pub fn with_root_certificates(roots: rustls::RootCertStore) -> Self {
+    |            ^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `map_err` found for struct `quinn::ClientConfig` in the current scope
+   --> src/transport.rs:382:10
+    |
+381 |       let client_config = ClientConfig::with_root_certificates(Arc::new(roots))
+    |  _________________________-
+382 | |         .map_err(|e| ProtocolError::InvalidMessage(format!("TLS config error: {}", e)))?;
+    | |         -^^^^^^^ method not found in `quinn::ClientConfig`
+    | |_________|
+    |
+
+error[E0277]: `StaticSecret` doesn't implement `std::fmt::Debug`
+  --> src/identity.rs:49:5
+   |
+35 | #[derive(Debug, Clone)]
+   |          ----- in this derive macro expansion
+...
+49 |     pub x25519_key: StaticSecret,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `std::fmt::Debug` is not implemented for `StaticSecret`
+
+error[E0599]: no function or associated item named `generate` found for struct `ed25519_dalek::SigningKey` in the current scope
+   --> src/identity.rs:74:39
+    |
+ 74 |         let ed25519_key = SigningKey::generate(&mut OsRng);
+    |                                       ^^^^^^^^ function or associated item not found in `ed25519_dalek::SigningKey`
+    |
+note: if you're trying to build a new `ed25519_dalek::SigningKey` consider using one of the following associated functions:
+      ed25519_dalek::SigningKey::from_bytes
+      ed25519_dalek::SigningKey::from_keypair_bytes
+   --> /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ed25519-dalek-2.2.0/src/signing.rs:104:5
+    |
+104 |     pub fn from_bytes(secret_key: &SecretKey) -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+138 |     pub fn from_keypair_bytes(bytes: &[u8; 64]) -> Result<SigningKey, SignatureError> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no function or associated item named `from_secret_key` found for struct `p256::elliptic_curve::PublicKey` in the current scope
+   --> src/identity.rs:79:42
+    |
+ 79 |         let p256_public = P256PublicKey::from_secret_key(&p256_key);
+    |                                          ^^^^^^^^^^^^^^^ function or associated item not found in `p256::elliptic_curve::PublicKey<NistP256>`
+    |
+note: if you're trying to build a new `p256::elliptic_curve::PublicKey<NistP256>` consider using one of the following associated functions:
+      p256::elliptic_curve::PublicKey::<C>::from_affine
+      p256::elliptic_curve::PublicKey::<C>::from_secret_scalar
+      p256::elliptic_curve::PublicKey::<C>::from_sec1_bytes
+   --> /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/elliptic-curve-0.13.8/src/public_key.rs:102:5
+    |
+102 |       pub fn from_affine(point: AffinePoint<C>) -> Result<Self> {
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+112 |       pub fn from_secret_scalar(scalar: &NonZeroScalar<C>) -> Self {
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+126 | /     pub fn from_sec1_bytes(bytes: &[u8]) -> Result<Self>
+127 | |     where
+128 | |         FieldBytesSize<C>: ModulusSize,
+129 | |         AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+    | |________________________________________________________________^
+help: there is an associated function `from_secret_scalar` with a similar name
+    |
+ 79 -         let p256_public = P256PublicKey::from_secret_key(&p256_key);
+ 79 +         let p256_public = P256PublicKey::from_secret_scalar(&p256_key);
+    |
+
+error[E0277]: `NetworkHandle` doesn't implement `std::fmt::Debug`
+  --> src/dht.rs:48:5
+   |
+37 | #[derive(Debug)]
+   |          ----- in this derive macro expansion
+...
+48 |     network: Arc<RwLock<Option<NetworkHandle>>>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `std::fmt::Debug` is not implemented for `NetworkHandle`
+   |
+   = note: add `#[derive(Debug)]` to `NetworkHandle` or manually `impl std::fmt::Debug for NetworkHandle`
+   = help: the trait `std::fmt::Debug` is implemented for `Arc<T, A>`
+help: consider annotating `NetworkHandle` with `#[derive(Debug)]`
+   |
+55 + #[derive(Debug)]
+56 | struct NetworkHandle {
+   |
+
+error[E0308]: mismatched types
+   --> src/dht.rs:426:40
+    |
+426 |                 PeerId::from_multihash(multihash).ok()
+    |                 ---------------------- ^^^^^^^^^ expected `Multihash<64>`, found `PeerId`
+    |                 |
+    |                 arguments to this function are incorrect
+    |
+    = note: expected struct `Multihash<64>`
+               found struct `PeerId`
+note: associated function defined here
+   --> /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libp2p-identity-0.2.13/src/peer_id.rs:94:12
+    |
+ 94 |     pub fn from_multihash(multihash: Multihash) -> Result<PeerId, Multihash> {
+    |            ^^^^^^^^^^^^^^
+help: call `Into::into` on this expression to convert `PeerId` into `Multihash<64>`
+    |
+426 |                 PeerId::from_multihash(multihash.into()).ok()
+    |                                                 +++++++
+
+error[E0277]: the trait bound `[u8; 64]: serde::Serialize` is not satisfied
+    --> src/server/handler/auth.rs:17:24
+     |
+  17 | #[derive(Debug, Clone, Serialize, Deserialize)]
+     |                        ^^^^^^^^^ the trait `protocol::_::_serde::Serialize` is not implemented for `[u8; 64]`
+...
+  24 |     pub signature: [u8; 64],
+     |     --- required by a bound introduced by this call
+     |
+     = note: for local types consider adding `#[derive(serde::Serialize)]` to your `[u8; 64]` type
+     = note: for types from other crates check whether the crate offers a `serde` feature flag
+     = help: the following other types implement trait `protocol::_::_serde::Serialize`:
+               [T; 0]
+               [T; 10]
+               [T; 11]
+               [T; 12]
+               [T; 13]
+               [T; 14]
+               [T; 15]
+               [T; 16]
+             and 26 others
+note: required by a bound in `protocol::_::_serde::ser::SerializeStruct::serialize_field`
+    --> /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde_core-1.0.228/src/ser/mod.rs:1917:21
+     |
+1915 |     fn serialize_field<T>(&mut self, key: &'static str, value: &T) -> Result<(), Self::Error>
+     |        --------------- required by a bound in this associated function
+1916 |     where
+1917 |         T: ?Sized + Serialize;
+     |                     ^^^^^^^^^ required by this bound in `SerializeStruct::serialize_field`
+     = note: this error originates in the derive macro `Serialize` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `[u8; 64]: serde::Deserialize<'de>` is not satisfied
+    --> src/server/handler/auth.rs:24:20
+     |
+  24 |     pub signature: [u8; 64],
+     |                    ^^^^^^^^ the trait `Deserialize<'_>` is not implemented for `[u8; 64]`
+     |
+     = note: for local types consider adding `#[derive(serde::Deserialize)]` to your `[u8; 64]` type
+     = note: for types from other crates check whether the crate offers a `serde` feature flag
+     = help: the following other types implement trait `Deserialize<'de>`:
+               &[u8]
+               [T; 0]
+               [T; 10]
+               [T; 11]
+               [T; 12]
+               [T; 13]
+               [T; 14]
+               [T; 15]
+             and 26 others
+note: required by a bound in `next_element`
+    --> /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde_core-1.0.228/src/de/mod.rs:1771:12
+     |
+1769 |     fn next_element<T>(&mut self) -> Result<Option<T>, Self::Error>
+     |        ------------ required by a bound in this associated function
+1770 |     where
+1771 |         T: Deserialize<'de>,
+     |            ^^^^^^^^^^^^^^^^ required by this bound in `SeqAccess::next_element`
+
+error[E0277]: the trait bound `[u8; 64]: serde::Deserialize<'de>` is not satisfied
+    --> src/server/handler/auth.rs:24:20
+     |
+  24 |     pub signature: [u8; 64],
+     |                    ^^^^^^^^ the trait `Deserialize<'_>` is not implemented for `[u8; 64]`
+     |
+     = note: for local types consider adding `#[derive(serde::Deserialize)]` to your `[u8; 64]` type
+     = note: for types from other crates check whether the crate offers a `serde` feature flag
+     = help: the following other types implement trait `Deserialize<'de>`:
+               &[u8]
+               [T; 0]
+               [T; 10]
+               [T; 11]
+               [T; 12]
+               [T; 13]
+               [T; 14]
+               [T; 15]
+             and 26 others
+note: required by a bound in `next_value`
+    --> /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde_core-1.0.228/src/de/mod.rs:1916:12
+     |
+1914 |     fn next_value<V>(&mut self) -> Result<V, Self::Error>
+     |        ---------- required by a bound in this associated function
+1915 |     where
+1916 |         V: Deserialize<'de>,
+     |            ^^^^^^^^^^^^^^^^ required by this bound in `MapAccess::next_value`
+
+error[E0277]: the trait bound `[u8; 64]: serde::Deserialize<'de>` is not satisfied
+  --> src/server/handler/auth.rs:17:35
+   |
+17 | #[derive(Debug, Clone, Serialize, Deserialize)]
+   |                                   ^^^^^^^^^^^ the trait `Deserialize<'_>` is not implemented for `[u8; 64]`
+   |
+   = note: for local types consider adding `#[derive(serde::Deserialize)]` to your `[u8; 64]` type
+   = note: for types from other crates check whether the crate offers a `serde` feature flag
+   = help: the following other types implement trait `Deserialize<'de>`:
+             &[u8]
+             [T; 0]
+             [T; 10]
+             [T; 11]
+             [T; 12]
+             [T; 13]
+             [T; 14]
+             [T; 15]
+           and 26 others
+note: required by a bound in `protocol::_::_serde::__private228::de::missing_field`
+  --> /home/scott/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs:26:8
+   |
+24 | pub fn missing_field<'de, V, E>(field: &'static str) -> Result<V, E>
+   |        ------------- required by a bound in this function
+25 | where
+26 |     V: Deserialize<'de>,
+   |        ^^^^^^^^^^^^^^^^ required by this bound in `missing_field`
+   = note: this error originates in the derive macro `Deserialize` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the `?` operator can only be applied to values that implement `std::ops::Try`
+  --> src/server/handler/auth.rs:66:21
+   |
+66 |     let signature = Signature::from_bytes(&response.signature)?;
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `?` operator cannot be applied to type `Signature`
+   |
+   = help: the trait `std::ops::Try` is not implemented for `Signature`
+
+error[E0308]: mismatched types
+   --> src/server/handler/mod.rs:66:59
+    |
+ 66 |         let consensus_dag = Arc::new(BoundedGhostdag::new(node_id));
+    |                                      -------------------- ^^^^^^^ expected `usize`, found `String`
+    |                                      |
+    |                                      arguments to this function are incorrect
+    |
+note: associated function defined here
+   --> src/consensus.rs:230:12
+    |
+230 |     pub fn new(k_parameter: usize) -> Self {
+    |            ^^^ ------------------
+
+error[E0609]: no field `dag_height` on type `&ConsensusState`
+   --> src/wasm/consensus_host.rs:124:27
+    |
+124 |                 consensus.dag_height as i64
+    |                           ^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `node_id`, `block_count`
+
+error[E0609]: no field `confirmed_blocks` on type `&ConsensusState`
+   --> src/wasm/consensus_host.rs:141:27
+    |
+141 |                 consensus.confirmed_blocks.len() as i64
+    |                           ^^^^^^^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `node_id`, `block_count`
+
+error[E0609]: no field `pending_work` on type `&ConsensusState`
+   --> src/wasm/consensus_host.rs:158:27
+    |
+158 |                 consensus.pending_work.len() as i64
+    |                           ^^^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `node_id`, `block_count`
+
+error[E0599]: no method named `confidence_score` found for reference `&ConsensusState` in the current scope
+   --> src/wasm/consensus_host.rs:175:28
+    |
+175 |                 (consensus.confidence_score() * 100.0) as i32
+    |                            ^^^^^^^^^^^^^^^^ method not found in `&ConsensusState`
+
+error[E0599]: no method named `main_chain_tip` found for reference `&ConsensusState` in the current scope
+   --> src/wasm/consensus_host.rs:248:47
+    |
+248 |                 if let Some(_tip) = consensus.main_chain_tip() {
+    |                                               ^^^^^^^^^^^^^^ method not found in `&ConsensusState`
+
+error[E0609]: no field `pending_work` on type `&ConsensusState`
+   --> src/wasm/consensus_host.rs:363:54
+    |
+363 |                 let congestion_factor = if consensus.pending_work.len() > 10 {
+    |                                                      ^^^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `node_id`, `block_count`
+
+error[E0609]: no field `dag_height` on type `&ConsensusState`
+   --> src/wasm/consensus_host.rs:400:31
+    |
+400 |                     consensus.dag_height,
+    |                               ^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `node_id`, `block_count`
+
+error[E0609]: no field `confirmed_blocks` on type `&ConsensusState`
+   --> src/wasm/consensus_host.rs:401:31
+    |
+401 |                     consensus.confirmed_blocks.len(),
+    |                               ^^^^^^^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `node_id`, `block_count`
+
+error[E0609]: no field `pending_work` on type `&ConsensusState`
+   --> src/wasm/consensus_host.rs:402:31
+    |
+402 |                     consensus.pending_work.len(),
+    |                               ^^^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `node_id`, `block_count`
+
+error[E0609]: no field `tips` on type `&ConsensusState`
+   --> src/wasm/consensus_host.rs:403:31
+    |
+403 |                     consensus.tips.len(),
+    |                               ^^^^ unknown field
+    |
+    = note: available fields are: `node_id`, `block_count`
+
+error[E0609]: no field `main_chain` on type `&ConsensusState`
+   --> src/wasm/consensus_host.rs:404:31
+    |
+404 |                     consensus.main_chain.len(),
+    |                               ^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `node_id`, `block_count`
+
+error[E0599]: no method named `confidence_score` found for reference `&ConsensusState` in the current scope
+   --> src/wasm/consensus_host.rs:405:31
+    |
+405 |                     consensus.confidence_score() * 100.0
+    |                               ^^^^^^^^^^^^^^^^ method not found in `&ConsensusState`
+
+error[E0599]: no method named `read_to_string` found for reference `&Path` in the current scope
+  --> src/gpu/xmx.rs:53:50
+   |
+53 |         if std::path::Path::new("/proc/cpuinfo").read_to_string()
+   |                                                  ^^^^^^^^^^^^^^ method not found in `&Path`
+
+error[E0599]: no method named `read_to_string` found for reference `&Path` in the current scope
+  --> src/gpu/xmx.rs:60:50
+   |
+60 |         if std::path::Path::new("/proc/cpuinfo").read_to_string()
+   |                                                  ^^^^^^^^^^^^^^ method not found in `&Path`
+
+error[E0599]: no method named `read_to_string` found for reference `&Path` in the current scope
+   --> src/gpu/xmx.rs:187:50
+    |
+187 |         if std::path::Path::new("/proc/cpuinfo").read_to_string()
+    |                                                  ^^^^^^^^^^^^^^ method not found in `&Path`
+
+error[E0599]: no method named `read_to_string` found for reference `&Path` in the current scope
+   --> src/gpu/xmx.rs:194:50
+    |
+194 |         if std::path::Path::new("/proc/cpuinfo").read_to_string()
+    |                                                  ^^^^^^^^^^^^^^ method not found in `&Path`
+
+error[E0308]: mismatched types
+   --> src/gpu/xmx.rs:435:24
+    |
+435 |         f32::from_bits((sign << 31) | 0x7F800000 | mantissa)
+    |         -------------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `u32`, found `u16`
+    |         |
+    |         arguments to this function are incorrect
+    |
+note: associated function defined here
+   --> /rustc/1159e78c4747b02ef996e55082b704c09b970588/library/core/src/num/f32.rs:1136:18
+help: you can convert a `u16` to a `u32`
+    |
+435 |         f32::from_bits(((sign << 31) | 0x7F800000 | mantissa).into())
+    |                        +                                    ++++++++
+
+error[E0308]: mismatched types
+   --> src/gpu/xmx.rs:438:24
+    |
+438 |         f32::from_bits((sign << 31) | mantissa)
+    |         -------------- ^^^^^^^^^^^^^^^^^^^^^^^ expected `u32`, found `u16`
+    |         |
+    |         arguments to this function are incorrect
+    |
+note: associated function defined here
+   --> /rustc/1159e78c4747b02ef996e55082b704c09b970588/library/core/src/num/f32.rs:1136:18
+help: you can convert a `u16` to a `u32`
+    |
+438 |         f32::from_bits(((sign << 31) | mantissa).into())
+    |                        +                       ++++++++
+
+error[E0308]: mismatched types
+   --> src/gpu/xmx.rs:441:24
+    |
+441 |         f32::from_bits((sign << 31) | ((exp - 0x71) << 23) | mantissa)
+    |         -------------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `u32`, found `u16`
+    |         |
+    |         arguments to this function are incorrect
+    |
+note: associated function defined here
+   --> /rustc/1159e78c4747b02ef996e55082b704c09b970588/library/core/src/num/f32.rs:1136:18
+help: you can convert a `u16` to a `u32`
+    |
+441 |         f32::from_bits(((sign << 31) | ((exp - 0x71) << 23) | mantissa).into())
+    |                        +                                              ++++++++
+
+error[E0026]: variant `xmx::XmxError::MemoryAllocation` does not have a field named `0`
+   --> src/gpu/xmx.rs:554:13
+    |
+554 |     #[error("Memory allocation failed: {0}")]
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ variant `xmx::XmxError::MemoryAllocation` does not have this field
+
+error[E0559]: variant `xmx::XmxError::MemoryAllocation` has no field named `0`
+   --> src/gpu/xmx.rs:554:13
+    |
+554 |     #[error("Memory allocation failed: {0}")]
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `xmx::XmxError::MemoryAllocation` does not have this field
+    |
+    = note: all struct fields are already assigned
+
+error[E0599]: no method named `get_metrics` found for struct `Arc<ConsensusCoordinator>` in the current scope
+  --> src/consensus_control.rs:91:66
+   |
+91 |         let metrics = futures::executor::block_on(self.consensus.get_metrics());
+   |                                                                  ^^^^^^^^^^^ method not found in `Arc<ConsensusCoordinator>`
+
+error[E0599]: no method named `submit_transaction` found for struct `Arc<ConsensusCoordinator>` in the current scope
+   --> src/consensus_control.rs:138:60
+    |
+138 |         futures::executor::block_on(async { self.consensus.submit_transaction(tx).await })?;
+    |                                                            ^^^^^^^^^^^^^^^^^^ method not found in `Arc<ConsensusCoordinator>`
+
+error[E0599]: no method named `get_recent_blocks` found for struct `Arc<ConsensusCoordinator>` in the current scope
+   --> src/consensus_control.rs:151:65
+    |
+151 |         let blocks = futures::executor::block_on(self.consensus.get_recent_blocks(20));
+    |                                                                 ^^^^^^^^^^^^^^^^^ method not found in `Arc<ConsensusCoordinator>`
+
+error[E0599]: no method named `get_dag_structure` found for struct `Arc<ConsensusCoordinator>` in the current scope
+   --> src/consensus_control.rs:185:67
+    |
+185 |         let dag_info = futures::executor::block_on(self.consensus.get_dag_structure());
+    |                                                                   ^^^^^^^^^^^^^^^^^ method not found in `Arc<ConsensusCoordinator>`
+
+error[E0599]: no method named `get_network_peers` found for struct `Arc<ConsensusCoordinator>` in the current scope
+   --> src/consensus_control.rs:224:64
+    |
+224 |         let peers = futures::executor::block_on(self.consensus.get_network_peers());
+    |                                                                ^^^^^^^^^^^^^^^^^ method not found in `Arc<ConsensusCoordinator>`
+
+error[E0599]: no method named `get_metrics` found for struct `Arc<ConsensusCoordinator>` in the current scope
+   --> src/consensus_control.rs:249:66
+    |
+249 |         let metrics = futures::executor::block_on(self.consensus.get_metrics());
+    |                                                                  ^^^^^^^^^^^ method not found in `Arc<ConsensusCoordinator>`
+
+warning: variable does not need to be mutable
+   --> src/transport.rs:354:9
+    |
+354 |     let mut server_config = rustls::ServerConfig::builder()
+    |         ----^^^^^^^^^^^^^
+    |         |
+    |         help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+error[E0310]: the parameter type `T` may not live long enough
+  --> src/wasm/translator.rs:87:9
+   |
+87 | /         linker.func_wrap(
+88 | |             "9p",
+89 | |             "read",
+90 | |             |_caller: wasmtime::Caller<'_, T>, _fid: i32, _offset: i64, _count: i32| -> i32 {
+...  |
+94 | |             },
+95 | |         )?;
+   | |         ^
+   | |         |
+   | |_________the parameter type `T` must be valid for the static lifetime...
+   |           ...so that the type `T` will meet its required lifetime bounds
+   |
+help: consider adding an explicit lifetime bound
+   |
+83 |     fn add_ninep_functions<T: 'static>(&self, linker: &mut Linker<T>) -> Result<()> {
+   |                             +++++++++
+
+error[E0310]: the parameter type `T` may not live long enough
+   --> src/wasm/translator.rs:98:9
+    |
+ 98 | /         linker.func_wrap(
+ 99 | |             "9p",
+100 | |             "write",
+101 | |             |_caller: wasmtime::Caller<'_, T>,
+...   |
+109 | |             },
+110 | |         )?;
+    | |         ^
+    | |         |
+    | |_________the parameter type `T` must be valid for the static lifetime...
+    |           ...so that the type `T` will meet its required lifetime bounds
+    |
+help: consider adding an explicit lifetime bound
+    |
+ 83 |     fn add_ninep_functions<T: 'static>(&self, linker: &mut Linker<T>) -> Result<()> {
+    |                             +++++++++
+
+error[E0310]: the parameter type `T` may not live long enough
+   --> src/wasm/translator.rs:113:9
+    |
+113 | /         linker.func_wrap(
+114 | |             "9p",
+115 | |             "stat",
+116 | |             |_caller: wasmtime::Caller<'_, T>, _fid: i32, _stat_ptr: i32| -> i32 {
+...   |
+119 | |             },
+120 | |         )?;
+    | |         ^
+    | |         |
+    | |_________the parameter type `T` must be valid for the static lifetime...
+    |           ...so that the type `T` will meet its required lifetime bounds
+    |
+help: consider adding an explicit lifetime bound
+    |
+ 83 |     fn add_ninep_functions<T: 'static>(&self, linker: &mut Linker<T>) -> Result<()> {
+    |                             +++++++++
+
+warning: unused variable: `b`
+   --> src/gpu/xmx.rs:102:5
+    |
+102 |     b: &[f32],
+    |     ^ help: if this is intentional, prefix it with an underscore: `_b`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `precision`
+   --> src/gpu/xmx.rs:103:5
+    |
+103 |     precision: XmxPrecision,
+    |     ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_precision`
+
+warning: unused variable: `precision`
+   --> src/gpu/xmx.rs:121:5
+    |
+121 |     precision: XmxPrecision,
+    |     ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_precision`
+
+warning: unused variable: `a_scale`
+   --> src/gpu/xmx.rs:486:40
+    |
+486 | fn matmul_int8_xmx(a: &[i8], b: &[i8], a_scale: f32, b_scale: f32) -> Vec<i8> {
+    |                                        ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_a_scale`
+
+warning: unused variable: `b_scale`
+   --> src/gpu/xmx.rs:486:54
+    |
+486 | fn matmul_int8_xmx(a: &[i8], b: &[i8], a_scale: f32, b_scale: f32) -> Vec<i8> {
+    |                                                      ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_b_scale`
+
+warning: unused variable: `precision`
+   --> src/gpu/xmx.rs:528:5
+    |
+528 |     precision: XmxPrecision,
+    |     ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_precision`
+
+Some errors have detailed explanations: E0026, E0061, E0119, E0277, E0282, E0308, E0310, E0425, E0428...
+For more information about an error, try `rustc --explain E0026`.
+warning: `ninepe-server` (lib) generated 26 warnings
+warning: ninepe-server@1.0.0: Using pre-built Intel oneAPI SYCL library
+warning: ninepe-server@1.0.0: Using pre-built AdaptiveCpp SYCL library
+warning: ninepe-server@1.0.0: SYCL backends available: Intel oneAPI, AdaptiveCpp
+warning: ninepe-server@1.0.0: Both backends built as separate shared libraries
+warning: ninepe-server@1.0.0: Runtime will dynamically load appropriate backend per GPU
+warning: ninepe-server@1.0.0: No static linking - using dlopen via libloading crate
+error: could not compile `ninepe-server` (lib) due to 115 previous errors; 26 warnings emitted

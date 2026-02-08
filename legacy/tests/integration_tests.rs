@@ -10,7 +10,7 @@ use tempfile::TempDir;
 use tokio::time::timeout;
 
 // These will be exposed from lib.rs
-// use ninepee_server::*;
+// use ninep_server::*;
 
 /// Test: Complete server lifecycle
 #[tokio::test]
@@ -153,7 +153,7 @@ async fn test_p2p_discovery() {
     // Node 2 discovers servers
     let servers = node2.discover_servers("/test/namespace").await.unwrap();
     assert!(!servers.is_empty());
-    assert_eq!(servers[0].ninepee_port, 9000);
+    assert_eq!(servers[0].ninep_port, 9000);
 }
 
 /// Test: NAT traversal simulation

@@ -133,12 +133,12 @@ Definition rust_handler_template (handler_name : string) : string :=
 /// Generated from Coq proof
 pub async fn handle_" ++ handler_name ++ "<'a>(
     fs: &'a mut FileSystemState,
-    msg: NinePeeMessage,
-) -> Result<NinePeeMessage> {
+    msg: NinePMessage,
+) -> Result<NinePMessage> {
     // Implementation verified by Coq
     match msg {
         // Pattern matching based on verified specification
-        _ => Ok(NinePeeMessage::Error {
+        _ => Ok(NinePMessage::Error {
             ename: ""Not implemented"".to_string(),
             errno: 1,
         })

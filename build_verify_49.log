@@ -1,0 +1,4050 @@
+warning: unused variable: `out_dir`
+   --> build.rs:176:9
+    |
+176 |     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+    |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_out_dir`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: `ninepe-server` (build script) generated 1 warning
+warning: ninepe-server@1.0.0: Using pre-built Intel oneAPI SYCL library
+warning: ninepe-server@1.0.0: Using pre-built AdaptiveCpp SYCL library
+warning: ninepe-server@1.0.0: SYCL backends available: Intel oneAPI, AdaptiveCpp
+warning: ninepe-server@1.0.0: Both backends built as separate shared libraries
+warning: ninepe-server@1.0.0: Runtime will dynamically load appropriate backend per GPU
+warning: ninepe-server@1.0.0: No static linking - using dlopen via libloading crate
+    Checking ninepe-server v1.0.0 (/home/scott/Repo/9pe-server)
+warning: unused import: `Context`
+ --> src/consensus/crypto.rs:1:14
+  |
+1 | use anyhow::{Context, Result};
+  |              ^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `rustls::server::AllowAnyAuthenticatedClient`
+  --> src/transport.rs:10:5
+   |
+10 | use rustls::server::AllowAnyAuthenticatedClient;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `rustls::Error as RustlsError`
+  --> src/transport.rs:12:5
+   |
+12 | use rustls::Error as RustlsError;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `SystemTime`
+  --> src/transport.rs:17:27
+   |
+17 | use std::time::{Duration, SystemTime};
+   |                           ^^^^^^^^^^
+
+warning: unused import: `NistP256`
+  --> src/identity.rs:12:12
+   |
+12 | use p256::{NistP256, PublicKey as P256PublicKey, SecretKey as P256SecretKey};
+   |            ^^^^^^^^
+
+warning: ambiguous glob re-exports
+   --> src/lib.rs:61:9
+    |
+ 61 | pub use protocol::*;
+    |         ^^^^^^^^^^^ the name `ProtocolError` in the type namespace is first re-exported here
+...
+140 | pub use error::*;
+    |         -------- but the name `ProtocolError` in the type namespace is also re-exported here
+    |
+    = note: `#[warn(ambiguous_glob_reexports)]` on by default
+
+warning: ambiguous glob re-exports
+   --> src/lib.rs:63:9
+    |
+ 63 | pub use translators::*;
+    |         ^^^^^^^^^^^^^^ the name `Translator` in the type namespace is first re-exported here
+...
+142 | pub use traits::*;
+    |         --------- but the name `Translator` in the type namespace is also re-exported here
+
+warning: ambiguous glob re-exports
+  --> src/lib.rs:63:9
+   |
+63 | pub use translators::*;
+   |         ^^^^^^^^^^^^^^ the name `TranslatorInfo` in the type namespace is first re-exported here
+...
+92 | pub use settrans::*;
+   |         ----------- but the name `TranslatorInfo` in the type namespace is also re-exported here
+
+warning: unused import: `crate::synth::SyntheticFilesystem`
+  --> src/server/builder.rs:11:5
+   |
+11 | use crate::synth::SyntheticFilesystem;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `BoundedGhostdag`
+ --> src/server/handler/basic_ops.rs:3:24
+  |
+3 | use crate::consensus::{BoundedGhostdag, NamespaceOp};
+  |                        ^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::wasm::ThreadSafeTranslatorRegistry`
+  --> src/server/handler/basic_ops.rs:17:5
+   |
+17 | use crate::wasm::ThreadSafeTranslatorRegistry;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::settrans::VirtualSettransSystem`
+  --> src/server/handler/basic_ops.rs:18:5
+   |
+18 | use crate::settrans::VirtualSettransSystem;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::dht::SovereignDht`
+  --> src/server/handler/basic_ops.rs:19:5
+   |
+19 | use crate::dht::SovereignDht;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::settrans::VirtualSettransSystem`
+ --> src/server/handler/ninep_extensions.rs:8:5
+  |
+8 | use crate::settrans::VirtualSettransSystem;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::synth::SyntheticFilesystem`
+ --> src/server/handler/ninep_extensions.rs:9:5
+  |
+9 | use crate::synth::SyntheticFilesystem;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::wasm::ThreadSafeTranslatorRegistry`
+  --> src/server/handler/ninep_extensions.rs:10:5
+   |
+10 | use crate::wasm::ThreadSafeTranslatorRegistry;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::consensus::BoundedGhostdag`
+  --> src/server/handler/mod.rs:13:5
+   |
+13 | use crate::consensus::BoundedGhostdag;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::settrans::VirtualSettransSystem`
+  --> src/server/handler/mod.rs:15:5
+   |
+15 | use crate::settrans::VirtualSettransSystem;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::synth::SyntheticFilesystem`
+  --> src/server/handler/mod.rs:16:5
+   |
+16 | use crate::synth::SyntheticFilesystem;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::wasm::ThreadSafeTranslatorRegistry`
+  --> src/server/handler/mod.rs:17:5
+   |
+17 | use crate::wasm::ThreadSafeTranslatorRegistry;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `WasiCtx`
+  --> src/wasm/threadsafe.rs:20:21
+   |
+20 | use wasmtime_wasi::{WasiCtx, WasiCtxBuilder};
+   |                     ^^^^^^^
+
+warning: ambiguous glob re-exports
+   --> src/lib.rs:90:9
+    |
+ 90 | pub use server::*;
+    |         ^^^^^^^^^ the name `ServerConfig` in the type namespace is first re-exported here
+...
+131 | pub use config::*;
+    |         --------- but the name `ServerConfig` in the type namespace is also re-exported here
+
+warning: unused imports: `BlockState` and `BoundedGhostdag`
+  --> src/namespace_manager.rs:10:17
+   |
+10 |     consensus::{BlockState, BoundedGhostdag, NamespaceOp},
+   |                 ^^^^^^^^^^  ^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::consensus::GhostdagBlock as Block`
+   --> src/namespace_manager.rs:401:17
+    |
+401 |             use crate::consensus::GhostdagBlock as Block;
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::consensus::GhostdagBlock as Block`
+   --> src/namespace_manager.rs:604:17
+    |
+604 |             use crate::consensus::GhostdagBlock as Block;
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `WorkReceipt`
+  --> src/mesh.rs:25:67
+   |
+25 | use crate::identity::{NodeId, NodePermissions, SovereignIdentity, WorkReceipt};
+   |                                                                   ^^^^^^^^^^^
+
+warning: ambiguous glob re-exports
+   --> src/lib.rs:136:9
+    |
+136 | pub use compute_control::*;
+    |         ^^^^^^^^^^^^^^^^^^ the name `JobStatus` in the type namespace is first re-exported here
+...
+142 | pub use traits::*;
+    |         --------- but the name `JobStatus` in the type namespace is also re-exported here
+
+warning: ambiguous glob re-exports
+   --> src/lib.rs:136:9
+    |
+136 | pub use compute_control::*;
+    |         ^^^^^^^^^^^^^^^^^^ the name `ComputeJob` in the type namespace is first re-exported here
+...
+142 | pub use traits::*;
+    |         --------- but the name `ComputeJob` in the type namespace is also re-exported here
+
+warning: ambiguous glob re-exports
+   --> src/lib.rs:142:9
+    |
+135 | pub use sycl::*;
+    |         ------- but the name `DeviceInfo` in the type namespace is also re-exported here
+...
+142 | pub use traits::*;
+    |         ^^^^^^^^^ the name `DeviceInfo` in the type namespace is first re-exported here
+
+warning: unused import: `std::path::PathBuf`
+ --> src/ipc/shm.rs:5:5
+  |
+5 | use std::path::PathBuf;
+  |     ^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `DerefMut`
+ --> src/ipc/shm.rs:6:23
+  |
+6 | use std::ops::{Deref, DerefMut};
+  |                       ^^^^^^^^
+
+warning: unused variable: `record`
+   --> src/transport.rs:319:13
+    |
+319 |         let record = dht
+    |             ^^^^^^ help: if this is intentional, prefix it with an underscore: `_record`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `wasm_provider`
+   --> src/server/builder.rs:202:13
+    |
+202 |         let wasm_provider = if let Some(wasm) = self.wasm_provider {
+    |             ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_wasm_provider`
+
+warning: unused variable: `default_pool`
+   --> src/server/builder.rs:229:13
+    |
+229 |         let default_pool = memory_manager.create_pool(
+    |             ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_default_pool`
+
+warning: unused variable: `s`
+   --> src/server/builder.rs:215:76
+    |
+215 |             let synth_fs_for_settrans = self.storage_provider.clone().map(|s| {
+    |                                                                            ^ help: if this is intentional, prefix it with an underscore: `_s`
+
+warning: unused variable: `now`
+   --> src/server/handler/basic_ops.rs:508:25
+    |
+508 |                     let now = std::time::SystemTime::now()
+    |                         ^^^ help: if this is intentional, prefix it with an underscore: `_now`
+
+warning: unused variable: `crypto`
+   --> src/server/mod.rs:228:17
+    |
+228 |             let crypto = Arc::new(crate::consensus::crypto::Ed25519Provider::new()?);
+    |                 ^^^^^^ help: if this is intentional, prefix it with an underscore: `_crypto`
+
+warning: unused variable: `public_key`
+   --> src/server/mod.rs:246:28
+    |
+246 |                         Ok(public_key) => {
+    |                            ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_public_key`
+
+warning: unused variable: `pk`
+   --> src/server/mod.rs:477:36
+    |
+477 | ...                   Ok(pk) => {
+    |                          ^^ help: if this is intentional, prefix it with an underscore: `_pk`
+
+warning: variable does not need to be mutable
+   --> src/wasm/threadsafe.rs:990:13
+    |
+990 |         let mut result = vec![0f32; a.len()];
+    |             ----^^^^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+warning: variable does not need to be mutable
+   --> src/transport.rs:353:9
+    |
+353 |     let mut server_config = rustls::ServerConfig::builder()
+    |         ----^^^^^^^^^^^^^
+    |         |
+    |         help: remove this `mut`
+
+warning: unused variable: `b`
+   --> src/gpu/xmx.rs:113:5
+    |
+113 |     b: &[f32],
+    |     ^ help: if this is intentional, prefix it with an underscore: `_b`
+
+warning: unused variable: `precision`
+   --> src/gpu/xmx.rs:114:5
+    |
+114 |     precision: XmxPrecision,
+    |     ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_precision`
+
+warning: field `sovereign_identity` is never read
+  --> src/server/mod.rs:46:5
+   |
+36 | pub struct Server {
+   |            ------ field in this struct
+...
+46 |     sovereign_identity: Arc<SovereignIdentity>,
+   |     ^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+
+warning: fields `wasm`, `storage`, `compute`, and `shm` are never read
+  --> src/server/handler/mod.rs:39:5
+   |
+29 | pub struct MessageHandler {
+   |            -------------- fields in this struct
+...
+39 |     wasm: Arc<dyn crate::traits::WasmProvider>,
+   |     ^^^^
+...
+49 |     storage: Arc<dyn crate::traits::StorageProvider>,
+   |     ^^^^^^^
+...
+52 |     compute: Arc<dyn crate::traits::ComputeBackend>,
+   |     ^^^^^^^
+...
+65 |     shm: Arc<crate::ipc::SharedMemoryManager>,
+   |     ^^^
+
+warning: method `generate_certificate` is never used
+   --> src/mesh.rs:171:8
+    |
+ 46 | impl MeshNetwork {
+    | ---------------- method in this implementation
+...
+171 |     fn generate_certificate(&self) -> Result<rcgen::Certificate> {
+    |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: field `manager_regions` is never read
+   --> src/ipc/shm.rs:128:5
+    |
+123 | pub struct SharedMemoryHandle {
+    |            ------------------ field in this struct
+...
+128 |     manager_regions: Option<Arc<RwLock<HashMap<String, Arc<Mutex<MemoryRegion>>>>>>,
+    |     ^^^^^^^^^^^^^^^
+    |
+    = note: `SharedMemoryHandle` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: missing documentation for a module
+   --> src/lib.rs:141:1
+    |
+141 | pub mod traits;
+    | ^^^^^^^^^^^^^^
+    |
+note: the lint level is defined here
+   --> src/lib.rs:14:9
+    |
+ 14 | #![warn(missing_docs)]
+    |         ^^^^^^^^^^^^
+
+warning: missing documentation for a module
+   --> src/lib.rs:143:1
+    |
+143 | pub mod compute_adapter;
+    | ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a module
+   --> src/lib.rs:145:1
+    |
+145 | pub mod storage_adapter;
+    | ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a module
+   --> src/lib.rs:147:1
+    |
+147 | pub mod wasm_adapter;
+    | ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a module
+   --> src/lib.rs:149:1
+    |
+149 | pub mod ipc;
+    | ^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/consensus.rs:28:1
+   |
+28 | pub struct GhostdagBlock {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/consensus.rs:1150:5
+     |
+1150 |     pub tip_height: u64,
+     |     ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/consensus.rs:1151:5
+     |
+1151 |     pub total_blocks: u64,
+     |     ^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/consensus.rs:1152:5
+     |
+1152 |     pub pending_tx_count: u64,
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/consensus.rs:1153:5
+     |
+1153 |     pub network_hashrate: u64,
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/consensus.rs:1154:5
+     |
+1154 |     pub active_peers: u64,
+     |     ^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/consensus.rs:1155:5
+     |
+1155 |     pub consensus_reached: bool,
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+    --> src/consensus.rs:1159:1
+     |
+1159 | pub struct ConsensusState {
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/consensus.rs:1160:4
+     |
+1160 |    pub node_id: String,
+     |    ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/consensus.rs:1161:4
+     |
+1161 |    pub block_count: u64,
+     |    ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/consensus.rs:1162:4
+     |
+1162 |    pub dag_height: u64,
+     |    ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/consensus.rs:1163:4
+     |
+1163 |    pub confirmed_blocks: Vec<String>,
+     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/consensus.rs:1164:4
+     |
+1164 |    pub pending_work: Vec<String>,
+     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/consensus.rs:1165:4
+     |
+1165 |    pub tips: Vec<String>,
+     |    ^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/consensus.rs:1166:4
+     |
+1166 |    pub main_chain: Vec<String>,
+     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+    --> src/consensus.rs:1170:5
+     |
+1170 |     pub fn confidence_score(&self) -> f32 {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+    --> src/consensus.rs:1174:5
+     |
+1174 |     pub fn main_chain_tip(&self) -> Option<String> {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+    --> src/consensus.rs:1224:5
+     |
+1224 |     pub async fn initialize(&self) -> anyhow::Result<()> {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+    --> src/consensus.rs:1228:5
+     |
+1228 |     pub fn trust_node(&self, _node_id: String, _public_key: [u8; 32]) {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+    --> src/consensus.rs:1232:5
+     |
+1232 |     pub async fn get_metrics(&self) -> ConsensusMetrics {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+    --> src/consensus.rs:1244:5
+     |
+1244 |     pub async fn submit_transaction(&self, _tx: Vec<u8>) -> anyhow::Result<()> {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+    --> src/consensus.rs:1248:5
+     |
+1248 |     pub async fn get_recent_blocks(&self, count: usize) -> Vec<GhostdagBlock> {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+    --> src/consensus.rs:1252:5
+     |
+1252 |     pub async fn get_dag_structure(&self) -> serde_json::Value {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+    --> src/consensus.rs:1256:5
+     |
+1256 |     pub async fn get_network_peers(&self) -> serde_json::Value {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/consensus.rs:1265:5
+     |
+1265 |     Pending,
+     |     ^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/consensus.rs:1266:5
+     |
+1266 |     Accepted,
+     |     ^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/consensus.rs:1267:5
+     |
+1267 |     Rejected,
+     |     ^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/consensus.rs:1268:5
+     |
+1268 |     Committed,
+     |     ^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/consensus.rs:1275:5
+     |
+1275 |     Bind,
+     |     ^^^^
+
+warning: missing documentation for a variant
+    --> src/consensus.rs:1276:5
+     |
+1276 |     Mount,
+     |     ^^^^^
+
+warning: missing documentation for a variant
+    --> src/consensus.rs:1277:5
+     |
+1277 |     Unmount,
+     |     ^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/consensus.rs:1278:5
+     |
+1278 |     Create {
+     |     ^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/consensus.rs:1279:9
+     |
+1279 |         path: String,
+     |         ^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/consensus.rs:1280:9
+     |
+1280 |         mode: u32,
+     |         ^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/consensus.rs:1281:9
+     |
+1281 |         is_dir: bool,
+     |         ^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/consensus.rs:1283:5
+     |
+1283 |     Delete {
+     |     ^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/consensus.rs:1284:9
+     |
+1284 |         path: String,
+     |         ^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/consensus.rs:1286:5
+     |
+1286 |     Write {
+     |     ^^^^^
+
+warning: missing documentation for a struct field
+    --> src/consensus.rs:1287:9
+     |
+1287 |         path: String,
+     |         ^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/consensus.rs:1288:9
+     |
+1288 |         offset: u64,
+     |         ^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/consensus.rs:1289:9
+     |
+1289 |         hash: [u8; 32],
+     |         ^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/consensus.rs:1291:5
+     |
+1291 |     Rename {
+     |     ^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/consensus.rs:1292:9
+     |
+1292 |         from: String,
+     |         ^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/consensus.rs:1293:9
+     |
+1293 |         to: String,
+     |         ^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/consensus.rs:1295:5
+     |
+1295 |     RegisterNamespace {
+     |     ^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/consensus.rs:1296:9
+     |
+1296 |         path: String,
+     |         ^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/consensus.rs:1297:9
+     |
+1297 |         owner_pubkey: [u8; 32],
+     |         ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/consensus.rs:1298:9
+     |
+1298 |         signature: Vec<u8>,
+     |         ^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a module
+    --> src/consensus.rs:1310:1
+     |
+1310 | pub mod crypto;
+     | ^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/transport.rs:28:1
+   |
+28 | pub struct ServerTls {
+   | ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/transport.rs:29:5
+   |
+29 |     pub cert: Vec<u8>,
+   |     ^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/transport.rs:30:5
+   |
+30 |     pub key: Vec<u8>,
+   |     ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an enum
+  --> src/transport.rs:34:1
+   |
+34 | pub enum TransportType {
+   | ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/transport.rs:35:5
+   |
+35 |     Tcp,
+   |     ^^^
+
+warning: missing documentation for a variant
+  --> src/transport.rs:36:5
+   |
+36 |     Quic { server_name: Option<String> },
+   |     ^^^^
+
+warning: missing documentation for a struct field
+  --> src/transport.rs:36:12
+   |
+36 |     Quic { server_name: Option<String> },
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a trait
+  --> src/transport.rs:46:1
+   |
+46 | pub trait ConnectionListener: Send + Sync {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/transport.rs:47:5
+   |
+47 |     async fn accept(&self) -> AnyResult<Box<dyn Connection>>;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/transport.rs:48:5
+   |
+48 |     fn local_addr(&self) -> Option<SocketAddr> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a trait
+  --> src/transport.rs:54:1
+   |
+54 | pub trait Transport: Send + Sync {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/transport.rs:55:5
+   |
+55 |     async fn listen(&self, addr: SocketAddr, tls: Option<ServerTls>) -> AnyResult<Box<dyn ConnectionListener>>;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/transport.rs:56:5
+   |
+56 |     async fn connect(&self, addr: SocketAddr) -> AnyResult<Box<dyn Connection>>;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a trait
+  --> src/transport.rs:59:1
+   |
+59 | pub trait Connection: AsyncRead + AsyncWrite + Send + Unpin {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/transport.rs:60:5
+   |
+60 |     fn peer_addr(&self) -> AnyResult<SocketAddr>;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/transport.rs:61:5
+   |
+61 |     fn protocol(&self) -> &'static str;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/transport.rs:64:1
+   |
+64 | pub struct TransportFactory;
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/transport.rs:67:5
+   |
+67 |     pub fn create(transport: TransportType) -> AnyResult<Box<dyn Transport>> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+ --> src/util.rs:4:1
+  |
+4 | pub fn log_execution_mode() {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+ --> src/util.rs:8:1
+  |
+8 | pub fn get_settrans_directory() -> PathBuf {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+  --> src/util.rs:12:1
+   |
+12 | pub fn get_n_directory() -> PathBuf {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/identity.rs:25:5
+   |
+25 |     pub fn new(hex_str: String) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/identity.rs:29:5
+   |
+29 |     pub fn as_str(&self) -> &str {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/identity.rs:42:5
+   |
+42 |     pub ed25519_public: VerifyingKey,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/identity.rs:46:5
+   |
+46 |     pub p256_public: P256PublicKey,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/identity.rs:50:5
+   |
+50 |     pub x25519_public: X25519PublicKey,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/identity.rs:54:5
+   |
+54 |     pub private_key_der: Vec<u8>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/identity.rs:87:5
+   |
+87 |     pub fn generate_with_permissions(permissions: NodePermissions) -> Result<Self> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/identity.rs:171:5
+    |
+171 |     pub fn p256_public_key_bytes(&self) -> Vec<u8> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/identity.rs:179:5
+    |
+179 |     pub can_submit_jobs: bool,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/identity.rs:180:5
+    |
+180 |     pub can_monitor_resources: bool,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/identity.rs:181:5
+    |
+181 |     pub can_view_logs: bool,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/identity.rs:182:5
+    |
+182 |     pub max_concurrent_jobs: u32,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/identity.rs:183:5
+    |
+183 |     pub max_gpu_hours_per_month: u64,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/identity.rs:184:5
+    |
+184 |     pub allowed_compute_types: Vec<String>,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/identity.rs:185:5
+    |
+185 |     pub network_scope: NetworkScope,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/identity.rs:186:5
+    |
+186 |     pub expires_at: Option<SystemTime>,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+   --> src/identity.rs:190:1
+    |
+190 | pub struct NetworkScope {
+    | ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/identity.rs:191:5
+    |
+191 |     pub cluster_name: String,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/identity.rs:192:5
+    |
+192 |     pub allowed_networks: Vec<String>,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/identity.rs:193:5
+    |
+193 |     pub blocked_networks: Vec<String>,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/identity.rs:197:5
+    |
+197 |     pub fn owner_defaults() -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/identity.rs:322:5
+    |
+322 |     pub has_gpu: bool,
+    |     ^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/identity.rs:323:5
+    |
+323 |     pub gpu_type: Option<String>,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/identity.rs:324:5
+    |
+324 |     pub cpu_cores: Option<u32>,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/identity.rs:325:5
+    |
+325 |     pub memory_gb: Option<u32>,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/identity.rs:326:5
+    |
+326 |     pub storage_gb: Option<u32>,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/identity.rs:327:5
+    |
+327 |     pub supported_operations: Vec<String>,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/identity.rs:333:5
+    |
+333 |     pub max_parallel_jobs: Option<u32>,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/identity.rs:334:5
+    |
+334 |     pub memory_requirements_mb: Option<u32>,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/identity.rs:335:5
+    |
+335 |     pub gpu_required: bool,
+    |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/identity.rs:336:5
+    |
+336 |     pub specialized_hardware: Vec<String>,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/dht.rs:78:1
+   |
+78 | pub struct ServiceRecord {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/dht.rs:79:5
+   |
+79 |     pub node_id: NodeId,
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/dht.rs:80:5
+   |
+80 |     pub service_name: String,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/dht.rs:81:5
+   |
+81 |     pub mount_point: String,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/dht.rs:82:5
+   |
+82 |     pub capabilities: ServiceCapabilities,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/dht.rs:83:5
+   |
+83 |     pub network_addr: SocketAddr,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/dht.rs:84:5
+   |
+84 |     pub timestamp: u64,
+   |     ^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/dht.rs:113:5
+    |
+113 |     pub fn start_maintenance(&self, interval: std::time::Duration) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/dht.rs:191:5
+    |
+191 | /     pub async fn start_networking(
+192 | |         &self,
+193 | |         listen_addr: SocketAddr,
+194 | |         bootstrap_addrs: Vec<Multiaddr>,
+195 | |     ) -> Result<(), anyhow::Error> {
+    | |__________________________________^
+
+warning: missing documentation for an associated function
+   --> src/dht.rs:707:5
+    |
+707 |     pub fn name_hash_for_addr(addr: &SocketAddr, node_name: &str) -> Vec<u8> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/server/mod.rs:63:5
+   |
+63 |     pub network: NetworkConfig,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/server/mod.rs:64:5
+   |
+64 |     pub transport: TransportType,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/server/mod.rs:65:5
+   |
+65 |     pub root_directory: PathBuf,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/server/mod.rs:66:5
+   |
+66 |     pub max_message_size: u32,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/server/mod.rs:67:5
+   |
+67 |     pub worker_threads: Option<usize>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/server/mod.rs:68:5
+   |
+68 |     pub mesh_enabled: bool,
+   |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/server/mod.rs:69:5
+   |
+69 |     pub mesh_port: u16,
+   |     ^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/server/mod.rs:70:5
+   |
+70 |     pub dht_port: u16,
+   |     ^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/server/mod.rs:71:5
+   |
+71 |     pub metrics_enabled: bool,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/server/mod.rs:72:5
+   |
+72 |     pub metrics_port: u16,
+   |     ^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/server/mod.rs:73:5
+   |
+73 |     pub translator_directory: PathBuf,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/server/mod.rs:74:5
+   |
+74 |     pub settrans_directory: PathBuf,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/server/mod.rs:75:5
+   |
+75 |     pub dht_store_path: PathBuf,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/server/mod.rs:76:5
+   |
+76 |     pub auto_mount_enabled: bool,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/server/mod.rs:77:5
+   |
+77 |     pub consensus_config: Option<crate::config::ConsensusConfig>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/server/mod.rs:78:5
+   |
+78 |     pub node_id: String,
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/server/mod.rs:79:5
+   |
+79 |     pub node_name: Option<String>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/server/mod.rs:80:5
+   |
+80 |     pub dht_bootstrap_peers: Vec<String>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/server/mod.rs:81:5
+   |
+81 |     pub service_discovery: Vec<String>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/server/builder.rs:44:5
+   |
+44 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/server/builder.rs:67:5
+   |
+67 |     pub fn with_config(mut self, config: crate::config::Config) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/server/builder.rs:72:5
+   |
+72 |     pub fn network_config(mut self, config: NetworkConfig) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/server/builder.rs:77:5
+   |
+77 |     pub fn transport(mut self, transport: TransportType) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/server/builder.rs:82:5
+   |
+82 |     pub fn root_directory(mut self, path: PathBuf) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/server/builder.rs:87:5
+   |
+87 |     pub fn max_message_size(mut self, size: u32) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/server/builder.rs:92:5
+   |
+92 |     pub fn worker_threads(mut self, threads: Option<usize>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/server/builder.rs:97:5
+   |
+97 |     pub fn mesh_enabled(mut self, enabled: bool) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/server/builder.rs:102:5
+    |
+102 |     pub fn mesh_port(mut self, port: u16) -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/server/builder.rs:107:5
+    |
+107 |     pub fn metrics_enabled(mut self, enabled: bool) -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/server/builder.rs:112:5
+    |
+112 |     pub fn metrics_port(mut self, port: u16) -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/server/builder.rs:127:5
+    |
+127 |     pub fn auto_mount_enabled(mut self, enabled: bool) -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/server/builder.rs:132:5
+    |
+132 |     pub fn dht_bootstrap_peers(mut self, peers: Vec<String>) -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/server/builder.rs:137:5
+    |
+137 |     pub fn service_discovery(mut self, services: Vec<String>) -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/server/builder.rs:142:5
+    |
+142 |     pub fn with_storage(mut self, provider: std::sync::Arc<dyn crate::traits::StorageProvider>) -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/server/builder.rs:147:5
+    |
+147 |     pub fn with_wasm(mut self, wasm: Arc<dyn crate::traits::WasmProvider>) -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/server/builder.rs:152:5
+    |
+152 |     pub fn with_compute(mut self, backend: std::sync::Arc<dyn crate::traits::ComputeBackend>) -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/server/builder.rs:157:5
+    |
+157 |     pub async fn build(self) -> Result<Server> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/server/handler/connection_state.rs:101:5
+    |
+101 | /     pub async fn create_auth_session(
+102 | |         &self,
+103 | |         afid: u32,
+104 | |         server_node_id: String,
+105 | |         required_scope: Option<String>,
+106 | |     ) -> AuthChallenge {
+    | |______________________^
+
+warning: missing documentation for a method
+   --> src/server/handler/connection_state.rs:126:5
+    |
+126 |     pub async fn get_auth_challenge(&self, afid: u32) -> Option<AuthChallenge> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/server/handler/connection_state.rs:131:5
+    |
+131 | /     pub async fn submit_auth_response(
+132 | |         &self,
+133 | |         afid: u32,
+134 | |         response: AuthResponse,
+135 | |     ) -> Result<NodePermissions, anyhow::Error> {
+    | |_______________________________________________^
+
+warning: missing documentation for a method
+   --> src/server/handler/connection_state.rs:173:5
+    |
+173 |     pub async fn auth_permissions(&self) -> Option<NodePermissions> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/server/handler/connection_state.rs:178:5
+    |
+178 |     pub async fn set_dht(&self, dht: Arc<SovereignDht>) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/server/session.rs:16:1
+   |
+16 | pub struct Session {
+   | ^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/server/session.rs:17:5
+   |
+17 |     pub id: u64,
+   |     ^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/server/session.rs:18:5
+   |
+18 |     pub peer_addr: SocketAddr,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/server/session.rs:19:5
+   |
+19 |     pub created_at: std::time::Instant,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/server/session.rs:29:5
+   |
+29 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/server/session.rs:36:5
+   |
+36 |     pub async fn create_session(&self, peer_addr: SocketAddr) -> Result<u64> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/server/session.rs:48:5
+   |
+48 |     pub async fn remove_session(&self, id: u64) {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/server/session.rs:52:5
+   |
+52 |     pub async fn close_all(&self) -> Result<()> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/wasm/composition.rs:26:5
+   |
+26 |     pub fn new() -> Result<Self> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/wasm/composition.rs:312:5
+    |
+312 |     pub wasi: Option<WasiCtx>,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/wasm/composition.rs:313:5
+    |
+313 |     pub compositions: HashMap<i32, String>,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/wasm/composition.rs:314:5
+    |
+314 |     pub stacks: HashMap<i32, String>,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/wasm/composition.rs:315:5
+    |
+315 |     pub next_handle: i32,
+    |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/wasm/composition.rs:316:5
+    |
+316 |     pub instance_name: String,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/wasm/composition.rs:317:5
+    |
+317 |     pub pending_registrations: Vec<(String, String, WasmFileHandlers)>,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/wasm/composition.rs:318:5
+    |
+318 |     pub pending_unregistrations: Vec<String>,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/wasm/composition.rs:319:5
+    |
+319 |     pub events: Vec<Vec<u8>>,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/wasm/composition.rs:325:5
+    |
+325 |     pub on_read: String,  // Function name for read handler
+    |     ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/wasm/composition.rs:326:5
+    |
+326 |     pub on_write: String, // Function name for write handler
+    |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/wasm/composition.rs:327:5
+    |
+327 |     pub on_stat: String,  // Function name for stat handler
+    |     ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/wasm/consensus_host.rs:420:5
+    |
+420 |     BlockConfirmed(String),
+    |     ^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/wasm/consensus_host.rs:421:5
+    |
+421 |     WorkCompleted(String),
+    |     ^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/wasm/consensus_host.rs:422:5
+    |
+422 |     NetworkPartition,
+    |     ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/wasm/consensus_host.rs:423:5
+    |
+423 |     NetworkHealed,
+    |     ^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/wasm/consensus_host.rs:424:5
+    |
+424 |     HighCongestion,
+    |     ^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/wasm/consensus_host.rs:425:5
+    |
+425 |     LowCongestion,
+    |     ^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/wasm/consensus_host.rs:440:5
+    |
+440 |     pub fn new() -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/wasm/consensus_host.rs:446:5
+    |
+446 |     pub fn emit_event(&self, event: ConsensusEvent) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/wasm/consensus_host.rs:457:5
+    |
+457 |     pub fn get_pending_events(&self) -> Vec<ConsensusEvent> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a trait
+  --> src/wasm/threadsafe.rs:70:1
+   |
+70 | pub trait TranslatorBackend: Send + Sync {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/wasm/threadsafe.rs:71:5
+   |
+71 |     fn name(&self) -> &str;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/wasm/threadsafe.rs:72:5
+   |
+72 |     fn mount_point(&self) -> &PathBuf;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/wasm/threadsafe.rs:73:5
+   |
+73 |     fn is_system(&self) -> bool {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/wasm/threadsafe.rs:77:5
+   |
+77 |     async fn read_file(&self, path: &str, offset: u64, count: u32) -> Result<Vec<u8>>;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/wasm/threadsafe.rs:79:5
+   |
+79 |     async fn write_file(&self, path: &str, offset: u64, data: Vec<u8>) -> Result<Vec<u8>>;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/wasm/threadsafe.rs:81:5
+   |
+81 |     async fn list_files(&self, path: &str) -> Result<Vec<String>>;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/wasm/threadsafe.rs:83:5
+   |
+83 |     async fn invoke_function(&self, function: &str, args: Vec<u8>) -> Result<Vec<u8>>;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/wasm/translator.rs:185:5
+    |
+185 |     pub fn name(&self) -> &str {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/wasm/translator.rs:189:5
+    |
+189 |     pub fn mount_point(&self) -> &Path {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/wasm/translator.rs:203:5
+    |
+203 |     pub fn new(install_dir: PathBuf) -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/wasm/translator.rs:404:5
+    |
+404 |     pub name: String,
+    |     ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/wasm/translator.rs:405:5
+    |
+405 |     pub mount_point: String,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/wasm/translator.rs:406:5
+    |
+406 |     pub version: String,
+    |     ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/wasm/translator.rs:407:5
+    |
+407 |     pub description: String,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/settrans.rs:20:5
+   |
+20 |     pub name: String,
+   |     ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/settrans.rs:21:5
+   |
+21 |     pub version: String,
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/settrans.rs:22:5
+   |
+22 |     pub description: String,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/settrans.rs:23:5
+   |
+23 |     pub mount_point: String,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/settrans.rs:24:5
+   |
+24 |     pub wasm_data: Vec<u8>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/settrans.rs:25:5
+   |
+25 |     pub status: TranslatorStatus,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/settrans.rs:26:5
+   |
+26 |     pub installed_at: chrono::DateTime<chrono::Utc>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/settrans.rs:27:5
+   |
+27 |     pub last_accessed: Option<chrono::DateTime<chrono::Utc>>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/settrans.rs:28:5
+   |
+28 |     pub error_count: u32,
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/settrans.rs:29:5
+   |
+29 |     pub last_error: Option<String>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an enum
+  --> src/settrans.rs:33:1
+   |
+33 | pub enum TranslatorStatus {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/settrans.rs:34:5
+   |
+34 |     Available,
+   |     ^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/settrans.rs:35:5
+   |
+35 |     Enabled,
+   |     ^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/settrans.rs:36:5
+   |
+36 |     Disabled,
+   |     ^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/settrans.rs:37:5
+   |
+37 |     Error(String),
+   |     ^^^^^
+
+warning: missing documentation for a variant
+  --> src/settrans.rs:43:5
+   |
+43 |     Enable(String),
+   |     ^^^^^^
+
+warning: missing documentation for a variant
+  --> src/settrans.rs:44:5
+   |
+44 |     Disable(String),
+   |     ^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/settrans.rs:45:5
+   |
+45 |     Uninstall(String),
+   |     ^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/settrans.rs:46:5
+   |
+46 |     Install { name: String, data: Vec<u8> },
+   |     ^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/settrans.rs:46:15
+   |
+46 |     Install { name: String, data: Vec<u8> },
+   |               ^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/settrans.rs:46:29
+   |
+46 |     Install { name: String, data: Vec<u8> },
+   |                             ^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/settrans.rs:47:5
+   |
+47 |     Refresh,
+   |     ^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/settrans.rs:48:5
+   |
+48 |     Status,
+   |     ^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/auto_mount.rs:38:5
+   |
+38 |     pub address: String,
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/auto_mount.rs:39:5
+   |
+39 |     pub port: u16,
+   |     ^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/auto_mount.rs:40:5
+   |
+40 |     pub transport: TransportType,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/auto_mount.rs:41:5
+   |
+41 |     pub last_seen: SystemTime,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/auto_mount.rs:42:5
+   |
+42 |     pub peer_info: Option<String>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/auto_mount.rs:48:5
+   |
+48 |     pub server: DiscoveredServer,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/auto_mount.rs:49:5
+   |
+49 |     pub mount_path: PathBuf,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/auto_mount.rs:50:5
+   |
+50 |     pub transport_type: TransportType,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/auto_mount.rs:51:5
+   |
+51 |     pub mounted_at: SystemTime,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/auto_mount.rs:545:5
+    |
+545 |     pub mount_point: PathBuf,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/auto_mount.rs:546:5
+    |
+546 |     pub running: bool,
+    |     ^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/auto_mount.rs:547:5
+    |
+547 |     pub discovered_count: usize,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/auto_mount.rs:548:5
+    |
+548 |     pub mounted_count: usize,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/auto_mount.rs:549:5
+    |
+549 |     pub servers: Vec<DiscoveredServer>,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/synth.rs:16:5
+   |
+16 |     pub name: String,
+   |     ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/synth.rs:17:5
+   |
+17 |     pub path: PathBuf,
+   |     ^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/synth.rs:18:5
+   |
+18 |     pub node_type: SynthNodeType,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/synth.rs:19:5
+   |
+19 |     pub permissions: u32,
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/synth.rs:20:5
+   |
+20 |     pub created: DateTime<Utc>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/synth.rs:21:5
+   |
+21 |     pub modified: DateTime<Utc>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/synth.rs:22:5
+   |
+22 |     pub accessed: DateTime<Utc>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an enum
+  --> src/synth.rs:26:1
+   |
+26 | pub enum SynthNodeType {
+   | ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/synth.rs:27:5
+   |
+27 |     Directory { children: Vec<String> },
+   |     ^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/synth.rs:27:17
+   |
+27 |     Directory { children: Vec<String> },
+   |                 ^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/synth.rs:28:5
+   |
+28 |     File { content: Vec<u8>, writable: bool },
+   |     ^^^^
+
+warning: missing documentation for a struct field
+  --> src/synth.rs:28:12
+   |
+28 |     File { content: Vec<u8>, writable: bool },
+   |            ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/synth.rs:28:30
+   |
+28 |     File { content: Vec<u8>, writable: bool },
+   |                              ^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/synth.rs:29:5
+   |
+29 |     ControlFile { handler: Arc<dyn ControlHandler> },
+   |     ^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/synth.rs:29:19
+   |
+29 |     ControlFile { handler: Arc<dyn ControlHandler> },
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/synth.rs:51:5
+   |
+51 |     fn read(&self) -> Result<Vec<u8>>;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/synth.rs:52:5
+   |
+52 |     fn write(&self, data: &[u8]) -> Result<()>;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/synth.rs:68:5
+   |
+68 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/config.rs:11:5
+   |
+11 |     pub server: ServerConfig,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/config.rs:14:5
+   |
+14 |     pub consensus: ConsensusConfig,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/config.rs:17:5
+   |
+17 |     pub llama: LlamaConfig,
+   |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/config.rs:20:5
+   |
+20 |     pub gpu: GpuConfig,
+   |     ^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/config.rs:23:5
+   |
+23 |     pub logging: LoggingConfig,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/config.rs:27:1
+   |
+27 | pub struct ServerConfig {
+   | ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/config.rs:29:5
+   |
+29 |     pub listen_addr: String,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/config.rs:32:5
+   |
+32 |     pub node_id: String,
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/config.rs:35:5
+   |
+35 |     pub node_name: Option<String>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/config.rs:38:5
+   |
+38 |     pub dht_port: Option<u16>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/config.rs:41:5
+   |
+41 |     pub dht_bootstrap_peers: Vec<String>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/config.rs:44:5
+   |
+44 |     pub service_discovery: Vec<String>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/config.rs:48:1
+   |
+48 | pub struct ConsensusConfig {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/config.rs:50:5
+   |
+50 |     pub enabled: bool,
+   |     ^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/config.rs:53:5
+   |
+53 |     pub peers: Vec<String>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/config.rs:56:5
+   |
+56 |     pub trusted_nodes: Vec<TrustedNodeConfig>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/config.rs:60:1
+   |
+60 | pub struct TrustedNodeConfig {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/config.rs:61:5
+   |
+61 |     pub node_id: String,
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/config.rs:62:5
+   |
+62 |     pub public_key: String,
+   |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/config.rs:64:5
+   |
+64 |     pub algorithm: String,
+   |     ^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/config.rs:68:1
+   |
+68 | pub struct LlamaConfig {
+   | ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/config.rs:70:5
+   |
+70 |     pub enabled: bool,
+   |     ^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/config.rs:73:5
+   |
+73 |     pub server_url: String,
+   |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/config.rs:77:1
+   |
+77 | pub struct GpuConfig {
+   | ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/config.rs:79:5
+   |
+79 |     pub enabled: bool,
+   |     ^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/config.rs:82:5
+   |
+82 |     pub backend: String,
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/config.rs:85:5
+   |
+85 |     pub device_id: u32,
+   |     ^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/config.rs:89:1
+   |
+89 | pub struct LoggingConfig {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/config.rs:91:5
+   |
+91 |     pub level: String,
+   |     ^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/namespace_manager.rs:34:5
+   |
+34 | /     async fn handle_namespace_access_request(
+35 | |         &self,
+36 | |         from_peer: String,
+37 | |         namespace_path: String,
+...  |
+40 | |         _message: String,
+41 | |     ) -> Result<()>;
+   | |____________________^
+
+warning: missing documentation for a method
+  --> src/namespace_manager.rs:43:5
+   |
+43 | /     async fn handle_namespace_access_response(
+44 | |         &self,
+45 | |         from_peer: String,
+46 | |         namespace_path: String,
+...  |
+49 | |         _message: String,
+50 | |     ) -> Result<()>;
+   | |____________________^
+
+warning: missing documentation for a struct
+  --> src/namespace_manager.rs:98:1
+   |
+98 | pub struct AccessRequest {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+   --> src/namespace_manager.rs:119:1
+    |
+119 | pub struct NamespaceMetadata {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/namespace_manager.rs:188:5
+    |
+188 |     pub fn with_consensus(mut self, consensus: Arc<crate::consensus::ConsensusCoordinator>) -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/mesh.rs:47:5
+   |
+47 |     pub fn with_peer_timeout(mut self, timeout: Duration) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/mesh.rs:51:5
+   |
+51 | /     pub fn new(
+52 | |         sovereign_identity: Arc<SovereignIdentity>,
+53 | |         dht: Arc<SovereignDht>,
+54 | |         local_port: u16,
+55 | |         bootstrap_peers: Vec<String>,
+56 | |         service_discovery: Vec<String>,
+57 | |     ) -> Self {
+   | |_____________^
+
+warning: missing documentation for a method
+   --> src/mesh.rs:945:5
+    |
+945 |     pub async fn get_peer_count(&self) -> usize {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mesh.rs:949:5
+    |
+949 |     pub async fn get_connected_peers(&self) -> Vec<String> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mesh.rs:953:5
+    |
+953 |     pub async fn get_all_peers(&self) -> Vec<(String, PeerState)> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mesh.rs:970:5
+    |
+970 |     pub async fn connect_to_peer(&self, address: &str, peer_id_hint: Option<String>) -> Result<()> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mesh.rs:978:5
+    |
+978 |     pub async fn disconnect_peer(&self, peer_id: &str) -> Result<()> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mesh.rs:991:5
+    |
+991 |     pub async fn announce_service(&self, service_name: &str) -> Result<()> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+    --> src/mesh.rs:1003:5
+     |
+1003 |     pub async fn get_status(&self) -> MeshStatus {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+    --> src/mesh.rs:1017:5
+     |
+1017 |     pub async fn get_dht_routing_table(&self) -> Vec<([u8; 32], String)> {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an enum
+    --> src/mesh.rs:1146:1
+     |
+1146 | pub enum MeshMessage {
+     | ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/mesh.rs:1147:5
+     |
+1147 |     Handshake {
+     |     ^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/mesh.rs:1148:9
+     |
+1148 |         node_id: String,
+     |         ^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/mesh.rs:1149:9
+     |
+1149 |         version: u32,
+     |         ^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/mesh.rs:1150:9
+     |
+1150 |         ed25519_public_key: Vec<u8>,
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/mesh.rs:1151:9
+     |
+1151 |         p256_public_key: Vec<u8>,
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/mesh.rs:1152:9
+     |
+1152 |         certificate_der: Vec<u8>,
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/mesh.rs:1153:9
+     |
+1153 |         permissions: NodePermissions,
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/mesh.rs:1155:5
+     |
+1155 |     HandshakeAck {
+     |     ^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/mesh.rs:1156:9
+     |
+1156 |         node_id: String,
+     |         ^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/mesh.rs:1157:9
+     |
+1157 |         version: u32,
+     |         ^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/mesh.rs:1158:9
+     |
+1158 |         ed25519_public_key: Vec<u8>,
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/mesh.rs:1159:9
+     |
+1159 |         p256_public_key: Vec<u8>,
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/mesh.rs:1160:9
+     |
+1160 |         certificate_der: Vec<u8>,
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/mesh.rs:1161:9
+     |
+1161 |         permissions: NodePermissions,
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/mesh.rs:1163:5
+     |
+1163 |     Ping,
+     |     ^^^^
+
+warning: missing documentation for a variant
+    --> src/mesh.rs:1164:5
+     |
+1164 |     Pong,
+     |     ^^^^
+
+warning: missing documentation for a variant
+    --> src/mesh.rs:1165:5
+     |
+1165 |     PeerListRequest,
+     |     ^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/mesh.rs:1166:5
+     |
+1166 |     PeerListResponse {
+     |     ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/mesh.rs:1167:9
+     |
+1167 |         peers: Vec<MeshPeerSummary>,
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/mesh.rs:1169:5
+     |
+1169 |     ConsensusBlock {
+     |     ^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/mesh.rs:1170:9
+     |
+1170 |         block_data: Vec<u8>,
+     |         ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/mesh.rs:1173:5
+     |
+1173 |     FindNode {
+     |     ^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/mesh.rs:1174:9
+     |
+1174 |         target: [u8; 32],
+     |         ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/mesh.rs:1176:5
+     |
+1176 |     FindNodeReply {
+     |     ^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/mesh.rs:1177:9
+     |
+1177 |         peers: Vec<(SocketAddr, [u8; 32])>,
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/mesh.rs:1180:5
+     |
+1180 |     NamespaceAccessRequest {
+     |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/mesh.rs:1181:9
+     |
+1181 |         namespace_path: String,
+     |         ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/mesh.rs:1182:9
+     |
+1182 |         requester_pubkey: [u8; 32],
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/mesh.rs:1183:9
+     |
+1183 |         requested_role: String,
+     |         ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/mesh.rs:1184:9
+     |
+1184 |         message: String,
+     |         ^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/mesh.rs:1186:5
+     |
+1186 |     NamespaceAccessResponse {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/mesh.rs:1187:9
+     |
+1187 |         namespace_path: String,
+     |         ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/mesh.rs:1188:9
+     |
+1188 |         requester_pubkey: [u8; 32],
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/mesh.rs:1189:9
+     |
+1189 |         approved: bool,
+     |         ^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/mesh.rs:1190:9
+     |
+1190 |         message: String,
+     |         ^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+    --> src/mesh.rs:1195:1
+     |
+1195 | pub struct MeshPeerSummary {
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/mesh.rs:1196:5
+     |
+1196 |     pub node_id: String,
+     |     ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/mesh.rs:1197:5
+     |
+1197 |     pub address: SocketAddr,
+     |     ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+    --> src/mesh.rs:1238:1
+     |
+1238 | pub struct PeerState {
+     | ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+    --> src/mesh.rs:1245:5
+     |
+1245 |     pub fn is_connected(&self) -> bool {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+    --> src/mesh.rs:1249:5
+     |
+1249 |     pub fn address(&self) -> Option<String> {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+    --> src/mesh.rs:1253:5
+     |
+1253 |     pub fn last_seen(&self) -> std::time::Instant {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+    --> src/mesh.rs:1259:1
+     |
+1259 | pub struct MeshStatus {
+     | ^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/mesh.rs:1260:5
+     |
+1260 |     pub node_id: String,
+     |     ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/mesh.rs:1261:5
+     |
+1261 |     pub peer_count: usize,
+     |     ^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/mesh.rs:1262:5
+     |
+1262 |     pub active_connections: usize,
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/mesh.rs:1263:5
+     |
+1263 |     pub mdns_enabled: bool,
+     |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/mesh.rs:1264:5
+     |
+1264 |     pub dht_enabled: bool,
+     |     ^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+    --> src/mesh.rs:1265:5
+     |
+1265 |     pub uptime_seconds: u64,
+     |     ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a module
+ --> src/gpu/mod.rs:2:1
+  |
+2 | pub mod info;
+  | ^^^^^^^^^^^^
+
+warning: missing documentation for a module
+ --> src/gpu/mod.rs:3:1
+  |
+3 | pub mod registry;
+  | ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a module
+ --> src/gpu/mod.rs:4:1
+  |
+4 | pub mod runtime;
+  | ^^^^^^^^^^^^^^^
+
+warning: missing documentation for a module
+ --> src/gpu/mod.rs:5:1
+  |
+5 | pub mod synthetic;
+  | ^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/gpu/info.rs:13:5
+   |
+13 |     pub name: String,
+   |     ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/gpu/info.rs:14:5
+   |
+14 |     pub vendor: String,
+   |     ^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/gpu/info.rs:15:5
+   |
+15 |     pub compute_units: u32,
+   |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/gpu/info.rs:16:5
+   |
+16 |     pub global_memory_size: u64,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/gpu/info.rs:17:5
+   |
+17 |     pub local_memory_size: u64,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/gpu/info.rs:18:5
+   |
+18 |     pub max_work_group_size: u32,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/gpu/info.rs:19:5
+   |
+19 |     pub is_gpu: bool,
+   |     ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/gpu/info.rs:20:5
+   |
+20 |     pub is_cpu: bool,
+   |     ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/gpu/info.rs:21:5
+   |
+21 |     pub supports_fp64: bool,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/gpu/info.rs:22:5
+   |
+22 |     pub supports_fp16: bool,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/gpu/info.rs:23:5
+   |
+23 |     pub local_index: usize,
+   |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/gpu/info.rs:24:5
+   |
+24 |     pub backend: String,
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/gpu/info.rs:25:5
+   |
+25 |     pub total_vram_bytes: u64,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/gpu/runtime.rs:12:1
+   |
+12 | pub struct DeviceState {
+   | ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/gpu/runtime.rs:25:5
+   |
+25 |     pub fn reset(&self) {
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/gpu/runtime.rs:29:5
+   |
+29 |     pub fn total_vram(&self) -> u64 {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/gpu/runtime.rs:33:5
+   |
+33 |     pub fn free_vram(&self) -> u64 {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/gpu/runtime.rs:37:5
+   |
+37 |     pub fn allocate(&self, size: u64) -> bool {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/gpu/runtime.rs:53:5
+   |
+53 |     pub fn release(&self, size: u64) -> bool {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+  --> src/gpu/runtime.rs:79:1
+   |
+79 | pub fn register_device_state(id: &str, total_vram: u64) -> Arc<DeviceState> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+  --> src/gpu/runtime.rs:91:1
+   |
+91 | pub fn get_device_state(id: &str) -> Option<Arc<DeviceState>> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/gpu/runtime.rs:104:5
+    |
+104 |     pub job_rx: Arc<std::sync::Mutex<UnboundedReceiver<GpuJob>>>,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/gpu/runtime.rs:108:5
+    |
+108 |     pub fn new(id: &str, total_vram: u64) -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/gpu/runtime.rs:119:5
+    |
+119 |     pub fn device_id(&self) -> &str {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/gpu/runtime.rs:123:5
+    |
+123 |     pub fn total_vram(&self) -> u64 {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/gpu/runtime.rs:127:5
+    |
+127 |     pub fn free_vram(&self) -> u64 {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/gpu/runtime.rs:141:5
+    |
+141 |     pub fn state(&self) -> Arc<DeviceState> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/gpu/runtime.rs:148:5
+    |
+148 |     pub id: Uuid,
+    |     ^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/gpu/runtime.rs:149:5
+    |
+149 |     pub required_vram: u64,
+    |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/gpu/runtime.rs:154:5
+    |
+154 |     pub fn new(required_vram: u64) -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/gpu/xmx.rs:37:15
+   |
+37 |     Ternary { packed_weights: Vec<u8> },
+   |               ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/gpu/xmx.rs:44:5
+   |
+44 |     HardwareNotAvailable,
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/gpu/xmx.rs:46:5
+   |
+46 |     UnsupportedPrecision(XmxPrecision),
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/gpu/xmx.rs:48:5
+   |
+48 |     MemoryAllocation,
+   |     ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a type alias
+ --> src/sycl/ffi.rs:9:1
+  |
+9 | pub type SyclDevice = *mut c_void;
+  | ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a type alias
+  --> src/sycl/ffi.rs:10:1
+   |
+10 | pub type SyclQueue = *mut c_void;
+   | ^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a type alias
+  --> src/sycl/ffi.rs:11:1
+   |
+11 | pub type SyclBuffer = *mut c_void;
+   | ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a type alias
+  --> src/sycl/ffi.rs:12:1
+   |
+12 | pub type SyclKernel = *mut c_void;
+   | ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a type alias
+  --> src/sycl/ffi.rs:13:1
+   |
+13 | pub type SyclEvent = *mut c_void;
+   | ^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/sycl/ffi.rs:18:1
+   |
+18 | pub struct SyclDeviceInfo {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/sycl/ffi.rs:19:5
+   |
+19 |     pub name: [c_char; 256],
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/sycl/ffi.rs:20:5
+   |
+20 |     pub vendor: [c_char; 128],
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/sycl/ffi.rs:21:5
+   |
+21 |     pub compute_units: u32,
+   |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/sycl/ffi.rs:22:5
+   |
+22 |     pub global_memory_size: u64,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/sycl/ffi.rs:23:5
+   |
+23 |     pub local_memory_size: u64,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/sycl/ffi.rs:24:5
+   |
+24 |     pub max_work_group_size: u32,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/sycl/ffi.rs:25:5
+   |
+25 |     pub is_gpu: bool,
+   |     ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/sycl/ffi.rs:26:5
+   |
+26 |     pub is_cpu: bool,
+   |     ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/sycl/ffi.rs:27:5
+   |
+27 |     pub supports_fp64: bool,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/sycl/ffi.rs:28:5
+   |
+28 |     pub supports_fp16: bool,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/sycl/ffi.rs:32:5
+   |
+32 |     pub fn name_str(&self) -> &str {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/sycl/ffi.rs:40:5
+   |
+40 |     pub fn vendor_str(&self) -> &str {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an enum
+  --> src/sycl/ffi.rs:52:1
+   |
+52 | pub enum SyclError {
+   | ^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/sycl/ffi.rs:53:5
+   |
+53 |     Success = 0,
+   |     ^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/sycl/ffi.rs:54:5
+   |
+54 |     InvalidDevice = 1,
+   |     ^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/sycl/ffi.rs:55:5
+   |
+55 |     InvalidQueue = 2,
+   |     ^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/sycl/ffi.rs:56:5
+   |
+56 |     InvalidBuffer = 3,
+   |     ^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/sycl/ffi.rs:57:5
+   |
+57 |     ExecutionFailed = 4,
+   |     ^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/sycl/ffi.rs:58:5
+   |
+58 |     OutOfMemory = 5,
+   |     ^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/sycl/ffi.rs:59:5
+   |
+59 |     InvalidHandle = 6,
+   |     ^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/sycl/ffi.rs:63:5
+   |
+63 |     pub fn is_ok(&self) -> bool {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/sycl/ffi.rs:67:5
+   |
+67 |     pub fn is_err(&self) -> bool {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/sycl/ffi.rs:71:5
+   |
+71 |     pub fn to_result(self) -> Result<(), SyclError> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/sycl/ffi.rs:79:5
+   |
+79 |     pub fn ok(self) -> Option<()> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an enum
+   --> src/sycl/ffi.rs:107:1
+    |
+107 | pub enum SyclBackend {
+    | ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/sycl/ffi.rs:108:5
+    |
+108 |     OpenCL = 0,
+    |     ^^^^^^
+
+warning: missing documentation for a variant
+   --> src/sycl/ffi.rs:109:5
+    |
+109 |     CUDA = 1,
+    |     ^^^^
+
+warning: missing documentation for a variant
+   --> src/sycl/ffi.rs:110:5
+    |
+110 |     HIP = 2,
+    |     ^^^
+
+warning: missing documentation for a variant
+   --> src/sycl/ffi.rs:111:5
+    |
+111 |     LevelZero = 3,
+    |     ^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/sycl/ffi.rs:112:5
+    |
+112 |     CPU = 4,
+    |     ^^^
+
+warning: missing documentation for a function
+   --> src/sycl/ffi.rs:130:5
+    |
+130 |     pub fn sycl_discover_devices() -> SyclError;
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+   --> src/sycl/ffi.rs:132:5
+    |
+132 |     pub fn sycl_get_device_count(count: *mut u32) -> SyclError;
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+   --> src/sycl/ffi.rs:134:5
+    |
+134 |     pub fn sycl_get_device(device_index: u32, device: *mut SyclDevice) -> SyclError;
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+   --> src/sycl/ffi.rs:136:5
+    |
+136 | /     pub fn sycl_get_device_info(
+137 | |         device: SyclDevice,
+138 | |         name: *mut c_char,
+139 | |         name_size: usize,
+140 | |         backend: *mut i32,
+141 | |     ) -> SyclError;
+    | |___________________^
+
+warning: missing documentation for a function
+   --> src/sycl/ffi.rs:143:5
+    |
+143 |     pub fn sycl_release_device(device: SyclDevice) -> SyclError;
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+   --> src/sycl/ffi.rs:146:5
+    |
+146 |     pub fn sycl_create_queue(device: SyclDevice, queue: *mut SyclQueue) -> SyclError;
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+   --> src/sycl/ffi.rs:148:5
+    |
+148 |     pub fn sycl_queue_wait(queue: SyclQueue) -> SyclError;
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+   --> src/sycl/ffi.rs:150:5
+    |
+150 |     pub fn sycl_release_queue(queue: SyclQueue) -> SyclError;
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+   --> src/sycl/ffi.rs:153:5
+    |
+153 | /     pub fn sycl_create_buffer(
+154 | |         queue: SyclQueue,
+155 | |         size_bytes: usize,
+156 | |         buffer: *mut SyclBuffer,
+157 | |     ) -> SyclError;
+    | |___________________^
+
+warning: missing documentation for a function
+   --> src/sycl/ffi.rs:160:5
+    |
+160 | /     pub fn sycl_buffer_write(
+161 | |         queue: SyclQueue,
+162 | |         buffer: SyclBuffer,
+163 | |         data: *const c_void,
+164 | |         offset: usize,
+165 | |         size_bytes: usize,
+166 | |     ) -> SyclError;
+    | |___________________^
+
+warning: missing documentation for a function
+   --> src/sycl/ffi.rs:168:5
+    |
+168 | /     pub fn sycl_buffer_read(
+169 | |         queue: SyclQueue,
+170 | |         buffer: SyclBuffer,
+171 | |         data: *mut c_void,
+172 | |         offset: usize,
+173 | |         size_bytes: usize,
+174 | |     ) -> SyclError;
+    | |___________________^
+
+warning: missing documentation for a function
+   --> src/sycl/ffi.rs:176:5
+    |
+176 |     pub fn sycl_release_buffer(buffer: SyclBuffer) -> SyclError;
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+   --> src/sycl/ffi.rs:179:5
+    |
+179 |     pub fn sycl_release_event(event: SyclEvent) -> SyclError;
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+   --> src/sycl/ffi.rs:181:5
+    |
+181 | /     pub fn sycl_get_kernel_time(
+182 | |         event: SyclEvent,
+183 | |         start_ns: *mut u64,
+184 | |         end_ns: *mut u64,
+185 | |     ) -> SyclError;
+    | |___________________^
+
+warning: missing documentation for a function
+   --> src/sycl/ffi.rs:188:5
+    |
+188 | /     pub fn sycl_matmul_f32_async(
+189 | |         queue: SyclQueue,
+190 | |         buffer_a: SyclBuffer,
+191 | |         buffer_b: SyclBuffer,
+...   |
+196 | |         event: *mut SyclEvent,
+197 | |     ) -> SyclError;
+    | |___________________^
+
+warning: missing documentation for a function
+   --> src/sycl/ffi.rs:199:5
+    |
+199 | /     pub fn sycl_ternary_matmul_async(
+200 | |         queue: SyclQueue,
+201 | |         buffer_a: SyclBuffer,
+202 | |         buffer_b: SyclBuffer,
+...   |
+207 | |         event: *mut SyclEvent,
+208 | |     ) -> SyclError;
+    | |___________________^
+
+warning: missing documentation for a function
+   --> src/sycl/ffi.rs:211:5
+    |
+211 |     pub fn sycl_get_last_error() -> *const c_char;
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+   --> src/sycl/ffi.rs:213:5
+    |
+213 |     pub fn sycl_clear_error();
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+   --> src/sycl/ffi.rs:216:5
+    |
+216 |     pub fn sycl_cleanup_unused_handles() -> SyclError;
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+   --> src/sycl/ffi.rs:218:5
+    |
+218 | /     pub fn sycl_get_active_handle_count(
+219 | |         devices: *mut u32,
+220 | |         queues: *mut u32,
+221 | |         buffers: *mut u32,
+222 | |         events: *mut u32,
+223 | |     ) -> SyclError;
+    | |___________________^
+
+warning: missing documentation for a struct field
+  --> src/sycl/backend_loader.rs:43:5
+   |
+43 |     pub discover_devices: Symbol<'static, unsafe extern "C" fn() -> SyclError>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/sycl/backend_loader.rs:44:5
+   |
+44 |     pub get_device_count: Symbol<'static, unsafe extern "C" fn(*mut u32) -> SyclError>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/sycl/backend_loader.rs:45:5
+   |
+45 |     pub get_device: Symbol<'static, unsafe extern "C" fn(u32, *mut SyclDevice) -> SyclError>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/sycl/backend_loader.rs:46:5
+   |
+46 |     pub get_device_info: Symbol<'static, unsafe extern "C" fn(SyclDevice, *mut c_char, usize, *mut i32) -> SyclError>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/sycl/backend_loader.rs:47:5
+   |
+47 |     pub release_device: Symbol<'static, unsafe extern "C" fn(SyclDevice) -> SyclError>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/sycl/backend_loader.rs:48:5
+   |
+48 |     pub create_queue: Symbol<'static, unsafe extern "C" fn(SyclDevice, *mut SyclQueue) -> SyclError>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/sycl/backend_loader.rs:49:5
+   |
+49 |     pub queue_wait: Symbol<'static, unsafe extern "C" fn(SyclQueue) -> SyclError>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/sycl/backend_loader.rs:50:5
+   |
+50 |     pub release_queue: Symbol<'static, unsafe extern "C" fn(SyclQueue) -> SyclError>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/sycl/backend_loader.rs:51:5
+   |
+51 |     pub create_buffer: Symbol<'static, unsafe extern "C" fn(SyclQueue, usize, *mut SyclBuffer) -> SyclError>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/sycl/backend_loader.rs:52:5
+   |
+52 |     pub buffer_write: Symbol<'static, unsafe extern "C" fn(SyclQueue, SyclBuffer, *const c_void, usize, usize) -> SyclError>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/sycl/backend_loader.rs:53:5
+   |
+53 |     pub buffer_read: Symbol<'static, unsafe extern "C" fn(SyclQueue, SyclBuffer, *mut c_void, usize, usize) -> SyclError>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/sycl/backend_loader.rs:54:5
+   |
+54 |     pub release_buffer: Symbol<'static, unsafe extern "C" fn(SyclBuffer) -> SyclError>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/sycl/backend_loader.rs:55:5
+   |
+55 |     pub release_event: Symbol<'static, unsafe extern "C" fn(SyclEvent) -> SyclError>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/sycl/backend_loader.rs:56:5
+   |
+56 |     pub get_kernel_time: Symbol<'static, unsafe extern "C" fn(SyclEvent, *mut u64, *mut u64) -> SyclError>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/sycl/backend_loader.rs:57:5
+   |
+57 |     pub matmul_f32_async: Symbol<'static, unsafe extern "C" fn(SyclQueue, SyclBuffer, SyclBuffer, SyclBuffer, u32, u32, u32, *mut SyclEvent) -> SyclError>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/sycl/backend_loader.rs:58:5
+   |
+58 |     pub ternary_matmul_async: Symbol<'static, unsafe extern "C" fn(SyclQueue, SyclBuffer, SyclBuffer, SyclBuffer, u32, u32, u32, *mut SyclEvent) -> SyclError>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/sycl/backend_loader.rs:59:5
+   |
+59 |     pub get_last_error: Symbol<'static, unsafe extern "C" fn() -> *const c_char>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/sycl/backend_loader.rs:60:5
+   |
+60 |     pub clear_error: Symbol<'static, unsafe extern "C" fn()>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/sycl/backend_loader.rs:244:5
+    |
+244 |     pub index: u32,
+    |     ^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/sycl/backend_loader.rs:245:5
+    |
+245 |     pub name: String,
+    |     ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/sycl/backend_loader.rs:246:5
+    |
+246 |     pub backend: SyclBackend,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/sycl/backend_loader.rs:247:5
+    |
+247 |     pub backend_lib: BackendType,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+  --> src/sycl/compat.rs:47:1
+   |
+47 | pub extern "C" fn sycl_discover_devices() -> SyclError {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+  --> src/sycl/compat.rs:55:1
+   |
+55 | pub extern "C" fn sycl_get_device_count(count: *mut u32) -> SyclError {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+  --> src/sycl/compat.rs:63:1
+   |
+63 | pub extern "C" fn sycl_get_device(index: u32, device: *mut SyclDevice) -> SyclError {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+  --> src/sycl/compat.rs:71:1
+   |
+71 | / pub extern "C" fn sycl_get_device_info(
+72 | |     device: SyclDevice,
+73 | |     name: *mut c_char,
+74 | |     name_size: usize,
+75 | |     backend_type: *mut i32,
+76 | | ) -> SyclError {
+   | |______________^
+
+warning: missing documentation for a function
+  --> src/sycl/compat.rs:84:1
+   |
+84 | pub extern "C" fn sycl_release_device(device: SyclDevice) -> SyclError {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+  --> src/sycl/compat.rs:92:1
+   |
+92 | pub extern "C" fn sycl_create_queue(device: SyclDevice, queue: *mut SyclQueue) -> SyclError {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+   --> src/sycl/compat.rs:100:1
+    |
+100 | pub extern "C" fn sycl_queue_wait(queue: SyclQueue) -> SyclError {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+   --> src/sycl/compat.rs:108:1
+    |
+108 | pub extern "C" fn sycl_release_queue(queue: SyclQueue) -> SyclError {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+   --> src/sycl/compat.rs:116:1
+    |
+116 | / pub extern "C" fn sycl_create_buffer(
+117 | |     queue: SyclQueue,
+118 | |     size: usize,
+119 | |     buffer: *mut SyclBuffer,
+120 | | ) -> SyclError {
+    | |______________^
+
+warning: missing documentation for a function
+   --> src/sycl/compat.rs:128:1
+    |
+128 | / pub extern "C" fn sycl_buffer_write(
+129 | |     queue: SyclQueue,
+130 | |     buffer: SyclBuffer,
+131 | |     data: *const c_void,
+132 | |     offset: usize,
+133 | |     size: usize,
+134 | | ) -> SyclError {
+    | |______________^
+
+warning: missing documentation for a function
+   --> src/sycl/compat.rs:142:1
+    |
+142 | / pub extern "C" fn sycl_buffer_read(
+143 | |     queue: SyclQueue,
+144 | |     buffer: SyclBuffer,
+145 | |     data: *mut c_void,
+146 | |     offset: usize,
+147 | |     size: usize,
+148 | | ) -> SyclError {
+    | |______________^
+
+warning: missing documentation for a function
+   --> src/sycl/compat.rs:156:1
+    |
+156 | pub extern "C" fn sycl_release_buffer(buffer: SyclBuffer) -> SyclError {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+   --> src/sycl/compat.rs:164:1
+    |
+164 | pub extern "C" fn sycl_release_event(event: SyclEvent) -> SyclError {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+   --> src/sycl/compat.rs:172:1
+    |
+172 | / pub extern "C" fn sycl_get_kernel_time(
+173 | |     event: SyclEvent,
+174 | |     start_ns: *mut u64,
+175 | |     end_ns: *mut u64,
+176 | | ) -> SyclError {
+    | |______________^
+
+warning: missing documentation for a function
+   --> src/sycl/compat.rs:184:1
+    |
+184 | / pub extern "C" fn sycl_matmul_f32_async(
+185 | |     queue: SyclQueue,
+186 | |     a: SyclBuffer,
+187 | |     b: SyclBuffer,
+...   |
+192 | |     event: *mut SyclEvent,
+193 | | ) -> SyclError {
+    | |______________^
+
+warning: missing documentation for a function
+   --> src/sycl/compat.rs:201:1
+    |
+201 | / pub extern "C" fn sycl_ternary_matmul_async(
+202 | |     queue: SyclQueue,
+203 | |     a: SyclBuffer,
+204 | |     b: SyclBuffer,
+...   |
+209 | |     event: *mut SyclEvent,
+210 | | ) -> SyclError {
+    | |______________^
+
+warning: missing documentation for a function
+   --> src/sycl/compat.rs:218:1
+    |
+218 | pub extern "C" fn sycl_get_last_error() -> *const c_char {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+   --> src/sycl/compat.rs:226:1
+    |
+226 | pub extern "C" fn sycl_clear_error() {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/compute_control.rs:35:5
+   |
+35 |     Pending,
+   |     ^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/compute_control.rs:36:5
+   |
+36 |     Running,
+   |     ^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/compute_control.rs:37:5
+   |
+37 |     Completed(Vec<u8>),
+   |     ^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/compute_control.rs:38:5
+   |
+38 |     Failed(String),
+   |     ^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/compute_control.rs:44:5
+   |
+44 |     pub id: String,
+   |     ^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/compute_control.rs:45:5
+   |
+45 |     pub job_type: String, // "sycl" or "wasm"
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/compute_control.rs:46:5
+   |
+46 |     pub operation: String,
+   |     ^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/compute_control.rs:47:5
+   |
+47 |     pub input: Vec<u8>,
+   |     ^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/compute_control.rs:48:5
+   |
+48 |     pub status: JobStatus,
+   |     ^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/compute_control.rs:49:5
+   |
+49 |     pub submitted_at: std::time::SystemTime,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/compute_control.rs:50:5
+   |
+50 |     pub device_id: Option<String>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/compute_control.rs:51:5
+   |
+51 |     pub requested_vram: u64,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/compute_control.rs:52:5
+   |
+52 |     pub allocated_vram: u64,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/compute_control.rs:53:5
+   |
+53 |     pub shm_handle: Option<crate::ipc::SharedMemoryHandle>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/compute_control.rs:57:1
+   |
+57 | pub struct JobSubmission {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/compute_control.rs:58:5
+   |
+58 |     pub job_type: String,
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/compute_control.rs:59:5
+   |
+59 |     pub operation: String,
+   |     ^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/compute_control.rs:60:5
+   |
+60 |     pub payload: Vec<u8>,
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/compute_control.rs:61:5
+   |
+61 |     pub requested_vram: u64,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/compute_control.rs:62:5
+   |
+62 |     pub device_hint: Option<usize>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/compute_control.rs:84:5
+   |
+84 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/compute_control.rs:88:5
+   |
+88 |     pub fn with_runtimes(runtimes: Vec<Arc<GpuRuntime>>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/compute_control.rs:117:5
+    |
+117 |     pub fn start_workers(self: &Arc<Self>) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/compute_control.rs:138:5
+    |
+138 | /     pub async fn set_translator_registry(
+139 | |         &self,
+140 | |         registry: Arc<ThreadSafeTranslatorRegistry>,
+141 | |     ) -> Result<()> {
+    | |___________________^
+
+warning: missing documentation for a method
+   --> src/compute_control.rs:311:5
+    |
+311 |     pub async fn submit_job(&self, submission: JobSubmission) -> Result<String> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/compute_control.rs:338:5
+    |
+338 |     pub async fn get_job_status(&self, job_id: &str) -> Option<JobStatus> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/compute_control.rs:342:5
+    |
+342 |     pub async fn list_jobs(&self) -> Vec<ComputeJob> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/compute_control.rs:346:5
+    |
+346 |     pub fn is_sycl_available(&self) -> bool {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/compute_control.rs:350:5
+    |
+350 |     pub async fn get_job(&self, job_id: &str) -> Option<ComputeJob> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/stats.rs:22:5
+   |
+22 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an enum
+  --> src/error.rs:25:1
+   |
+25 | pub enum NetworkError {
+   | ^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/error.rs:26:5
+   |
+26 |     BindFailed(String),
+   |     ^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/error.rs:27:5
+   |
+27 |     InvalidAddress(String),
+   |     ^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/error.rs:28:5
+   |
+28 |     ConnectionFailed(String),
+   |     ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/error.rs:29:5
+   |
+29 |     DnsResolution(String),
+   |     ^^^^^^^^^^^^^
+
+warning: missing documentation for an enum
+  --> src/error.rs:33:1
+   |
+33 | pub enum TransportError {
+   | ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/error.rs:34:5
+   |
+34 |     QuicSetupFailed(String),
+   |     ^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/error.rs:35:5
+   |
+35 |     TcpBindFailed(String),
+   |     ^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/error.rs:36:5
+   |
+36 |     TlsError(String),
+   |     ^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/error.rs:37:5
+   |
+37 |     ConnectionLost(String),
+   |     ^^^^^^^^^^^^^^
+
+warning: missing documentation for an enum
+  --> src/error.rs:41:1
+   |
+41 | pub enum ProtocolError {
+   | ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/error.rs:42:5
+   |
+42 |     InvalidMessage(String),
+   |     ^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/error.rs:43:5
+   |
+43 |     UnsupportedVersion(u32),
+   |     ^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/error.rs:44:5
+   |
+44 |     AuthenticationFailed(String),
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/error.rs:45:5
+   |
+45 |     PermissionDenied(String),
+   |     ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an enum
+  --> src/error.rs:49:1
+   |
+49 | pub enum FileSystemError {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/error.rs:50:5
+   |
+50 |     PathNotFound(String),
+   |     ^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/error.rs:51:5
+   |
+51 |     AccessDenied(String),
+   |     ^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/error.rs:52:5
+   |
+52 |     InvalidPath(String),
+   |     ^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/error.rs:53:5
+   |
+53 |     DirectoryNotEmpty(String),
+   |     ^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an enum
+  --> src/error.rs:57:1
+   |
+57 | pub enum ConfigError {
+   | ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/error.rs:58:5
+   |
+58 |     InvalidValue(String),
+   |     ^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/error.rs:59:5
+   |
+59 |     MissingRequired(String),
+   |     ^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/error.rs:60:5
+   |
+60 |     ParseError(String),
+   |     ^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/traits.rs:10:1
+   |
+10 | pub struct NetworkStats {
+   | ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/traits.rs:11:5
+   |
+11 |     pub node_count: u32,
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/traits.rs:12:5
+   |
+12 |     pub connected_peers: u32,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/traits.rs:13:5
+   |
+13 |     pub consensus_score: f64,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a trait
+  --> src/traits.rs:17:1
+   |
+17 | pub trait ConsensusProvider: Send + Sync {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a trait
+  --> src/traits.rs:31:1
+   |
+31 | pub trait StorageProvider: Send + Sync {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/traits.rs:46:1
+   |
+46 | pub struct FileAttr {
+   | ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/traits.rs:47:5
+   |
+47 |     pub size: u64,
+   |     ^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/traits.rs:48:5
+   |
+48 |     pub mode: u32,
+   |     ^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/traits.rs:49:5
+   |
+49 |     pub mtime: u64,
+   |     ^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/traits.rs:50:5
+   |
+50 |     pub is_dir: bool,
+   |     ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/traits.rs:54:1
+   |
+54 | pub struct DirEntry {
+   | ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/traits.rs:55:5
+   |
+55 |     pub name: String,
+   |     ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/traits.rs:56:5
+   |
+56 |     pub is_dir: bool,
+   |     ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/traits.rs:61:1
+   |
+61 | pub struct DeviceInfo {
+   | ^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/traits.rs:62:5
+   |
+62 |     pub id: String,
+   |     ^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/traits.rs:63:5
+   |
+63 |     pub name: String,
+   |     ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/traits.rs:64:5
+   |
+64 |     pub is_gpu: bool,
+   |     ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/traits.rs:65:5
+   |
+65 |     pub memory: u64,
+   |     ^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/traits.rs:69:1
+   |
+69 | pub struct ComputeJob {
+   | ^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/traits.rs:70:5
+   |
+70 |     pub id: String,
+   |     ^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/traits.rs:71:5
+   |
+71 |     pub job_type: String,
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/traits.rs:72:5
+   |
+72 |     pub operation: String,
+   |     ^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/traits.rs:73:5
+   |
+73 |     pub params: Vec<u8>,
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/traits.rs:74:5
+   |
+74 |     pub shm_handle: Option<SharedMemoryHandle>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an enum
+  --> src/traits.rs:78:1
+   |
+78 | pub enum JobStatus {
+   | ^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/traits.rs:79:5
+   |
+79 |     Pending,
+   |     ^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/traits.rs:80:5
+   |
+80 |     Running,
+   |     ^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/traits.rs:81:5
+   |
+81 |     Completed(Vec<u8>),
+   |     ^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/traits.rs:82:5
+   |
+82 |     Failed(String),
+   |     ^^^^^^
+
+warning: missing documentation for a trait
+  --> src/traits.rs:86:1
+   |
+86 | pub trait ComputeBackend: Send + Sync {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/traits.rs:99:1
+   |
+99 | pub struct WasmMetadata {
+   | ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/traits.rs:100:5
+    |
+100 |     pub name: String,
+    |     ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/traits.rs:101:5
+    |
+101 |     pub version: String,
+    |     ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/traits.rs:102:5
+    |
+102 |     pub description: String,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/traits.rs:103:5
+    |
+103 |     pub mount_point: String,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/traits.rs:104:5
+    |
+104 |     pub status: String,
+    |     ^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a trait
+   --> src/traits.rs:108:1
+    |
+108 | pub trait WasmProvider: Send + Sync {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a trait
+   --> src/traits.rs:126:1
+    |
+126 | pub trait Translator: Send + Sync {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+ --> src/compute_adapter.rs:7:1
+  |
+7 | pub struct ComputeManagerAdapter {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/compute_adapter.rs:12:5
+   |
+12 |     pub fn new(manager: Arc<ComputeManager>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+ --> src/storage_adapter.rs:8:1
+  |
+8 | pub struct SyntheticStorageAdapter {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/storage_adapter.rs:13:5
+   |
+13 |     pub fn new(fs: Arc<SyntheticFilesystem>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+ --> src/wasm_adapter.rs:9:1
+  |
+9 | pub struct WasmRegistryAdapter {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/wasm_adapter.rs:15:5
+   |
+15 | /     pub fn new(
+16 | |         registry: Arc<ThreadSafeTranslatorRegistry>,
+17 | |         settrans: Arc<VirtualSettransSystem>,
+18 | |     ) -> Self {
+   | |_____________^
+
+warning: missing documentation for a struct
+  --> src/wasm_adapter.rs:59:1
+   |
+59 | pub struct TranslatorAdapter {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a module
+ --> src/ipc/mod.rs:1:1
+  |
+1 | pub mod shm;
+  | ^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/ipc/shm.rs:22:5
+   |
+22 |     pub ptr: *mut u8,
+   |     ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/ipc/shm.rs:23:5
+   |
+23 |     pub size: usize,
+   |     ^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/ipc/shm.rs:24:5
+   |
+24 |     pub pool_id: usize,
+   |     ^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/ipc/shm.rs:25:5
+   |
+25 |     pub state: BorrowState,
+   |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/ipc/shm.rs:39:5
+   |
+39 |     pub fn new(memory_manager: Arc<MemoryManager>) -> Result<Self> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/ipc/shm.rs:132:5
+    |
+132 |     pub fn id(&self) -> &str {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/ipc/shm.rs:136:5
+    |
+136 |     pub fn size(&self) -> usize {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/ipc/shm.rs:140:5
+    |
+140 |     pub fn as_slice(&self) -> &[u8] {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/ipc/shm.rs:145:5
+    |
+145 |     pub fn as_mut_slice(&mut self) -> Result<&mut [u8]> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `ninepe-server` (lib) generated 642 warnings (run `cargo fix --lib -p ninepe-server` to apply 26 suggestions)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.50s

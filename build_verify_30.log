@@ -1,0 +1,53 @@
+warning: unused variable: `out_dir`
+   --> build.rs:176:9
+    |
+176 |     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+    |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_out_dir`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: `ninepe-server` (build script) generated 1 warning
+warning: ninepe-server@1.0.0: Using pre-built Intel oneAPI SYCL library
+warning: ninepe-server@1.0.0: Using pre-built AdaptiveCpp SYCL library
+warning: ninepe-server@1.0.0: SYCL backends available: Intel oneAPI, AdaptiveCpp
+warning: ninepe-server@1.0.0: Both backends built as separate shared libraries
+warning: ninepe-server@1.0.0: Runtime will dynamically load appropriate backend per GPU
+warning: ninepe-server@1.0.0: No static linking - using dlopen via libloading crate
+    Checking ninepe-server v1.0.0 (/home/scott/Repo/9pe-server)
+error: mismatched closing delimiter: `}`
+   --> src/wasm/threadsafe.rs:227:23
+    |
+ 94 | impl ThreadSafeTranslator {
+    |                           - closing delimiter possibly meant for this
+...
+227 |             return Err(anyhow::anysycl_matmul_f32_async, sycl_queue_wait, sycl_release_buffer, sycl_release_device,
+    |                       ^ unclosed delimiter
+...
+230 | };
+    | ^ mismatched closing delimiter
+
+error: this file contains an unclosed delimiter
+    --> src/wasm/threadsafe.rs:2310:3
+     |
+  94 | impl ThreadSafeTranslator {
+     |                           - unclosed delimiter
+...
+ 118 |     fn validate_wasm_bytes(wasm_bytes: &[u8]) -> Result<()> {
+     |                                                             - unclosed delimiter
+...
+ 226 |         if !has_write_file {
+     |                            - this delimiter might not be properly closed...
+...
+ 230 | };
+     | - ...as it matches this but it has different indentation
+...
+2310 | }
+     |  ^
+
+warning: ninepe-server@1.0.0: Using pre-built Intel oneAPI SYCL library
+warning: ninepe-server@1.0.0: Using pre-built AdaptiveCpp SYCL library
+warning: ninepe-server@1.0.0: SYCL backends available: Intel oneAPI, AdaptiveCpp
+warning: ninepe-server@1.0.0: Both backends built as separate shared libraries
+warning: ninepe-server@1.0.0: Runtime will dynamically load appropriate backend per GPU
+warning: ninepe-server@1.0.0: No static linking - using dlopen via libloading crate
+error: could not compile `ninepe-server` (lib) due to 2 previous errors

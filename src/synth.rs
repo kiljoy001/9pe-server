@@ -56,6 +56,10 @@ pub trait ControlHandler: Send + Sync {
 #[derive(Debug)]
 pub struct SyntheticFilesystem {
     nodes: Arc<RwLock<HashMap<PathBuf, SynthNode>>>,
+    /// Maximum number of nodes (files + directories) allowed
+    max_nodes: usize,
+    /// Maximum total bytes across all files
+    max_total_bytes: usize,
 }
 
 impl Default for SyntheticFilesystem {
@@ -65,15 +69,80 @@ impl Default for SyntheticFilesystem {
 }
 
 impl SyntheticFilesystem {
+    /// Default maximum nodes (64K)
+    pub const DEFAULT_MAX_NODES: usize = 65536;
+    /// Default maximum total bytes (256 MB)
+    pub const DEFAULT_MAX_TOTAL_BYTES: usize = 256 * 1024 * 1024;
+
     pub fn new() -> Self {
         Self {
             nodes: Arc::new(RwLock::new(HashMap::new())),
+            max_nodes: Self::DEFAULT_MAX_NODES,
+            max_total_bytes: Self::DEFAULT_MAX_TOTAL_BYTES,
         }
+    }
+
+    /// Create with custom limits
+    pub fn with_limits(max_nodes: usize, max_total_bytes: usize) -> Self {
+        Self {
+            nodes: Arc::new(RwLock::new(HashMap::new())),
+            max_nodes,
+            max_total_bytes,
+        }
+    }
+
+    /// Calculate total bytes used by all files
+    fn total_bytes_used(nodes: &HashMap<PathBuf, SynthNode>) -> usize {
+        nodes.values().map(|n| {
+            match &n.node_type {
+                SynthNodeType::File { content, .. } => content.len(),
+                _ => 0,
+            }
+        }).sum()
+    }
+
+    /// Check if adding content would exceed limits
+    fn check_limits(&self, nodes: &HashMap<PathBuf, SynthNode>, additional_bytes: usize, additional_nodes: usize) -> Result<()> {
+        if nodes.len() + additional_nodes > self.max_nodes {
+            anyhow::bail!(
+                "Node limit exceeded: {} + {} > {}",
+                nodes.len(),
+                additional_nodes,
+                self.max_nodes
+            );
+        }
+
+        let current_bytes = Self::total_bytes_used(nodes);
+        if current_bytes + additional_bytes > self.max_total_bytes {
+            anyhow::bail!(
+                "Total size limit exceeded: {} + {} > {} bytes",
+                current_bytes,
+                additional_bytes,
+                self.max_total_bytes
+            );
+        }
+
+        Ok(())
     }
 
     /// Create a virtual directory
     pub async fn create_directory(&self, path: &Path) -> Result<()> {
         let mut nodes = self.nodes.write().await;
+
+        // Count how many new directories we need to create
+        let mut dirs_to_create = 0usize;
+        let mut check_path = PathBuf::new();
+        for component in path.components() {
+            check_path.push(component);
+            if !nodes.contains_key(&check_path) {
+                dirs_to_create += 1;
+            }
+        }
+
+        // Check node limit before creating
+        if dirs_to_create > 0 {
+            self.check_limits(&nodes, 0, dirs_to_create)?;
+        }
 
         // Create parent directories if needed
         let mut current = PathBuf::new();
@@ -123,14 +192,40 @@ impl SyntheticFilesystem {
         Ok(())
     }
 
+    /// Maximum file size for synthetic files (16 MB default)
+    pub const MAX_FILE_SIZE: usize = 16 * 1024 * 1024;
+
     /// Create a virtual file
     pub async fn create_file(&self, path: &Path, content: Vec<u8>, writable: bool) -> Result<()> {
+        // Enforce per-file size limit
+        if content.len() > Self::MAX_FILE_SIZE {
+            anyhow::bail!(
+                "File size {} bytes exceeds maximum {} bytes",
+                content.len(),
+                Self::MAX_FILE_SIZE
+            );
+        }
+
         // Ensure parent directory exists
         if let Some(parent) = path.parent() {
             self.create_directory(parent).await?;
         }
 
         let mut nodes = self.nodes.write().await;
+
+        // Check if this is a new file or replacement
+        let is_new = !nodes.contains_key(path);
+        let old_size = nodes.get(path).map(|n| {
+            match &n.node_type {
+                SynthNodeType::File { content, .. } => content.len(),
+                _ => 0,
+            }
+        }).unwrap_or(0);
+
+        // Check aggregate limits (new bytes = content.len() - old_size for replacements)
+        let additional_bytes = if is_new { content.len() } else { content.len().saturating_sub(old_size) };
+        let additional_nodes = if is_new { 1 } else { 0 };
+        self.check_limits(&nodes, additional_bytes, additional_nodes)?;
 
         let name = path
             .file_name()
@@ -225,13 +320,16 @@ impl SyntheticFilesystem {
     pub async fn list_directory(&self, path: &Path) -> Result<Vec<String>> {
         let nodes = self.nodes.read().await;
 
-        if let Some(node) = nodes.get(path) {
-            if let SynthNodeType::Directory { ref children } = node.node_type {
-                return Ok(children.clone());
+        match nodes.get(path) {
+            Some(node) => {
+                if let SynthNodeType::Directory { ref children } = node.node_type {
+                    Ok(children.clone())
+                } else {
+                    anyhow::bail!("Not a directory: {:?}", path)
+                }
             }
+            None => anyhow::bail!("Directory not found: {:?}", path),
         }
-
-        Ok(Vec::new())
     }
 
     /// Read file contents
@@ -255,7 +353,26 @@ impl SyntheticFilesystem {
 
     /// Write file contents
     pub async fn write_file(&self, path: &Path, data: Vec<u8>) -> Result<()> {
+        // Enforce per-file size limit
+        if data.len() > Self::MAX_FILE_SIZE {
+            anyhow::bail!(
+                "Write size {} bytes exceeds maximum {} bytes",
+                data.len(),
+                Self::MAX_FILE_SIZE
+            );
+        }
+
         let mut nodes = self.nodes.write().await;
+
+        // Check aggregate limit before writing
+        if let Some(node) = nodes.get(path) {
+            if let SynthNodeType::File { content, .. } = &node.node_type {
+                let additional_bytes = data.len().saturating_sub(content.len());
+                if additional_bytes > 0 {
+                    self.check_limits(&nodes, additional_bytes, 0)?;
+                }
+            }
+        }
 
         if let Some(node) = nodes.get_mut(path) {
             match &mut node.node_type {
@@ -276,6 +393,155 @@ impl SyntheticFilesystem {
         }
 
         anyhow::bail!("File not found: {:?}", path)
+    }
+    /// Remove a node (file or directory)
+    pub async fn remove_node(&self, path: &Path) -> Result<()> {
+        let mut nodes = self.nodes.write().await;
+
+        if !nodes.contains_key(path) {
+            anyhow::bail!("Path not found: {:?}", path);
+        }
+
+        // Check if directory is empty
+        if let Some(node) = nodes.get(path) {
+            if let SynthNodeType::Directory { children } = &node.node_type {
+                if !children.is_empty() {
+                    anyhow::bail!("Directory not empty: {:?}", path);
+                }
+            }
+        }
+
+        nodes.remove(path);
+
+        // Update parent
+        if let Some(parent_path) = path.parent() {
+            if let Some(parent_node) = nodes.get_mut(parent_path) {
+                if let SynthNodeType::Directory { ref mut children } = parent_node.node_type {
+                    let name = path
+                        .file_name()
+                        .unwrap_or_default()
+                        .to_string_lossy()
+                        .to_string();
+                    if let Some(pos) = children.iter().position(|x| *x == name) {
+                        children.remove(pos);
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Rename a node
+    pub async fn rename_node(&self, from: &Path, to: &Path) -> Result<()> {
+        let mut nodes = self.nodes.write().await;
+
+        if !nodes.contains_key(from) {
+            anyhow::bail!("Source path not found: {:?}", from);
+        }
+
+        if nodes.contains_key(to) {
+            anyhow::bail!("Destination path already exists: {:?}", to);
+        }
+
+        // Validate destination parent exists and is a directory BEFORE making changes
+        if let Some(dest_parent_path) = to.parent() {
+            match nodes.get(dest_parent_path) {
+                Some(parent_node) => {
+                    if !matches!(parent_node.node_type, SynthNodeType::Directory { .. }) {
+                        anyhow::bail!("Destination parent is not a directory: {:?}", dest_parent_path);
+                    }
+                }
+                None => {
+                    anyhow::bail!("Destination parent directory not found: {:?}", dest_parent_path);
+                }
+            }
+        }
+
+        // Remove from source parent
+        if let Some(parent_path) = from.parent() {
+            if let Some(parent_node) = nodes.get_mut(parent_path) {
+                if let SynthNodeType::Directory { ref mut children } = parent_node.node_type {
+                    let name = from
+                        .file_name()
+                        .unwrap_or_default()
+                        .to_string_lossy()
+                        .to_string();
+                    if let Some(pos) = children.iter().position(|x| *x == name) {
+                        children.remove(pos);
+                    }
+                }
+            }
+        }
+
+        // Move node
+        if let Some(mut node) = nodes.remove(from) {
+            let new_name = to
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
+
+            node.name = new_name.clone();
+            node.path = to.to_path_buf();
+            nodes.insert(to.to_path_buf(), node);
+
+            // Add to destination parent (already validated above)
+            if let Some(parent_path) = to.parent() {
+                if let Some(parent_node) = nodes.get_mut(parent_path) {
+                    if let SynthNodeType::Directory { ref mut children } = parent_node.node_type {
+                        children.push(new_name);
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Truncate file to size
+    pub async fn truncate_file(&self, path: &Path, size: u64) -> Result<()> {
+        // Enforce size limit when expanding
+        if size as usize > Self::MAX_FILE_SIZE {
+            anyhow::bail!(
+                "Truncate size {} bytes exceeds maximum {} bytes",
+                size,
+                Self::MAX_FILE_SIZE
+            );
+        }
+
+        let mut nodes = self.nodes.write().await;
+
+        if let Some(node) = nodes.get_mut(path) {
+            match &mut node.node_type {
+                SynthNodeType::File { content, writable } => {
+                     if !*writable {
+                        anyhow::bail!("File is read-only: {:?}", path);
+                     }
+                     content.resize(size as usize, 0);
+                     node.modified = Utc::now();
+                     return Ok(());
+                }
+                _ => anyhow::bail!("Not a file: {:?}", path),
+            }
+        }
+        anyhow::bail!("File not found: {:?}", path)
+    }
+
+    /// Set permissions
+    pub async fn set_permissions(&self, path: &Path, mode: u32) -> Result<()> {
+        let mut nodes = self.nodes.write().await;
+
+        if let Some(node) = nodes.get_mut(path) {
+            node.permissions = mode;
+            node.modified = Utc::now(); // Metadata change updates mtime in 9P? or ctime? 
+            // 9P usually updates mtime on content change. wstat can change mtime explicitly.
+            // Here we are just changing permissions.
+            // Let's just update modified for now to signal change.
+            Ok(())
+        } else {
+            anyhow::bail!("Path not found: {:?}", path)
+        }
     }
 }
 

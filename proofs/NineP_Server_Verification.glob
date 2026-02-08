@@ -1,0 +1,737 @@
+DIGEST 75577dfec29d4ae97034038e1713e483
+FNineP_Server_Verification
+R120:133 Coq.Lists.List <> <> lib
+R151:165 Coq.Arith.Arith <> <> lib
+R183:195 Coq.Bool.Bool <> <> lib
+R213:230 Coq.Strings.String <> <> lib
+R248:281 Coq.Logic.FunctionalExtensionality <> <> lib
+R291:303 Coq.Lists.List ListNotations <> mod
+def 510:512 <> Fid
+R517:519 Coq.Init.Datatypes <> nat ind
+def 533:536 <> Path
+R541:544 Coq.Init.Datatypes <> list ind
+R546:551 Coq.Strings.String <> string ind
+def 565:567 <> Tag
+R572:574 Coq.Init.Datatypes <> nat ind
+rec 605:607 <> Qid
+proj 629:636 <> qid_type
+proj 676:683 <> qid_vers
+proj 694:701 <> qid_path
+R640:642 Coq.Init.Datatypes <> nat ind
+R687:689 Coq.Init.Datatypes <> nat ind
+R705:707 Coq.Init.Datatypes <> nat ind
+rec 750:760 <> ServerState
+proj 785:793 <> root_path
+proj 805:811 <> fid_map
+proj 836:847 <> max_msg_size
+proj 858:866 <> auth_done
+proj 878:885 <> attached
+R797:800 NineP_Server_Verification <> Path def
+R815:818 Coq.Init.Datatypes <> list ind
+R824:826 Coq.Init.Datatypes <> ::type_scope:x_'*'_x not
+R821:823 NineP_Server_Verification <> Fid def
+R827:830 NineP_Server_Verification <> Path def
+R851:853 Coq.Init.Datatypes <> nat ind
+R870:873 Coq.Init.Datatypes <> bool ind
+R889:892 Coq.Init.Datatypes <> bool ind
+ind 957:970 <> NinePMessage
+constr 986:992 <> Version
+constr 1032:1039 <> VersionR
+constr 1079:1084 <> Attach
+constr 1141:1147 <> AttachR
+constr 1177:1180 <> Walk
+constr 1232:1236 <> WalkR
+constr 1271:1274 <> Open
+constr 1311:1315 <> OpenR
+constr 1352:1355 <> Read
+constr 1399:1403 <> ReadR
+constr 1438:1442 <> Write
+constr 1491:1496 <> WriteR
+constr 1526:1530 <> Clunk
+constr 1560:1565 <> ClunkR
+constr 1588:1592 <> Error
+R999:1002 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R996:998 Coq.Init.Datatypes <> nat ind
+R1009:1012 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1003:1008 Coq.Strings.String <> string ind
+R1013:1026 NineP_Server_Verification <> NinePMessage:11 ind
+R1046:1049 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1043:1045 Coq.Init.Datatypes <> nat ind
+R1056:1059 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1050:1055 Coq.Strings.String <> string ind
+R1060:1073 NineP_Server_Verification <> NinePMessage:11 ind
+R1091:1094 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1088:1090 NineP_Server_Verification <> Fid def
+R1098:1101 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1095:1097 NineP_Server_Verification <> Fid def
+R1108:1111 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1102:1107 Coq.Strings.String <> string ind
+R1118:1121 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1112:1117 Coq.Strings.String <> string ind
+R1122:1135 NineP_Server_Verification <> NinePMessage:11 ind
+R1154:1157 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1151:1153 NineP_Server_Verification <> Qid rec
+R1158:1171 NineP_Server_Verification <> NinePMessage:11 ind
+R1187:1190 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1184:1186 NineP_Server_Verification <> Fid def
+R1194:1197 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1191:1193 NineP_Server_Verification <> Fid def
+R1209:1212 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1198:1201 Coq.Init.Datatypes <> list ind
+R1203:1208 Coq.Strings.String <> string ind
+R1213:1226 NineP_Server_Verification <> NinePMessage:11 ind
+R1248:1251 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1240:1243 Coq.Init.Datatypes <> list ind
+R1245:1247 NineP_Server_Verification <> Qid rec
+R1252:1265 NineP_Server_Verification <> NinePMessage:11 ind
+R1281:1284 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1278:1280 NineP_Server_Verification <> Fid def
+R1288:1291 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1285:1287 Coq.Init.Datatypes <> nat ind
+R1292:1305 NineP_Server_Verification <> NinePMessage:11 ind
+R1322:1325 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1319:1321 NineP_Server_Verification <> Qid rec
+R1329:1332 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1326:1328 Coq.Init.Datatypes <> nat ind
+R1333:1346 NineP_Server_Verification <> NinePMessage:11 ind
+R1362:1365 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1359:1361 NineP_Server_Verification <> Fid def
+R1369:1372 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1366:1368 Coq.Init.Datatypes <> nat ind
+R1376:1379 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1373:1375 Coq.Init.Datatypes <> nat ind
+R1380:1393 NineP_Server_Verification <> NinePMessage:11 ind
+R1415:1418 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1407:1410 Coq.Init.Datatypes <> list ind
+R1412:1414 Coq.Init.Datatypes <> nat ind
+R1419:1432 NineP_Server_Verification <> NinePMessage:11 ind
+R1449:1452 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1446:1448 NineP_Server_Verification <> Fid def
+R1456:1459 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1453:1455 Coq.Init.Datatypes <> nat ind
+R1468:1471 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1460:1463 Coq.Init.Datatypes <> list ind
+R1465:1467 Coq.Init.Datatypes <> nat ind
+R1472:1485 NineP_Server_Verification <> NinePMessage:11 ind
+R1503:1506 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1500:1502 Coq.Init.Datatypes <> nat ind
+R1507:1520 NineP_Server_Verification <> NinePMessage:11 ind
+R1537:1540 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1534:1536 NineP_Server_Verification <> Fid def
+R1541:1554 NineP_Server_Verification <> NinePMessage:11 ind
+R1569:1582 NineP_Server_Verification <> NinePMessage:11 ind
+R1602:1605 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1596:1601 Coq.Strings.String <> string ind
+R1609:1612 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1606:1608 Coq.Init.Datatypes <> nat ind
+R1613:1626 NineP_Server_Verification <> NinePMessage:11 ind
+scheme 957:970 <> NinePMessage_rect
+scheme 957:970 <> NinePMessage_ind
+scheme 957:970 <> NinePMessage_rec
+scheme 957:970 <> NinePMessage_sind
+def 1875:1890 <> path_starts_with
+R1904:1907 NineP_Server_Verification <> Path def
+binder 1893:1893 <> p:13
+binder 1895:1900 <> prefix:14
+R1912:1915 Coq.Init.Datatypes <> bool ind
+R1936:1936 NineP_Server_Verification <> p:13 var
+R1928:1933 NineP_Server_Verification <> prefix:14 var
+R1947:1948 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+R1956:1959 Coq.Init.Datatypes <> true constr
+R1968:1969 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+R1974:1978 Coq.Init.Datatypes <> false constr
+R1986:1987 Coq.Init.Datatypes <> ::list_scope:x_'::'_x not
+R1994:1995 Coq.Init.Datatypes <> ::list_scope:x_'::'_x not
+R2011:2020 Coq.Strings.String <> eqb def
+R2067:2071 Coq.Init.Datatypes <> false constr
+R2033:2048 NineP_Server_Verification <> path_starts_with:15 def
+def 2139:2147 <> safe_join
+R2162:2165 NineP_Server_Verification <> Path def
+binder 2150:2153 <> root:18
+binder 2155:2158 <> base:19
+R2182:2185 Coq.Init.Datatypes <> list ind
+R2187:2192 Coq.Strings.String <> string ind
+binder 2169:2178 <> components:20
+R2197:2202 Coq.Init.Datatypes <> option ind
+R2204:2207 NineP_Server_Verification <> Path def
+R2234:2237 Coq.Init.Datatypes <> ::list_scope:x_'++'_x not
+R2230:2233 NineP_Server_Verification <> base:19 var
+R2238:2247 NineP_Server_Verification <> components:20 var
+binder 2218:2225 <> new_path:21
+R2257:2272 NineP_Server_Verification <> path_starts_with def
+R2274:2281 NineP_Server_Verification <> new_path:21 var
+R2283:2286 NineP_Server_Verification <> root:18 var
+R2316:2319 Coq.Init.Datatypes <> None constr
+R2295:2298 Coq.Init.Datatypes <> Some constr
+R2300:2307 NineP_Server_Verification <> new_path:21 var
+def 2555:2561 <> get_fid
+R2569:2572 Coq.Init.Datatypes <> list ind
+R2578:2580 Coq.Init.Datatypes <> ::type_scope:x_'*'_x not
+R2575:2577 NineP_Server_Verification <> Fid def
+R2581:2584 NineP_Server_Verification <> Path def
+binder 2564:2565 <> fm:22
+R2593:2595 NineP_Server_Verification <> Fid def
+binder 2589:2589 <> f:23
+R2600:2605 Coq.Init.Datatypes <> option ind
+R2607:2610 NineP_Server_Verification <> Path def
+R2623:2624 NineP_Server_Verification <> fm:22 var
+R2635:2636 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+R2641:2644 Coq.Init.Datatypes <> None constr
+R2661:2664 Coq.Init.Datatypes <> ::list_scope:x_'::'_x not
+R2650:2650 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R2654:2655 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R2660:2660 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R2682:2688 Coq.Arith.PeanoNat Nat eqb def
+R2694:2694 NineP_Server_Verification <> f:23 var
+R2716:2722 NineP_Server_Verification <> get_fid:24 def
+R2729:2729 NineP_Server_Verification <> f:23 var
+R2701:2704 Coq.Init.Datatypes <> Some constr
+def 2796:2802 <> set_fid
+R2810:2813 Coq.Init.Datatypes <> list ind
+R2819:2821 Coq.Init.Datatypes <> ::type_scope:x_'*'_x not
+R2816:2818 NineP_Server_Verification <> Fid def
+R2822:2825 NineP_Server_Verification <> Path def
+binder 2805:2806 <> fm:26
+R2834:2836 NineP_Server_Verification <> Fid def
+binder 2830:2830 <> f:27
+R2844:2847 NineP_Server_Verification <> Path def
+binder 2840:2840 <> p:28
+R2852:2855 Coq.Init.Datatypes <> list ind
+R2861:2863 Coq.Init.Datatypes <> ::type_scope:x_'*'_x not
+R2858:2860 NineP_Server_Verification <> Fid def
+R2864:2867 NineP_Server_Verification <> Path def
+R2881:2885 Coq.Init.Datatypes <> ::list_scope:x_'::'_x not
+R2931:2931 Coq.Init.Datatypes <> ::list_scope:x_'::'_x not
+R2875:2875 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R2877:2878 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R2880:2880 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R2876:2876 NineP_Server_Verification <> f:27 var
+R2879:2879 NineP_Server_Verification <> p:28 var
+R2886:2891 Coq.Lists.List <> filter def
+R2929:2930 NineP_Server_Verification <> fm:26 var
+binder 2898:2898 <> x:29
+R2903:2906 Coq.Init.Datatypes <> negb def
+R2909:2915 Coq.Arith.PeanoNat Nat eqb def
+R2918:2920 Coq.Init.Datatypes <> fst def
+R2922:2922 NineP_Server_Verification <> x:29 var
+R2925:2925 NineP_Server_Verification <> f:27 var
+def 2971:2980 <> remove_fid
+R2988:2991 Coq.Init.Datatypes <> list ind
+R2997:2999 Coq.Init.Datatypes <> ::type_scope:x_'*'_x not
+R2994:2996 NineP_Server_Verification <> Fid def
+R3000:3003 NineP_Server_Verification <> Path def
+binder 2983:2984 <> fm:30
+R3012:3014 NineP_Server_Verification <> Fid def
+binder 3008:3008 <> f:31
+R3019:3022 Coq.Init.Datatypes <> list ind
+R3028:3030 Coq.Init.Datatypes <> ::type_scope:x_'*'_x not
+R3025:3027 NineP_Server_Verification <> Fid def
+R3031:3034 NineP_Server_Verification <> Path def
+R3042:3047 Coq.Lists.List <> filter def
+R3085:3086 NineP_Server_Verification <> fm:30 var
+binder 3054:3054 <> x:32
+R3059:3062 Coq.Init.Datatypes <> negb def
+R3065:3071 Coq.Arith.PeanoNat Nat eqb def
+R3074:3076 Coq.Init.Datatypes <> fst def
+R3078:3078 NineP_Server_Verification <> x:32 var
+R3081:3081 NineP_Server_Verification <> f:31 var
+def 3293:3307 <> process_message
+R3314:3324 NineP_Server_Verification <> ServerState rec
+binder 3310:3310 <> s:33
+R3334:3347 NineP_Server_Verification <> NinePMessage ind
+binder 3328:3330 <> msg:34
+R3366:3368 Coq.Init.Datatypes <> ::type_scope:x_'*'_x not
+R3355:3365 NineP_Server_Verification <> ServerState rec
+R3369:3382 NineP_Server_Verification <> NinePMessage ind
+R3396:3398 NineP_Server_Verification <> msg:34 var
+R3409:3415 NineP_Server_Verification <> Version constr
+R3457:3459 Coq.Init.Peano <> min abbrev
+R3468:3479 NineP_Server_Verification <> max_msg_size proj
+R3481:3481 NineP_Server_Verification <> s:33 var
+binder 3444:3452 <> resp_size:36
+R3512:3521 Coq.Strings.String <> eqb def
+binder 3497:3504 <> resp_ver:37
+R3616:3616 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R3618:3619 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R3647:3647 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R3617:3617 NineP_Server_Verification <> s:33 var
+R3620:3627 NineP_Server_Verification <> VersionR constr
+R3629:3637 NineP_Server_Verification <> resp_size:36 var
+R3639:3646 NineP_Server_Verification <> resp_ver:37 var
+R3654:3659 NineP_Server_Verification <> Attach constr
+R3694:3701 NineP_Server_Verification <> attached proj
+R3703:3703 NineP_Server_Verification <> s:33 var
+R3789:3796 NineP_Server_Verification <> mkServer constr
+R3799:3807 NineP_Server_Verification <> root_path proj
+R3809:3809 NineP_Server_Verification <> s:33 var
+R3842:3848 NineP_Server_Verification <> set_fid def
+R3851:3857 NineP_Server_Verification <> fid_map proj
+R3859:3859 NineP_Server_Verification <> s:33 var
+R3867:3875 NineP_Server_Verification <> root_path proj
+R3877:3877 NineP_Server_Verification <> s:33 var
+R3911:3922 NineP_Server_Verification <> max_msg_size proj
+R3924:3924 NineP_Server_Verification <> s:33 var
+R3957:3965 NineP_Server_Verification <> auth_done proj
+R3967:3967 NineP_Server_Verification <> s:33 var
+R3999:4002 Coq.Init.Datatypes <> true constr
+binder 3780:3784 <> new_s:38
+R4015:4015 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4021:4022 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4046:4046 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4016:4020 NineP_Server_Verification <> new_s:38 var
+R4023:4029 NineP_Server_Verification <> AttachR constr
+R4032:4036 NineP_Server_Verification <> mkQid constr
+R3718:3718 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R3720:3721 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R3755:3755 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R3719:3719 NineP_Server_Verification <> s:33 var
+R3722:3726 NineP_Server_Verification <> Error constr
+R4053:4056 NineP_Server_Verification <> Walk constr
+R4093:4099 NineP_Server_Verification <> get_fid def
+R4102:4108 NineP_Server_Verification <> fid_map proj
+R4110:4110 NineP_Server_Verification <> s:33 var
+R4133:4136 Coq.Init.Datatypes <> None constr
+R4141:4141 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4143:4144 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4173:4173 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4142:4142 NineP_Server_Verification <> s:33 var
+R4145:4149 NineP_Server_Verification <> Error constr
+R4183:4186 Coq.Init.Datatypes <> Some constr
+R4215:4223 NineP_Server_Verification <> safe_join def
+R4226:4234 NineP_Server_Verification <> root_path proj
+R4236:4236 NineP_Server_Verification <> s:33 var
+R4270:4273 Coq.Init.Datatypes <> None constr
+R4278:4278 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4280:4281 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4316:4316 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4279:4279 NineP_Server_Verification <> s:33 var
+R4282:4286 NineP_Server_Verification <> Error constr
+R4330:4333 Coq.Init.Datatypes <> Some constr
+R4374:4380 NineP_Server_Verification <> set_fid def
+R4383:4389 NineP_Server_Verification <> fid_map proj
+R4391:4391 NineP_Server_Verification <> s:33 var
+binder 4364:4369 <> new_fm:39
+R4439:4446 NineP_Server_Verification <> mkServer constr
+R4449:4457 NineP_Server_Verification <> root_path proj
+R4459:4459 NineP_Server_Verification <> s:33 var
+R4462:4467 NineP_Server_Verification <> new_fm:39 var
+R4505:4516 NineP_Server_Verification <> max_msg_size proj
+R4518:4518 NineP_Server_Verification <> s:33 var
+R4522:4530 NineP_Server_Verification <> auth_done proj
+R4532:4532 NineP_Server_Verification <> s:33 var
+R4536:4543 NineP_Server_Verification <> attached proj
+R4545:4545 NineP_Server_Verification <> s:33 var
+binder 4430:4434 <> new_s:40
+R4565:4565 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4571:4572 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4594:4594 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4566:4570 NineP_Server_Verification <> new_s:40 var
+R4573:4577 NineP_Server_Verification <> WalkR constr
+R4579:4579 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R4593:4593 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R4580:4584 NineP_Server_Verification <> mkQid constr
+R4625:4629 NineP_Server_Verification <> Clunk constr
+R4658:4667 NineP_Server_Verification <> remove_fid def
+R4670:4676 NineP_Server_Verification <> fid_map proj
+R4678:4678 NineP_Server_Verification <> s:33 var
+binder 4648:4653 <> new_fm:41
+R4707:4714 NineP_Server_Verification <> mkServer constr
+R4717:4725 NineP_Server_Verification <> root_path proj
+R4727:4727 NineP_Server_Verification <> s:33 var
+R4730:4735 NineP_Server_Verification <> new_fm:41 var
+R4765:4776 NineP_Server_Verification <> max_msg_size proj
+R4778:4778 NineP_Server_Verification <> s:33 var
+R4782:4790 NineP_Server_Verification <> auth_done proj
+R4792:4792 NineP_Server_Verification <> s:33 var
+R4796:4803 NineP_Server_Verification <> attached proj
+R4805:4805 NineP_Server_Verification <> s:33 var
+binder 4698:4702 <> new_s:42
+R4817:4817 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4823:4824 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4831:4831 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4818:4822 NineP_Server_Verification <> new_s:42 var
+R4825:4830 NineP_Server_Verification <> ClunkR constr
+R4843:4843 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4845:4846 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4880:4880 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4844:4844 NineP_Server_Verification <> s:33 var
+R4847:4851 NineP_Server_Verification <> Error constr
+prf 5146:5171 <> path_containment_invariant
+binder 5184:5184 <> s:43
+binder 5186:5188 <> msg:44
+binder 5190:5191 <> s':45
+binder 5193:5196 <> resp:46
+binder 5198:5200 <> fid:47
+binder 5202:5205 <> path:48
+R5246:5253 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R5233:5235 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R5212:5226 NineP_Server_Verification <> process_message def
+R5228:5228 NineP_Server_Verification <> s:43 var
+R5230:5232 NineP_Server_Verification <> msg:44 var
+R5236:5236 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R5239:5240 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R5245:5245 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R5237:5238 NineP_Server_Verification <> s':45 var
+R5241:5244 NineP_Server_Verification <> resp:46 var
+R5290:5297 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R5278:5280 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R5254:5260 NineP_Server_Verification <> get_fid def
+R5263:5269 NineP_Server_Verification <> fid_map proj
+R5271:5272 NineP_Server_Verification <> s':45 var
+R5275:5277 NineP_Server_Verification <> fid:47 var
+R5281:5284 Coq.Init.Datatypes <> Some constr
+R5286:5289 NineP_Server_Verification <> path:48 var
+R5334:5336 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R5298:5313 NineP_Server_Verification <> path_starts_with def
+R5315:5318 NineP_Server_Verification <> path:48 var
+R5321:5329 NineP_Server_Verification <> root_path proj
+R5331:5332 NineP_Server_Verification <> s':45 var
+R5337:5340 Coq.Init.Datatypes <> true constr
+prf 5479:5488 <> fid_unique
+binder 5501:5502 <> fm:49
+binder 5504:5504 <> f:50
+binder 5506:5507 <> p1:51
+binder 5509:5510 <> p2:52
+R5539:5546 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R5529:5531 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R5517:5523 NineP_Server_Verification <> get_fid def
+R5525:5526 NineP_Server_Verification <> fm:49 var
+R5528:5528 NineP_Server_Verification <> f:50 var
+R5532:5535 Coq.Init.Datatypes <> Some constr
+R5537:5538 NineP_Server_Verification <> p1:51 var
+R5569:5576 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R5559:5561 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R5547:5553 NineP_Server_Verification <> get_fid def
+R5555:5556 NineP_Server_Verification <> fm:49 var
+R5558:5558 NineP_Server_Verification <> f:50 var
+R5562:5565 Coq.Init.Datatypes <> Some constr
+R5567:5568 NineP_Server_Verification <> p2:52 var
+R5579:5581 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R5577:5578 NineP_Server_Verification <> p1:51 var
+R5582:5583 NineP_Server_Verification <> p2:52 var
+prf 5702:5720 <> attach_creates_root
+binder 5733:5733 <> s:53
+binder 5735:5737 <> fid:54
+binder 5739:5742 <> afid:55
+binder 5744:5748 <> uname:56
+binder 5750:5754 <> aname:57
+binder 5756:5757 <> s':58
+binder 5759:5761 <> qid:59
+R5786:5793 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R5778:5780 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R5768:5775 NineP_Server_Verification <> attached proj
+R5777:5777 NineP_Server_Verification <> s:53 var
+R5781:5785 Coq.Init.Datatypes <> false constr
+R5861:5868 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R5841:5843 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R5794:5808 NineP_Server_Verification <> process_message def
+R5810:5810 NineP_Server_Verification <> s:53 var
+R5813:5818 NineP_Server_Verification <> Attach constr
+R5820:5822 NineP_Server_Verification <> fid:54 var
+R5824:5827 NineP_Server_Verification <> afid:55 var
+R5829:5833 NineP_Server_Verification <> uname:56 var
+R5835:5839 NineP_Server_Verification <> aname:57 var
+R5844:5844 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R5847:5848 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R5860:5860 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R5845:5846 NineP_Server_Verification <> s':58 var
+R5849:5855 NineP_Server_Verification <> AttachR constr
+R5857:5859 NineP_Server_Verification <> qid:59 var
+R5893:5895 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R5869:5875 NineP_Server_Verification <> get_fid def
+R5878:5884 NineP_Server_Verification <> fid_map proj
+R5886:5887 NineP_Server_Verification <> s':58 var
+R5890:5892 NineP_Server_Verification <> fid:54 var
+R5896:5899 Coq.Init.Datatypes <> Some constr
+R5902:5910 NineP_Server_Verification <> root_path proj
+R5912:5912 NineP_Server_Verification <> s:53 var
+R6030:6032 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R6015:6021 Coq.Arith.PeanoNat Nat eqb def
+R6033:6036 Coq.Init.Datatypes <> true constr
+R6030:6032 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R6015:6021 Coq.Arith.PeanoNat Nat eqb def
+R6033:6036 Coq.Init.Datatypes <> true constr
+R6050:6059 Coq.Arith.PeanoNat Nat eqb_eq thm
+R6050:6059 Coq.Arith.PeanoNat Nat eqb_eq thm
+prf 6153:6165 <> clunk_removes
+binder 6178:6178 <> s:60
+binder 6180:6182 <> fid:61
+binder 6184:6185 <> s':62
+binder 6187:6190 <> resp:63
+R6239:6246 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R6226:6228 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R6197:6211 NineP_Server_Verification <> process_message def
+R6213:6213 NineP_Server_Verification <> s:60 var
+R6216:6220 NineP_Server_Verification <> Clunk constr
+R6222:6224 NineP_Server_Verification <> fid:61 var
+R6229:6229 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R6232:6233 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R6238:6238 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R6230:6231 NineP_Server_Verification <> s':62 var
+R6234:6237 NineP_Server_Verification <> resp:63 var
+R6271:6273 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R6247:6253 NineP_Server_Verification <> get_fid def
+R6256:6262 NineP_Server_Verification <> fid_map proj
+R6264:6265 NineP_Server_Verification <> s':62 var
+R6268:6270 NineP_Server_Verification <> fid:61 var
+R6274:6277 Coq.Init.Datatypes <> None constr
+R6405:6414 NineP_Server_Verification <> remove_fid def
+R6417:6423 NineP_Server_Verification <> get_fid def
+R6439:6445 NineP_Server_Verification <> fid_map proj
+R6439:6445 NineP_Server_Verification <> fid_map proj
+R6507:6513 Coq.Arith.PeanoNat Nat eqb def
+R6507:6513 Coq.Arith.PeanoNat Nat eqb def
+prf 6722:6747 <> walk_preserves_containment
+binder 6760:6760 <> s:64
+binder 6762:6764 <> fid:65
+binder 6766:6771 <> newfid:66
+binder 6773:6777 <> names:67
+binder 6779:6785 <> oldpath:68
+binder 6787:6793 <> newpath:69
+binder 6795:6796 <> s':70
+binder 6798:6801 <> qids:71
+R6846:6853 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R6831:6833 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R6808:6814 NineP_Server_Verification <> get_fid def
+R6817:6823 NineP_Server_Verification <> fid_map proj
+R6825:6825 NineP_Server_Verification <> s:64 var
+R6828:6830 NineP_Server_Verification <> fid:65 var
+R6834:6837 Coq.Init.Datatypes <> Some constr
+R6839:6845 NineP_Server_Verification <> oldpath:68 var
+R6906:6913 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R6891:6893 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R6854:6862 NineP_Server_Verification <> safe_join def
+R6865:6873 NineP_Server_Verification <> root_path proj
+R6875:6875 NineP_Server_Verification <> s:64 var
+R6878:6884 NineP_Server_Verification <> oldpath:68 var
+R6886:6890 NineP_Server_Verification <> names:67 var
+R6894:6897 Coq.Init.Datatypes <> Some constr
+R6899:6905 NineP_Server_Verification <> newpath:69 var
+R6974:6981 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R6955:6957 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R6914:6928 NineP_Server_Verification <> process_message def
+R6930:6930 NineP_Server_Verification <> s:64 var
+R6933:6936 NineP_Server_Verification <> Walk constr
+R6938:6940 NineP_Server_Verification <> fid:65 var
+R6942:6947 NineP_Server_Verification <> newfid:66 var
+R6949:6953 NineP_Server_Verification <> names:67 var
+R6958:6958 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R6961:6962 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R6973:6973 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R6959:6960 NineP_Server_Verification <> s':70 var
+R6963:6967 NineP_Server_Verification <> WalkR constr
+R6969:6972 NineP_Server_Verification <> qids:71 var
+R7020:7022 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R6982:6997 NineP_Server_Verification <> path_starts_with def
+R6999:7005 NineP_Server_Verification <> newpath:69 var
+R7008:7016 NineP_Server_Verification <> root_path proj
+R7018:7018 NineP_Server_Verification <> s:64 var
+R7023:7026 Coq.Init.Datatypes <> true constr
+R7055:7063 NineP_Server_Verification <> safe_join def
+R7084:7099 NineP_Server_Verification <> path_starts_with def
+R7109:7112 Coq.Init.Datatypes <> ::list_scope:x_'++'_x not
+R7121:7129 NineP_Server_Verification <> root_path proj
+R7084:7099 NineP_Server_Verification <> path_starts_with def
+R7109:7112 Coq.Init.Datatypes <> ::list_scope:x_'++'_x not
+R7121:7129 NineP_Server_Verification <> root_path proj
+prf 7259:7281 <> version_preserves_state
+binder 7294:7294 <> s:72
+binder 7296:7300 <> msize:73
+binder 7302:7308 <> version:74
+binder 7310:7311 <> s':75
+binder 7313:7318 <> rmsize:76
+binder 7320:7327 <> rversion:77
+R7408:7415 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R7375:7377 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R7334:7348 NineP_Server_Verification <> process_message def
+R7350:7350 NineP_Server_Verification <> s:72 var
+R7353:7359 NineP_Server_Verification <> Version constr
+R7361:7365 NineP_Server_Verification <> msize:73 var
+R7367:7373 NineP_Server_Verification <> version:74 var
+R7378:7378 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R7381:7382 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R7407:7407 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R7379:7380 NineP_Server_Verification <> s':75 var
+R7383:7390 NineP_Server_Verification <> VersionR constr
+R7392:7397 NineP_Server_Verification <> rmsize:76 var
+R7399:7406 NineP_Server_Verification <> rversion:77 var
+R7438:7445 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R7425:7427 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R7416:7422 NineP_Server_Verification <> fid_map proj
+R7424:7424 NineP_Server_Verification <> s:72 var
+R7428:7434 NineP_Server_Verification <> fid_map proj
+R7436:7437 NineP_Server_Verification <> s':75 var
+R7472:7479 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R7457:7459 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R7446:7454 NineP_Server_Verification <> root_path proj
+R7456:7456 NineP_Server_Verification <> s:72 var
+R7460:7468 NineP_Server_Verification <> root_path proj
+R7470:7471 NineP_Server_Verification <> s':75 var
+R7506:7513 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R7491:7493 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R7480:7488 NineP_Server_Verification <> auth_done proj
+R7490:7490 NineP_Server_Verification <> s:72 var
+R7494:7502 NineP_Server_Verification <> auth_done proj
+R7504:7505 NineP_Server_Verification <> s':75 var
+R7524:7526 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R7514:7521 NineP_Server_Verification <> attached proj
+R7523:7523 NineP_Server_Verification <> s:72 var
+R7527:7534 NineP_Server_Verification <> attached proj
+R7536:7537 NineP_Server_Verification <> s':75 var
+prf 7658:7678 <> error_preserves_state
+binder 7691:7691 <> s:78
+binder 7693:7695 <> msg:79
+binder 7697:7699 <> err:80
+binder 7701:7705 <> errno:81
+R7756:7763 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R7733:7735 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R7712:7726 NineP_Server_Verification <> process_message def
+R7728:7728 NineP_Server_Verification <> s:78 var
+R7730:7732 NineP_Server_Verification <> msg:79 var
+R7736:7736 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R7738:7739 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R7755:7755 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R7737:7737 NineP_Server_Verification <> s:78 var
+R7740:7744 NineP_Server_Verification <> Error constr
+R7746:7748 NineP_Server_Verification <> err:80 var
+R7750:7754 NineP_Server_Verification <> errno:81 var
+R7764:7767 Coq.Init.Logic <> True ind
+prf 7840:7859 <> message_size_bounded
+binder 7872:7872 <> s:82
+binder 7874:7878 <> msize:83
+binder 7880:7886 <> version:84
+binder 7888:7889 <> s':85
+binder 7891:7896 <> rmsize:86
+binder 7898:7905 <> rversion:87
+R7986:7993 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R7953:7955 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R7912:7926 NineP_Server_Verification <> process_message def
+R7928:7928 NineP_Server_Verification <> s:82 var
+R7931:7937 NineP_Server_Verification <> Version constr
+R7939:7943 NineP_Server_Verification <> msize:83 var
+R7945:7951 NineP_Server_Verification <> version:84 var
+R7956:7956 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R7959:7960 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R7985:7985 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R7957:7958 NineP_Server_Verification <> s':85 var
+R7961:7968 NineP_Server_Verification <> VersionR constr
+R7970:7975 NineP_Server_Verification <> rmsize:86 var
+R7977:7984 NineP_Server_Verification <> rversion:87 var
+R8009:8012 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R8000:8003 Coq.Init.Peano <> ::nat_scope:x_'<='_x not
+R7994:7999 NineP_Server_Verification <> rmsize:86 var
+R8004:8008 NineP_Server_Verification <> msize:83 var
+R8019:8022 Coq.Init.Peano <> ::nat_scope:x_'<='_x not
+R8013:8018 NineP_Server_Verification <> rmsize:86 var
+R8023:8034 NineP_Server_Verification <> max_msg_size proj
+R8036:8036 NineP_Server_Verification <> s:82 var
+R8115:8126 Coq.Arith.PeanoNat Nat le_min_l thm
+R8115:8126 Coq.Arith.PeanoNat Nat le_min_l thm
+R8139:8150 Coq.Arith.PeanoNat Nat le_min_r thm
+R8139:8150 Coq.Arith.PeanoNat Nat le_min_r thm
+prf 8213:8230 <> walk_invalid_fails
+binder 8243:8243 <> s:88
+binder 8245:8247 <> fid:89
+binder 8249:8254 <> newfid:90
+binder 8256:8260 <> names:91
+binder 8262:8268 <> oldpath:92
+R8313:8320 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R8298:8300 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R8275:8281 NineP_Server_Verification <> get_fid def
+R8284:8290 NineP_Server_Verification <> fid_map proj
+R8292:8292 NineP_Server_Verification <> s:88 var
+R8295:8297 NineP_Server_Verification <> fid:89 var
+R8301:8304 Coq.Init.Datatypes <> Some constr
+R8306:8312 NineP_Server_Verification <> oldpath:92 var
+R8365:8372 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R8358:8360 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R8321:8329 NineP_Server_Verification <> safe_join def
+R8332:8340 NineP_Server_Verification <> root_path proj
+R8342:8342 NineP_Server_Verification <> s:88 var
+R8345:8351 NineP_Server_Verification <> oldpath:92 var
+R8353:8357 NineP_Server_Verification <> names:91 var
+R8361:8364 Coq.Init.Datatypes <> None constr
+R8414:8416 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R8373:8387 NineP_Server_Verification <> process_message def
+R8389:8389 NineP_Server_Verification <> s:88 var
+R8392:8395 NineP_Server_Verification <> Walk constr
+R8397:8399 NineP_Server_Verification <> fid:89 var
+R8401:8406 NineP_Server_Verification <> newfid:90 var
+R8408:8412 NineP_Server_Verification <> names:91 var
+R8417:8417 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R8419:8420 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R8455:8455 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R8418:8418 NineP_Server_Verification <> s:88 var
+R8421:8425 NineP_Server_Verification <> Error constr
+prf 8576:8591 <> no_double_attach
+binder 8604:8604 <> s:93
+binder 8606:8608 <> fid:94
+binder 8610:8613 <> afid:95
+binder 8615:8619 <> uname:96
+binder 8621:8625 <> aname:97
+R8649:8656 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R8642:8644 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R8632:8639 NineP_Server_Verification <> attached proj
+R8641:8641 NineP_Server_Verification <> s:93 var
+R8645:8648 Coq.Init.Datatypes <> true constr
+R8704:8712 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R8657:8671 NineP_Server_Verification <> process_message def
+R8673:8673 NineP_Server_Verification <> s:93 var
+R8676:8681 NineP_Server_Verification <> Attach constr
+R8683:8685 NineP_Server_Verification <> fid:94 var
+R8687:8690 NineP_Server_Verification <> afid:95 var
+R8692:8696 NineP_Server_Verification <> uname:96 var
+R8698:8702 NineP_Server_Verification <> aname:97 var
+R8713:8713 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R8715:8716 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R8750:8750 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R8714:8714 NineP_Server_Verification <> s:93 var
+R8717:8721 NineP_Server_Verification <> Error constr
+prf 8867:8885 <> fid_requires_attach
+binder 8898:8898 <> s:98
+binder 8900:8902 <> fid:99
+R8927:8934 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R8919:8921 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R8909:8916 NineP_Server_Verification <> attached proj
+R8918:8918 NineP_Server_Verification <> s:98 var
+R8922:8926 Coq.Init.Datatypes <> false constr
+R8958:8960 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R8935:8941 NineP_Server_Verification <> get_fid def
+R8944:8950 NineP_Server_Verification <> fid_map proj
+R8952:8952 NineP_Server_Verification <> s:98 var
+R8955:8957 NineP_Server_Verification <> fid:99 var
+R8961:8964 Coq.Init.Datatypes <> None constr
+prf 9108:9128 <> process_deterministic
+binder 9141:9141 <> s:100
+binder 9143:9145 <> msg:101
+binder 9147:9148 <> s1:102
+binder 9150:9151 <> r1:103
+binder 9153:9154 <> s2:104
+binder 9156:9157 <> r2:105
+R9196:9203 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R9185:9187 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R9164:9178 NineP_Server_Verification <> process_message def
+R9180:9180 NineP_Server_Verification <> s:100 var
+R9182:9184 NineP_Server_Verification <> msg:101 var
+R9188:9188 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R9191:9192 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R9195:9195 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R9189:9190 NineP_Server_Verification <> s1:102 var
+R9193:9194 NineP_Server_Verification <> r1:103 var
+R9236:9243 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R9225:9227 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R9204:9218 NineP_Server_Verification <> process_message def
+R9220:9220 NineP_Server_Verification <> s:100 var
+R9222:9224 NineP_Server_Verification <> msg:101 var
+R9228:9228 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R9231:9232 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R9235:9235 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R9229:9230 NineP_Server_Verification <> s2:104 var
+R9233:9234 NineP_Server_Verification <> r2:105 var
+R9251:9254 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R9246:9248 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R9244:9245 NineP_Server_Verification <> s1:102 var
+R9249:9250 NineP_Server_Verification <> s2:104 var
+R9257:9259 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R9255:9256 NineP_Server_Verification <> r1:103 var
+R9260:9261 NineP_Server_Verification <> r2:105 var

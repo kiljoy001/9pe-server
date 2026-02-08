@@ -5,24 +5,24 @@ R219:233 Coq.Arith.Arith <> <> lib
 R251:263 Coq.Bool.Bool <> <> lib
 R281:283 Coq.micromega.Lia <> <> lib
 R293:305 Coq.Lists.List ListNotations <> mod
-ind 424:441 <> NinePeeMessageType
+ind 424:441 <> NinePMessageType
 constr 457:461 <> Tread
 constr 465:469 <> Rread
 constr 473:478 <> Twrite
 constr 482:487 <> Rwrite
 constr 491:496 <> Terror
 constr 500:505 <> Rerror
-scheme 424:441 <> NinePeeMessageType_rect
-scheme 424:441 <> NinePeeMessageType_ind
-scheme 424:441 <> NinePeeMessageType_rec
-scheme 424:441 <> NinePeeMessageType_sind
-rec 516:529 <> NinePeeMessage
+scheme 424:441 <> NinePMessageType_rect
+scheme 424:441 <> NinePMessageType_ind
+scheme 424:441 <> NinePMessageType_rec
+scheme 424:441 <> NinePMessageType_sind
+rec 516:529 <> NinePMessage
 proj 538:545 <> msg_type
 proj 571:577 <> msg_fid
 proj 588:597 <> msg_offset
 proj 608:616 <> msg_count
 proj 627:634 <> msg_data
-R549:566 UnifiedSyntheticWASM <> NinePeeMessageType ind
+R549:566 UnifiedSyntheticWASM <> NinePMessageType ind
 R581:583 Coq.Init.Datatypes <> nat ind
 R601:603 Coq.Init.Datatypes <> nat ind
 R620:622 Coq.Init.Datatypes <> nat ind
@@ -75,7 +75,7 @@ R1465:1469 UnifiedSyntheticWASM <> input:19 var
 binder 1453:1453 <> x:20
 R1459:1461 Coq.Init.Peano <> ::nat_scope:x_'+'_x not
 R1458:1458 UnifiedSyntheticWASM <> x:20 var
-rec 1626:1645 <> UnifiedNinePeeSystem
+rec 1626:1645 <> UnifiedNinePSystem
 proj 1688:1707 <> synthetic_generators
 proj 1778:1793 <> wasm_translators
 proj 1865:1882 <> enable_composition
@@ -91,12 +91,12 @@ R1809:1814 Coq.Init.Datatypes <> option ind
 R1816:1834 UnifiedSyntheticWASM <> WasmTranslatorState rec
 R1886:1889 Coq.Init.Datatypes <> bool ind
 def 2015:2037 <> process_unified_message
-R2051:2070 UnifiedSyntheticWASM <> UnifiedNinePeeSystem rec
+R2051:2070 UnifiedSyntheticWASM <> UnifiedNinePSystem rec
 binder 2042:2047 <> system:25
-R2082:2095 UnifiedSyntheticWASM <> NinePeeMessage rec
+R2082:2095 UnifiedSyntheticWASM <> NinePMessage rec
 binder 2076:2078 <> msg:26
 R2100:2105 Coq.Init.Datatypes <> option ind
-R2107:2120 UnifiedSyntheticWASM <> NinePeeMessage rec
+R2107:2120 UnifiedSyntheticWASM <> NinePMessage rec
 R2138:2145 UnifiedSyntheticWASM <> msg_type proj
 R2133:2135 UnifiedSyntheticWASM <> msg:26 var
 R2157:2161 UnifiedSyntheticWASM <> Tread constr
@@ -243,7 +243,7 @@ R5760:5775 UnifiedSyntheticWASM <> wasm_translators proj
 R5807:5829 UnifiedSyntheticWASM <> execute_wasm_translator def
 R5807:5829 UnifiedSyntheticWASM <> execute_wasm_translator def
 def 6056:6071 <> composition_safe
-R6083:6102 UnifiedSyntheticWASM <> UnifiedNinePeeSystem rec
+R6083:6102 UnifiedSyntheticWASM <> UnifiedNinePSystem rec
 binder 6074:6079 <> system:33
 binder 6124:6126 <> msg:34
 binder 6128:6144 <> synthetic_content:35
@@ -483,8 +483,8 @@ R8989:8996 UnifiedSyntheticWASM <> msg_data proj
 R8989:8996 UnifiedSyntheticWASM <> msg_data proj
 R8873:8877 UnifiedSyntheticWASM <> Rread constr
 R8958:8963 Coq.Init.Datatypes <> length def
-prf 9270:9299 <> unified_ninepee_system_correct
-R9322:9341 UnifiedSyntheticWASM <> UnifiedNinePeeSystem rec
+prf 9270:9299 <> unified_ninep_system_correct
+R9322:9341 UnifiedSyntheticWASM <> UnifiedNinePSystem rec
 binder 9313:9318 <> system:57
 R9394:9394 Coq.Init.Logic <> ::type_scope:x_'->'_x not
 R9511:9517 Coq.Init.Logic <> ::type_scope:x_'->'_x not

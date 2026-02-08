@@ -169,7 +169,7 @@ mod formal_verification {
     #[test]
     fn generate_tla_plus_spec() {
         let spec = r#"
----------------------------- MODULE NinePeeProtocol ----------------------------
+---------------------------- MODULE NinePProtocol ----------------------------
 EXTENDS Naturals, Sequences, TLC
 
 CONSTANTS
@@ -257,7 +257,7 @@ Require Import Coq.Logic.FunctionalExtensionality.
 
 (** 9P.e Protocol Formal Verification **)
 
-Module NinePeeProtocol.
+Module NinePProtocol.
 
   (** Node states **)
   Inductive NodeState : Type :=
@@ -339,7 +339,7 @@ Module NinePeeProtocol.
     - apply Nat.leb_le. omega.
   Qed.
 
-End NinePeeProtocol.
+End NinePProtocol.
         "#;
 
         std::fs::write("9pe_protocol.v", proof).unwrap();

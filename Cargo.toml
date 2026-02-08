@@ -1,19 +1,17 @@
 [package]
-name = "ninep-server"
+name = "ninepe-server"
 version = "1.0.0"
 edition = "2021"
-description = "9P.e Server - Refactored with clean architecture"
+description = "9P.e Server - Modern filesystem protocol server with QUIC transport and Intel XMX acceleration"
 license = "AGPL-3.0-or-later"
 repository = "https://github.com/kiljoy001/9pe-server"
-keywords = ["9p", "filesystem", "quic", "protocol", "server"]
-categories = ["network-programming", "filesystem"]
+keywords = ["9p", "filesystem", "quic", "protocol", "server", "xmx"]
+categories = ["network-programming", "filesystem", "cryptography"]
 authors = ["9PE Team"]
 
-[lib]
-name = "ninep_server"
-path = "src/lib.rs"
-
 [dependencies]
+# 9PE core protocol
+
 # Core async runtime
 tokio = { version = "1.0", features = ["full"] }
 
@@ -23,116 +21,148 @@ clap = { version = "4.0", features = ["derive", "env"] }
 # Logging
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "registry", "fmt", "json"] }
+tracing-appender = "0.2"
 
 # Error handling
 anyhow = "1.0"
 thiserror = "1.0"
 
+# FUSE filesystem support
+fuser = { version = "0.14", optional = true }
+
 # Async utilities
+futures = "0.3"
 async-trait = "0.1"
-
-# QUIC transport support
-quinn = "0.10"
-rustls = "0.21"
-webpki-roots = "0.26"
-rcgen = "0.12"
-
-# Serialization
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-base64 = "0.22"
-serde_cbor = "0.11"
-sled = "0.34"
-
-# Network utilities
-if-addrs = "0.10"
 
 # System interface
 libc = "0.2"
 
-# Local 9P.e protocol implementation (currently using internal implementation)
-# p9e-quic = { path = "../9PE" }
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+bincode = "1.3"
+toml = "0.8"
+serde_cbor = "0.11"
+sled = "0.34"
+
+# Random for secure operations
+rand = "0.8"
+getrandom = { version = "0.2", features = ["js"] }
+
+# Image encoding (for canvas output)
+png = "0.17"
+
+# WebGPU for GPU-accelerated rendering
+wgpu = "23.0"
+bytemuck = { version = "1.14", features = ["derive"] }
+pollster = "0.3"
 
 # UUID generation
-uuid = { version = "1.0", features = ["v4", "serde"] }
-
-# Configuration
-directories = "5.0"
-
-# Date/time handling
-chrono = { version = "0.4", features = ["serde"] }
-
-# WASM support for translators (optional)
-wasmtime = { version = "27.0", optional = true }
-wasmtime-wasi = { version = "27.0", optional = true }
-wasm-encoder = "0.38"
-wasmparser = "0.118"
-
-# Additional dependencies for translator system
-futures = "0.3"
-regex = "1.10"
-once_cell = "1.19"
-toml = "0.8"
-bincode = "1.3"
-rand = "0.8"
-
-# Authentication and cryptography
-argon2 = "0.5"
-ed25519-dalek = "2.1"
-
-# FUSE filesystem support for mounting
-fuser = "0.14"
+uuid = { version = "1.10", features = ["v4", "v8", "serde"] }
 
 # Hex encoding
 hex = "0.4"
 
+# Configuration and directories
+directories = "5.0"
+gethostname = "0.4"
+
 # Pattern matching
+regex = "1.10"
+once_cell = "1.19"
+
+# Metrics and monitoring
+prometheus = "0.13"
 lazy_static = "1.4"
+sys-info = "0.9"
 
-# OpenCL support for compute host functions (optional)
-opencl3 = { version = "0.9", optional = true }
+# ECC Cryptography (modern replacement for RSA)
+ed25519-dalek = { version = "2.0", optional = true }      # Ed25519 signatures
+p256 = { version = "0.13", optional = true }               # P-256 ECDSA
+x25519-dalek = { version = "2.0", features = ["static_secrets"], optional = true }  # X25519 key exchange
+k256 = { version = "0.13", optional = true }               # Broad ECDSA support
+hmac = { version = "0.12", optional = true }               # HMAC for key derivation
+hkdf = { version = "0.12", optional = true }               # HKDF key derivation
+sha2 = { version = "0.10", optional = true }               # SHA-2 hashing
+base64 = { version = "0.21", optional = true }             # Base64 encoding
+blake3 = { version = "1.5", optional = true }              # BLAKE3 hashing
+chacha20poly1305 = { version = "0.10", optional = true }   # ChaCha20-Poly1305 AEAD
+serde_arrays = { version = "0.1", optional = true }        # Serde support for arrays
+proptest = { version = "1.0", optional = true }
 
-# Additional dependencies for consensus (optional)
-num_cpus = "1.16"
-reqwest = { version = "0.12.23", features = ["json"] }
-sha2 = "0.10.9"
-mdns-sd = { version = "0.15.1", optional = true }
-dirs = "6.0.0"
-serde_with = "3.11"
+# QUIC transport support
+quinn = { version = "0.10", optional = true }
+rustls = { version = "0.21", features = ["dangerous_configuration"], optional = true }  
+webpki-roots = { version = "0.26", optional = true }
+rcgen = { version = "0.12", optional = true }  
+
+# Date/time handling
+chrono = { version = "0.4", features = ["serde"] }
+
+# Password hashing
+argon2 = "0.5"
+password-hash = "0.5"
+
+# Intel XMX acceleration (compile-time only)
+# Note: XMX uses inline SIMD instructions, no external dependency needed
+
+# P2P networking and discovery (for cluster operations)
+libp2p = { version = "0.52", features = ["kad", "mdns", "noise", "tcp", "gossipsub", "identify", "autonat", "relay", "dcutr", "macros", "yamux", "tokio"] }
+
+# HTTP client for API endpoints
+reqwest = { version = "0.11", features = ["json"], optional = true }
+wat = "1.0"
+wasmtime = { version = "41.0.1", optional = true }
+wasmtime-wasi = { version = "41.0.1", optional = true }
+mdns-sd = "0.17.2"
+libloading = "0.9.0"
+serde_with = "3.16.1"
+
+# Test utilities
+arbitrary = { version = "1.3", features = ["derive"], optional = true }
+hypercore = "0.15.0"
+hypercore-protocol = "0.6.1"
+random-access-memory = "3.0.0"
+random-access-disk = { version = "3.0.1", default-features = false, features = ["tokio"] }
+url = "2.5.8"
+tokio-rustls = "0.26.4"
+
+# V8 JavaScript engine
+v8 = "130.0"
 
 [dev-dependencies]
 # Testing
 tokio-test = "0.4"
-tempfile = "3.8"
+tempfile = "3.0"
+
+# Property-based testing
+proptest = "1.0"
+quickcheck = "1.0"
+quickcheck_macros = "1.0"
+
+# Benchmarking
 criterion = { version = "0.5", features = ["html_reports"] }
-proptest = "1.4"
 
 # Test utilities
-rand = "0.8"
-toml = "0.8"
-async-trait = "0.1"
-wat = "1.0"
+uuid = { version = "1.0", features = ["v4"] }
 
 [features]
-# Minimal default: just QUIC + 9P + basic file serving
-default = []
-
-# Advanced features (add incrementally)
-consensus = []
-mesh = ["mdns-sd"]
-translators = ["wasmtime", "wasmtime-wasi"]
-gpu = ["opencl3"]
-synthetic = []
-
-# Testing
-testing = []
-legacy-tests = []
-
-# All features enabled (for full build)
-full = ["consensus", "mesh", "translators", "gpu", "synthetic"]
+default = ["server", "wasm", "gpu", "xmx", "testing", "translators", "synthetic", "ecc", "quic"]
+server = []
+wasm = ["dep:wasmtime", "dep:wasmtime-wasi"]
+gpu = []
+xmx = []
+testing = ["dep:arbitrary", "dep:proptest"]
+fuse = ["dep:fuser"]
+quic = ["quinn", "rustls", "webpki-roots", "rcgen"]  # QUIC transport with TLS
+translators = ["wasm"]       # Translator system
+synthetic = []               # Synthetic filesystem support
+ecc = ["ed25519-dalek", "p256", "x25519-dalek", "k256", "hmac", "hkdf", "sha2", "base64", "blake3", "chacha20poly1305", "serde_arrays", "rcgen"]  # ECC cryptography
+# gpu feature already defined above
+# wasmtime features are now handled via wasm feature
 
 [[bin]]
-name = "ninep-server"
+name = "ninepe-server"
 path = "src/main.rs"
 
 [profile.release]

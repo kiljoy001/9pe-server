@@ -1,0 +1,6 @@
+error: failed to parse manifest at `/home/scott/Repo/9pe-server/Cargo.toml`
+
+Caused by:
+  feature `default` includes `gpu` which is neither a dependency nor another feature
+
+  help: a feature with a similar name exists: `ecc`

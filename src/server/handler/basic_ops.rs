@@ -2,18 +2,16 @@
 
 use crate::consensus::{BoundedGhostdag, NamespaceOp};
 use crate::identity::NodePermissions;
+use crate::namespace_manager::NamespaceManager;
 use crate::protocol::NinePMessage;
 use crate::protocol::{Qid, Stat};
 use anyhow::Result;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use tracing::{debug, warn};
+use tracing::{debug, warn, info};
 
-use super::connection_state::{ConnectionState, FileHandle};
+use super::connection_state::ConnectionState;
 use super::auth::{decode_auth_response, encode_auth_challenge};
-// use crate::wasm::ThreadSafeTranslatorRegistry; // Unused
-// use crate::settrans::VirtualSettransSystem; // Unused
-// use crate::dht::SovereignDht; // Unused
 
 /// Handler for basic 9P operations
 pub struct BasicOpsHandler {
@@ -25,6 +23,9 @@ pub struct BasicOpsHandler {
 
     /// Consensus coordinator (optional)
     consensus_dag: Option<Arc<crate::consensus::ConsensusCoordinator>>,
+
+    /// Namespace manager for access control
+    namespace_manager: Option<Arc<NamespaceManager>>,
 }
 
 impl BasicOpsHandler {
@@ -33,12 +34,119 @@ impl BasicOpsHandler {
         storage: Arc<dyn crate::traits::StorageProvider>,
         connection_state: ConnectionState,
         consensus_dag: Option<Arc<crate::consensus::ConsensusCoordinator>>,
+        namespace_manager: Option<Arc<NamespaceManager>>,
     ) -> Self {
         Self {
             storage,
             connection_state,
             consensus_dag,
+            namespace_manager,
         }
+    }
+
+    /// Check if a user has access to a namespace
+    ///
+    /// Returns Ok(()) if access is granted, Err with reason if denied.
+    /// Access is granted if:
+    /// - The namespace doesn't exist (unregistered namespaces are open)
+    /// - The user is the namespace owner
+    /// - The user is in the participants list
+    /// - The namespace is public (type="public")
+    async fn check_namespace_access(&self, namespace_path: &str, user_pubkey: &[u8]) -> Result<()> {
+        let namespace_manager = match &self.namespace_manager {
+            Some(nm) => nm,
+            None => {
+                // No namespace manager configured - allow all access
+                debug!("No namespace manager configured, allowing access to {}", namespace_path);
+                return Ok(());
+            }
+        };
+
+        // Empty namespace means root - always allowed for authenticated users
+        if namespace_path.is_empty() {
+            return Ok(());
+        }
+
+        // Try to get the namespace claim
+        let claim = match namespace_manager.get_claim(namespace_path).await {
+            Ok(claim) => claim,
+            Err(_) => {
+                // Namespace not registered - check if it's under a registered parent
+                // Walk up the path to find a registered parent namespace
+                let mut check_path = namespace_path.to_string();
+                loop {
+                    if let Some(parent_idx) = check_path.rfind('/') {
+                        if parent_idx == 0 {
+                            // Reached root, no registered parent found
+                            debug!("Namespace {} has no registered parent, allowing access", namespace_path);
+                            return Ok(());
+                        }
+                        check_path = check_path[..parent_idx].to_string();
+                        if let Ok(parent_claim) = namespace_manager.get_claim(&check_path).await {
+                            // Found a parent namespace - check access to it
+                            return self.verify_claim_access(&parent_claim, user_pubkey, namespace_path).await;
+                        }
+                    } else {
+                        // No more path components
+                        debug!("Namespace {} not registered, allowing access", namespace_path);
+                        return Ok(());
+                    }
+                }
+            }
+        };
+
+        self.verify_claim_access(&claim, user_pubkey, namespace_path).await
+    }
+
+    /// Verify access against a specific namespace claim
+    async fn verify_claim_access(
+        &self,
+        claim: &crate::namespace_manager::NamespaceClaim,
+        user_pubkey: &[u8],
+        namespace_path: &str,
+    ) -> Result<()> {
+        // Check if namespace is expired
+        if let Some(expires_at) = claim.expires_at {
+            if chrono::Utc::now() > expires_at {
+                anyhow::bail!("Namespace {} has expired", namespace_path);
+            }
+        }
+
+        // Check if user is owner
+        if user_pubkey.len() == 32 {
+            let mut pubkey_array = [0u8; 32];
+            pubkey_array.copy_from_slice(user_pubkey);
+            if claim.owner_pubkey == pubkey_array {
+                debug!("User is owner of namespace {}", namespace_path);
+                return Ok(());
+            }
+        }
+
+        // Check if namespace is public
+        if claim.metadata.namespace_type == "public" {
+            debug!("Namespace {} is public, allowing access", namespace_path);
+            return Ok(());
+        }
+
+        // Check if user is in participants list
+        let user_pubkey_hex = hex::encode(user_pubkey);
+        if claim.metadata.participants.contains(&user_pubkey_hex) {
+            debug!("User {} is participant in namespace {}", user_pubkey_hex, namespace_path);
+            return Ok(());
+        }
+
+        // Access denied
+        info!(
+            "Access denied to namespace {} for user {} (owner: {}, participants: {:?})",
+            namespace_path,
+            user_pubkey_hex,
+            hex::encode(&claim.owner_pubkey),
+            claim.metadata.participants
+        );
+        anyhow::bail!(
+            "Access denied to namespace {}: not owner or participant",
+            namespace_path
+        )
     }
 
     /// Require authentication for this connection
@@ -56,23 +164,69 @@ impl BasicOpsHandler {
     pub async fn handle_attach(
         &self,
         fid: u32,
-        _afid: u32,
+        afid: u32,
         uname: String,
         aname: String,
     ) -> Result<NinePMessage> {
-        debug!("Attach: fid={}, uname={}, aname={}", fid, uname, aname);
+        debug!("Attach: fid={}, afid={}, uname={}, aname={}", fid, afid, uname, aname);
 
-        // Create root fid
-        let handle = FileHandle {
+        // SECURITY: Require authentication for attach
+        // The afid must reference a completed auth session
+        if afid != u32::MAX {
+            // afid provided - verify it completed authentication
+            if !self.connection_state.is_authenticated().await {
+                warn!("Attach attempt with afid={} but auth not completed", afid);
+                return Ok(NinePMessage::Error {
+                    ename: "Authentication not completed on afid".to_string(),
+                    errno: 13, // EACCES
+                });
+            }
+        } else {
+            // No afid (NOFID) - require prior authentication
+            if let Err(e) = self.require_auth().await {
+                warn!("Unauthorized attach attempt by {}: {}", uname, e);
+                return Ok(NinePMessage::Error {
+                    ename: format!("Authentication required: {}", e),
+                    errno: 13, // EACCES
+                });
+            }
+        }
+
+        // SECURITY: Verify namespace access
+        // Get user's public key from the authenticated session
+        let user_pubkey = self.connection_state.user_pubkey().await;
+        if let Some(pubkey) = &user_pubkey {
+            // Check if user has access to the requested namespace
+            if let Err(e) = self.check_namespace_access(&aname, pubkey).await {
+                warn!("Namespace access denied for {} to {}: {}", uname, aname, e);
+                return Ok(NinePMessage::Error {
+                    ename: format!("Namespace access denied: {}", e),
+                    errno: 13, // EACCES
+                });
+            }
+        } else if !aname.is_empty() && self.namespace_manager.is_some() {
+            // Authenticated but no pubkey stored - this shouldn't happen
+            // but deny access to be safe
+            warn!("No pubkey for authenticated user {} attempting to access {}", uname, aname);
+            return Ok(NinePMessage::Error {
+                ename: "Internal error: no public key for authenticated session".to_string(),
+                errno: 13, // EACCES
+            });
+        }
+
+        // Set namespace context based on aname
+        if !aname.is_empty() {
+            self.connection_state.set_namespace(aname.clone()).await;
+        }
+
+        // Create root fid using the extended fid system
+        self.connection_state.create_fid(
             fid,
-            path: "/".to_string(),
-            mode: 0,
-            offset: 0,
-            synthetic: false,
-            translator_id: None,
-        };
-
-        self.connection_state.add_fid(fid, handle).await;
+            "/".to_string(),
+            0,      // mode
+            false,  // synthetic
+            None,   // translator_id
+        ).await;
 
         // Get root qid
         let attr = self.storage.stat(Path::new("/")).await?;
@@ -82,12 +236,82 @@ impl BasicOpsHandler {
             path: 0,
         };
 
+        info!("User {} attached to namespace '{}' with fid {}", uname, aname, fid);
+
         Ok(NinePMessage::Attach {
             fid,
-            afid: 0,
+            afid,
             uname,
             aname,
         })
+    }
+
+    /// Check if a path is within the allowed namespace boundary
+    ///
+    /// Returns Ok(()) if the path is within bounds, Err if it would escape.
+    /// An empty namespace means root access (no restrictions).
+    fn check_path_within_namespace(&self, path: &Path, namespace: &str) -> Result<()> {
+        // Empty namespace means root access - all paths allowed
+        if namespace.is_empty() {
+            return Ok(());
+        }
+
+        // Canonicalize the path to resolve ".." components
+        // We work with string representations since these are virtual paths
+        let path_str = path.to_string_lossy();
+
+        // Normalize the path by resolving ".." components
+        let normalized = self.normalize_path(&path_str);
+
+        // Check if normalized path starts with the namespace
+        // The path must either equal the namespace or be a child of it
+        if normalized == namespace {
+            return Ok(());
+        }
+
+        // Check if it's a child path (namespace + "/" + something)
+        let namespace_prefix = if namespace.ends_with('/') {
+            namespace.to_string()
+        } else {
+            format!("{}/", namespace)
+        };
+
+        if normalized.starts_with(&namespace_prefix) {
+            return Ok(());
+        }
+
+        // Path is outside namespace boundary
+        anyhow::bail!(
+            "Path '{}' is outside namespace boundary '{}'",
+            normalized,
+            namespace
+        )
+    }
+
+    /// Normalize a path by resolving ".." and "." components
+    fn normalize_path(&self, path: &str) -> String {
+        let mut components: Vec<&str> = Vec::new();
+
+        for part in path.split('/') {
+            match part {
+                "" | "." => {
+                    // Skip empty components and current directory
+                }
+                ".." => {
+                    // Go up one directory, but don't go above root
+                    components.pop();
+                }
+                other => {
+                    components.push(other);
+                }
+            }
+        }
+
+        if components.is_empty() {
+            "/".to_string()
+        } else {
+            format!("/{}", components.join("/"))
+        }
     }
 
     /// Handle walk request
@@ -99,6 +323,15 @@ impl BasicOpsHandler {
     ) -> Result<NinePMessage> {
         debug!("Walk: fid={}, newfid={}, wnames={:?}", fid, newfid, wnames);
 
+        // SECURITY: Require authentication for walk
+        if let Err(e) = self.require_auth().await {
+            warn!("Unauthorized walk attempt: {}", e);
+            return Ok(NinePMessage::Error {
+                ename: format!("Authentication required: {}", e),
+                errno: 13, // EACCES
+            });
+        }
+
         let handle = match self.connection_state.get_fid(fid).await {
             Some(h) => h,
             None => {
@@ -109,19 +342,35 @@ impl BasicOpsHandler {
             }
         };
 
+        // Get the namespace this connection is attached to
+        let namespace = self.connection_state.namespace().await;
+
         let mut current_path = PathBuf::from(&handle.path);
         let mut qids = Vec::new();
 
         for name in &wnames {
-             // Handle ".."
+            // Handle ".."
             if name == ".." {
                 current_path.pop();
-                // Ensure we don't go above root (StorageProvider handles its root, but our paths are virtual absolute)
-                // If path was already "/" pop does nothing.
             } else {
                 current_path.push(name);
             }
-            
+
+            // SECURITY: Check namespace boundary BEFORE validating path existence
+            // This prevents information leakage about paths outside the namespace
+            if let Err(e) = self.check_path_within_namespace(&current_path, &namespace) {
+                warn!(
+                    "Walk blocked: attempt to escape namespace '{}' to '{}': {}",
+                    namespace,
+                    current_path.display(),
+                    e
+                );
+                return Ok(NinePMessage::Error {
+                    ename: format!("Access denied: path outside namespace boundary"),
+                    errno: 13, // EACCES
+                });
+            }
+
             // Validate existence via stat
             match self.storage.stat(&current_path).await {
                 Ok(attr) => {
@@ -137,16 +386,13 @@ impl BasicOpsHandler {
 
         // Create new fid if walk was successful
         if qids.len() == wnames.len() {
-            let new_handle = FileHandle {
-                fid: newfid,
-                path: current_path.to_string_lossy().to_string(),
-                mode: 0,
-                offset: 0,
-                synthetic: false,
-                translator_id: None,
-            };
-
-            self.connection_state.add_fid(newfid, new_handle).await;
+            self.connection_state.create_fid(
+                newfid,
+                current_path.to_string_lossy().to_string(),
+                0,      // mode
+                false,  // synthetic
+                None,   // translator_id
+            ).await;
         }
 
         Ok(NinePMessage::Walk {
@@ -160,6 +406,15 @@ impl BasicOpsHandler {
     pub async fn handle_open(&self, fid: u32, mode: u8) -> Result<NinePMessage> {
         debug!("Open: fid={}, mode={}", fid, mode);
 
+        // SECURITY: Require authentication for open
+        if let Err(e) = self.require_auth().await {
+            warn!("Unauthorized open attempt on fid={}: {}", fid, e);
+            return Ok(NinePMessage::Error {
+                ename: format!("Authentication required: {}", e),
+                errno: 13, // EACCES
+            });
+        }
+
         let mut handle = match self.connection_state.get_fid(fid).await {
             Some(h) => h,
             None => {
@@ -169,9 +424,6 @@ impl BasicOpsHandler {
                 });
             }
         };
-        
-        // TODO: Check permissions against storage?
-        // StorageProvider doesn't enforce open state usually, but we could checks stats.
 
         handle.mode = mode;
         self.connection_state.add_fid(fid, handle).await;
@@ -246,16 +498,14 @@ impl BasicOpsHandler {
         match result {
             Ok(()) => {
                 // Update fid to point to new file
-                let new_handle = FileHandle {
+                let new_path = format!("{}/{}", handle.path.trim_end_matches('/'), name);
+                self.connection_state.create_fid(
                     fid,
-                    path: format!("{}/{}", handle.path.trim_end_matches('/'), name),
+                    new_path,
                     mode,
-                    offset: 0,
-                    synthetic: false,
-                    translator_id: None,
-                };
-
-                self.connection_state.add_fid(fid, new_handle).await;
+                    false,  // synthetic
+                    None,   // translator_id
+                ).await;
 
                 Ok(NinePMessage::Create {
                     fid,
@@ -277,6 +527,14 @@ impl BasicOpsHandler {
     /// Handle read request
     pub async fn handle_read(&self, fid: u32, offset: u64, count: u32) -> Result<NinePMessage> {
         debug!("Read: fid={}, offset={}, count={}", fid, offset, count);
+
+        // Validate count against maximum message size to prevent DoS
+        if count > crate::protocol::MAX_MESSAGE_SIZE {
+            return Ok(NinePMessage::Error {
+                ename: format!("Read count {} exceeds maximum message size", count),
+                errno: 22, // EINVAL
+            });
+        }
 
         let handle = match self.connection_state.get_fid(fid).await {
             Some(h) => h,
@@ -459,6 +717,16 @@ impl BasicOpsHandler {
     /// Handle clunk request
     pub async fn handle_clunk(&self, fid: u32) -> Result<NinePMessage> {
         debug!("Clunk: fid={}", fid);
+
+        // SECURITY: Require authentication for clunk
+        if let Err(e) = self.require_auth().await {
+            warn!("Unauthorized clunk attempt on fid={}: {}", fid, e);
+            return Ok(NinePMessage::Error {
+                ename: format!("Authentication required: {}", e),
+                errno: 13, // EACCES
+            });
+        }
+
         self.connection_state.remove_fid(fid).await;
         Ok(NinePMessage::Clunk { fid })
     }
@@ -529,6 +797,15 @@ impl BasicOpsHandler {
     pub async fn handle_stat(&self, fid: u32) -> Result<NinePMessage> {
         debug!("Stat: fid={}", fid);
 
+        // SECURITY: Require authentication for stat
+        if let Err(e) = self.require_auth().await {
+            warn!("Unauthorized stat attempt on fid={}: {}", fid, e);
+            return Ok(NinePMessage::Error {
+                ename: format!("Authentication required: {}", e),
+                errno: 13, // EACCES
+            });
+        }
+
         let handle = match self.connection_state.get_fid(fid).await {
             Some(h) => h,
             None => {
@@ -572,12 +849,21 @@ impl BasicOpsHandler {
     /// Handle wstat request
     pub async fn handle_wstat(&self, fid: u32, stat_data: Vec<u8>) -> Result<NinePMessage> {
         debug!("Wstat: fid={}, data_len={}", fid, stat_data.len());
-        
+
+        // SECURITY: Require authentication for wstat (modifies file metadata)
+        if let Err(e) = self.require_auth().await {
+            warn!("Unauthorized wstat attempt on fid={}: {}", fid, e);
+            return Ok(NinePMessage::Error {
+                ename: format!("Authentication required: {}", e),
+                errno: 13, // EACCES
+            });
+        }
+
         let handle = match self.connection_state.get_fid(fid).await {
             Some(h) => h,
             None => return Ok(NinePMessage::Error { ename: "Invalid fid".to_string(), errno: 9 }),
         };
-        
+
         match self.parse_stat_changes(&stat_data).await {
             Ok(changes) => {
                 let file_path = PathBuf::from(&handle.path);
@@ -613,18 +899,33 @@ impl BasicOpsHandler {
         }
     }
     
-    // ... parse_stat_changes remains mostly same ...
+    /// Parse stat changes from wstat data
+    ///
+    /// Returns an error if the data cannot be parsed - we no longer silently
+    /// accept malformed stat data as this could mask protocol violations.
     async fn parse_stat_changes(&self, data: &[u8]) -> Result<StatChanges> {
-        if data.len() < 2 { return Err(anyhow::anyhow!("Stat data too short")); }
-        let mut changes = StatChanges::default();
-        match bincode::deserialize::<Stat>(data) {
-            Ok(stat) => {
-                if !stat.name.is_empty() && stat.name != "~" { changes.name = Some(stat.name); }
-                if stat.mode != u32::MAX { changes.mode = Some(stat.mode); }
-                if stat.length != u64::MAX { changes.length = Some(stat.length); }
-            }
-            Err(_) => debug!("Could not deserialize full stat"),
+        if data.len() < 2 {
+            return Err(anyhow::anyhow!("Stat data too short: {} bytes", data.len()));
         }
+
+        let stat = bincode::deserialize::<Stat>(data)
+            .map_err(|e| anyhow::anyhow!("Invalid stat data: {}", e))?;
+
+        let mut changes = StatChanges::default();
+
+        // "~" or empty means "don't change" in 9P
+        if !stat.name.is_empty() && stat.name != "~" {
+            changes.name = Some(stat.name);
+        }
+        // u32::MAX means "don't change"
+        if stat.mode != u32::MAX {
+            changes.mode = Some(stat.mode);
+        }
+        // u64::MAX means "don't change"
+        if stat.length != u64::MAX {
+            changes.length = Some(stat.length);
+        }
+
         Ok(changes)
     }
     

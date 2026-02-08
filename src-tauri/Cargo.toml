@@ -1,5 +1,5 @@
 [package]
-name = "ninepee-server-gui"
+name = "ninep-server-gui"
 version = "0.1.0"
 description = "9PE Server Dashboard"
 authors = ["you"]

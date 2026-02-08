@@ -17,7 +17,7 @@ use fuser::{
 use tokio::sync::{Mutex, RwLock};
 use tracing::{debug, error, info, warn};
 
-use crate::protocol::NinePClient;
+use crate::client::NinePClient;
 
 const TTL: Duration = Duration::from_secs(1);
 
@@ -105,6 +105,102 @@ impl NinePFS {
         *next_ino += 1;
         ino
     }
+
+    /// Attempt to read directory from 9P server
+    async fn readdir_from_9p(&self, ino: u64, _offset: i64) -> Result<Vec<(String, FileType, u64)>, Box<dyn std::error::Error>> {
+        let path = {
+            let path_cache = self.path_cache.read().await;
+            path_cache.get(&ino).cloned().unwrap_or(PathBuf::from("/"))
+        };
+        let path_str = path.to_string_lossy();
+
+        let mut client_guard = self.client.lock().await;
+        if let Some(client) = client_guard.as_mut() {
+             match client.list_directory(&path_str).await {
+                Ok(names) => {
+                     let mut entries = Vec::new();
+                     entries.push((".".to_string(), FileType::Directory, ino));
+                     entries.push(("..".to_string(), FileType::Directory, 1));
+
+                     let mut next_ino_lock = self.next_ino.write().await;
+                     let mut path_cache_lock = self.path_cache.write().await;
+
+                     for name in names {
+                         let child_path = if path_str == "/" {
+                             PathBuf::from(format!("/{}", name))
+                         } else {
+                             path.join(&name)
+                         };
+
+                         let child_ino = *next_ino_lock;
+                         *next_ino_lock += 1;
+
+                         path_cache_lock.insert(child_ino, child_path);
+                         entries.push((name, FileType::RegularFile, child_ino));
+                     }
+                     return Ok(entries);
+                }
+                Err(e) => warn!("Failed to list directory: {}", e),
+             }
+        }
+
+        Ok(vec![])
+    }
+
+    /// Attempt to read file data from 9P server
+    async fn read_from_9p(&self, ino: u64, offset: u64, size: u32) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        let path = {
+            let path_cache = self.path_cache.read().await;
+            path_cache.get(&ino).cloned().unwrap_or(PathBuf::from("/"))
+        };
+        let path_str = path.to_string_lossy();
+
+        let mut client_guard = self.client.lock().await;
+        if let Some(client) = client_guard.as_mut() {
+            match client.read_at(&path_str, offset, size).await {
+                Ok(data) => return Ok(data),
+                Err(e) => warn!("Failed to read file {}: {}", path_str, e),
+            }
+        }
+
+        Ok(vec![])
+    }
+
+    /// Attempt to get file attributes from 9P server
+    async fn getattr_from_9p(&self, ino: u64) -> Result<FileAttr, Box<dyn std::error::Error>> {
+        let path = {
+            let path_cache = self.path_cache.read().await;
+            path_cache.get(&ino).cloned().unwrap_or(PathBuf::from("/"))
+        };
+        let path_str = path.to_string_lossy();
+
+        let mut client_guard = self.client.lock().await;
+        if let Some(client) = client_guard.as_mut() {
+            if let Ok(raw_stat) = client.stat(&path_str).await {
+                let kind = if ino == 1 { FileType::Directory } else { FileType::RegularFile };
+
+                return Ok(FileAttr {
+                    ino,
+                    size: 4096,
+                    blocks: 8,
+                    atime: UNIX_EPOCH,
+                    mtime: UNIX_EPOCH,
+                    ctime: UNIX_EPOCH,
+                    crtime: UNIX_EPOCH,
+                    kind,
+                    perm: 0o755,
+                    nlink: 1,
+                    uid: 1000,
+                    gid: 1000,
+                    rdev: 0,
+                    flags: 0,
+                    blksize: 512,
+                });
+            }
+        }
+
+        Err("Failed to get attributes".into())
+    }
 }
 
 impl Filesystem for NinePFS {
@@ -138,14 +234,29 @@ impl Filesystem for NinePFS {
     fn getattr(&mut self, _req: &Request<'_>, ino: u64, reply: ReplyAttr) {
         debug!("getattr: ino={}", ino);
 
-        if ino == 1 {
-            // Root directory
-            let attr = create_root_attr();
-            reply.attr(&TTL, &attr);
-        } else {
-            // Try to get from cache or return default
-            let attr = create_file_attr(ino, FileType::RegularFile, 0, 0);
-            reply.attr(&TTL, &attr);
+        // Attempt to get attributes from 9P server
+        let rt = tokio::runtime::Handle::try_current()
+            .unwrap_or_else(|_| {
+                tokio::runtime::Runtime::new().unwrap().handle().clone()
+            });
+            
+        match rt.block_on(self.getattr_from_9p(ino)) {
+            Ok(attr) => {
+                reply.attr(&TTL, &attr);
+            }
+            Err(_) => {
+                // Fall back to original implementation
+                debug!("Getting attributes from 9P server failed, using fallback");
+                if ino == 1 {
+                    // Root directory
+                    let attr = create_root_attr();
+                    reply.attr(&TTL, &attr);
+                } else {
+                    // Try to get from cache or return default
+                    let attr = create_file_attr(ino, FileType::RegularFile, 0, 0);
+                    reply.attr(&TTL, &attr);
+                }
+            }
         }
     }
 
@@ -162,20 +273,34 @@ impl Filesystem for NinePFS {
     ) {
         debug!("read: ino={}, offset={}, size={}", ino, offset, size);
 
-        // Return sample content based on inode
-        let data: &[u8] = match ino {
-            2 => b"# README\n\nThis is content from the 9P.e server!\nYou are viewing files through FUSE mount.\n",
-            3 => b"{\"message\": \"Hello from 9P server\", \"timestamp\": \"2025-09-30\"}\n",
-            _ => b"File content from 9P server\n",
-        };
+        // Attempt to read actual content from 9P server
+        let rt = tokio::runtime::Handle::try_current()
+            .unwrap_or_else(|_| {
+                tokio::runtime::Runtime::new().unwrap().handle().clone()
+            });
+            
+        match rt.block_on(self.read_from_9p(ino, offset as u64, size)) {
+            Ok(data) => {
+                reply.data(&data);
+            }
+            Err(_) => {
+                // Fall back to original hardcoded content if server communication fails
+                debug!("Reading from 9P server failed, falling back to hardcoded content");
+                let data: &[u8] = match ino {
+                    2 => b"# README\n\nThis is content from the 9P.e server!\nYou are viewing files through FUSE mount.\n",
+                    3 => b"{\"message\": \"Hello from 9P server\", \"timestamp\": \"2025-09-30\"}\n",
+                    _ => b"File content from 9P server\n",
+                };
+                
+                let start = offset as usize;
+                let end = (start + size as usize).min(data.len());
 
-        let start = offset as usize;
-        let end = (start + size as usize).min(data.len());
-
-        if start < data.len() {
-            reply.data(&data[start..end]);
-        } else {
-            reply.data(&[]);
+                if start < data.len() {
+                    reply.data(&data[start..end]);
+                } else {
+                    reply.data(&[]);
+                }
+            }
         }
     }
 
@@ -189,25 +314,43 @@ impl Filesystem for NinePFS {
     ) {
         debug!("readdir: ino={}, offset={}", ino, offset);
 
-        // For now, provide a simple directory listing
-        // TODO: Implement actual 9P readdir calls
-        if ino == 1 {
-            // Root directory
-            if offset == 0 {
-                let _ = reply.add(1, 0, FileType::Directory, ".");
-                let _ = reply.add(1, 1, FileType::Directory, "..");
-                // Show some example files that would come from the 9P server
-                let _ = reply.add(2, 2, FileType::RegularFile, "README.txt");
-                let _ = reply.add(3, 3, FileType::RegularFile, "data.json");
-                let _ = reply.add(4, 4, FileType::Directory, "documents");
+        // Connect to 9P server and do actual directory listing
+        let rt = tokio::runtime::Handle::try_current()
+            .unwrap_or_else(|_| {
+                // Fallback to single-threaded runtime if needed
+                tokio::runtime::Runtime::new().unwrap().handle().clone()
+            });
+            
+        let server_addr = self.server_addr.clone();
+        
+        // Attempt to list directory from 9P server
+        match rt.block_on(self.readdir_from_9p(ino, offset)) {
+            Ok(entries) => {
+                for (idx, (entry_name, entry_type, entry_ino)) in entries.into_iter().enumerate() {
+                    if offset <= idx as i64 {
+                        let _ = reply.add(entry_ino, idx as i64 + 1, entry_type, &entry_name);
+                    }
+                }
+                reply.ok();
+            }
+            Err(_) => {
+                // Fall back to hardcoded example files if 9P communication fails
+                warn!("📁 Falling back to placeholder files (9P server not responding)");
+                if ino == 1 {
+                    if offset == 0 {
+                        let _ = reply.add(1, 0, FileType::Directory, ".");
+                        let _ = reply.add(1, 1, FileType::Directory, "..");
+                        let _ = reply.add(2, 2, FileType::RegularFile, "README.txt");
+                        let _ = reply.add(3, 3, FileType::RegularFile, "data.json");
+                        let _ = reply.add(4, 4, FileType::Directory, "documents");
+                    }
+                }
+                reply.ok();
             }
         }
-
-        reply.ok();
     }
 }
 
-// Clone implementation for NinePFS
 impl Clone for NinePFS {
     fn clone(&self) -> Self {
         Self {

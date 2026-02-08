@@ -138,12 +138,12 @@ use prometheus::{Counter, Histogram, register_counter};
 
 lazy_static! {
     static ref CONNECTIONS_TOTAL: Counter = register_counter!(
-        "ninepee_connections_total",
+        "ninep_connections_total",
         "Total connections"
     ).unwrap();
 
     static ref REQUEST_DURATION: Histogram = register_histogram!(
-        "ninepee_request_duration_seconds",
+        "ninep_request_duration_seconds",
         "Request duration"
     ).unwrap();
 }
@@ -179,7 +179,7 @@ async fn start_grafana_sidecar() {
 import { PanelContainer, Button } from '@grafana/ui'
 import { Line } from 'react-chartjs-2'
 
-function NinePeeDashboard() {
+function NinePDashboard() {
     return (
         <div className="grafana-dashboard-grid">
             {/* Grafana-style panels */}

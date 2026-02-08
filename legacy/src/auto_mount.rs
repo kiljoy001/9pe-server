@@ -13,7 +13,7 @@ use libp2p::PeerId;
 
 use crate::mesh_client::{MeshClient, DiscoveredPeer};
 use crate::auth::{AuthService, AuthMethod, SignedCapability, Permissions, User};
-use crate::client::NinePeeClient;
+use crate::client::NinePClient;
 use crate::simple_fuse;
 
 /// Mount configuration for a remote server
@@ -266,7 +266,7 @@ async fn authenticate_to_server(
     user: Option<&User>,
 ) -> Result<SignedCapability> {
     // Try to connect first
-    match NinePeeClient::connect(&peer.listen_addr).await {
+    match NinePClient::connect(&peer.listen_addr).await {
         Ok(_client) => {
             // For now, issue a basic read-only capability
             // In production, would negotiate with server

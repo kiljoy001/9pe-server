@@ -51,19 +51,19 @@ mod grafana_metrics_tests {
     #[test]
     fn test_prometheus_format() {
         let metrics = vec![
-            Metric::counter("ninepee_requests_total", 1234.0),
-            Metric::gauge("ninepee_connections_active", 5.0),
-            Metric::histogram("ninepee_request_duration_seconds", vec![0.1, 0.5, 1.0, 2.0]),
+            Metric::counter("ninep_requests_total", 1234.0),
+            Metric::gauge("ninep_connections_active", 5.0),
+            Metric::histogram("ninep_request_duration_seconds", vec![0.1, 0.5, 1.0, 2.0]),
         ];
 
         let output = format_prometheus_metrics(&metrics);
 
         // Verify Prometheus format
-        assert!(output.contains("# TYPE ninepee_requests_total counter"));
-        assert!(output.contains("ninepee_requests_total 1234"));
-        assert!(output.contains("# TYPE ninepee_connections_active gauge"));
-        assert!(output.contains("ninepee_connections_active 5"));
-        assert!(output.contains("# TYPE ninepee_request_duration_seconds histogram"));
+        assert!(output.contains("# TYPE ninep_requests_total counter"));
+        assert!(output.contains("ninep_requests_total 1234"));
+        assert!(output.contains("# TYPE ninep_connections_active gauge"));
+        assert!(output.contains("ninep_connections_active 5"));
+        assert!(output.contains("# TYPE ninep_request_duration_seconds histogram"));
     }
 
     /// Test: Grafana dashboard configuration
@@ -71,12 +71,12 @@ mod grafana_metrics_tests {
     fn test_dashboard_generation() {
         let dashboard = DashboardBuilder::new("9P.e Server Monitoring")
             .add_row("Overview")
-            .add_panel(Panel::stat("Active Connections", "ninepee_connections_active"))
-            .add_panel(Panel::gauge("CPU Usage", "ninepee_cpu_percent"))
-            .add_panel(Panel::graph("Throughput", "ninepee_bytes_per_second"))
+            .add_panel(Panel::stat("Active Connections", "ninep_connections_active"))
+            .add_panel(Panel::gauge("CPU Usage", "ninep_cpu_percent"))
+            .add_panel(Panel::graph("Throughput", "ninep_bytes_per_second"))
             .add_row("File Operations")
-            .add_panel(Panel::table("Recent Files", "ninepee_file_operations"))
-            .add_panel(Panel::heatmap("Access Pattern", "ninepee_file_access_heatmap"))
+            .add_panel(Panel::table("Recent Files", "ninep_file_operations"))
+            .add_panel(Panel::heatmap("Access Pattern", "ninep_file_access_heatmap"))
             .build();
 
         // Verify dashboard structure
@@ -101,20 +101,20 @@ mod grafana_metrics_tests {
         // Configure alert rules
         alerter.add_rule(AlertRule {
             name: "High CPU".to_string(),
-            condition: "ninepee_cpu_percent > 90",
+            condition: "ninep_cpu_percent > 90",
             duration: Duration::from_secs(300),  // 5 minutes
             severity: Severity::Warning,
         });
 
         alerter.add_rule(AlertRule {
             name: "Connection Spike".to_string(),
-            condition: "rate(ninepee_connections_total[5m]) > 100",
+            condition: "rate(ninep_connections_total[5m]) > 100",
             duration: Duration::from_secs(60),
             severity: Severity::Critical,
         });
 
         // Test alert triggering
-        alerter.evaluate_metric("ninepee_cpu_percent", 95.0);
+        alerter.evaluate_metric("ninep_cpu_percent", 95.0);
         assert!(alerter.has_active_alerts());
 
         let alerts = alerter.get_active_alerts();
@@ -128,12 +128,12 @@ mod grafana_metrics_tests {
         let mut streamer = MetricsStreamer::new();
 
         // Subscribe to metrics
-        let mut subscription = streamer.subscribe("ninepee_throughput").await;
+        let mut subscription = streamer.subscribe("ninep_throughput").await;
 
         // Publish metrics
-        streamer.publish("ninepee_throughput", 1024.0).await;
-        streamer.publish("ninepee_throughput", 2048.0).await;
-        streamer.publish("ninepee_throughput", 4096.0).await;
+        streamer.publish("ninep_throughput", 1024.0).await;
+        streamer.publish("ninep_throughput", 2048.0).await;
+        streamer.publish("ninep_throughput", 4096.0).await;
 
         // Receive streamed metrics
         let mut received = vec![];
@@ -154,15 +154,15 @@ mod grafana_metrics_tests {
     fn test_panel_queries() {
         let queries = vec![
             // Simple queries
-            PanelQuery::simple("ninepee_connections_active"),
+            PanelQuery::simple("ninep_connections_active"),
 
             // Aggregation queries
-            PanelQuery::rate("ninepee_requests_total", "5m"),
-            PanelQuery::avg("ninepee_response_time", "1h"),
+            PanelQuery::rate("ninep_requests_total", "5m"),
+            PanelQuery::avg("ninep_response_time", "1h"),
 
             // Complex queries
             PanelQuery::custom(
-                "histogram_quantile(0.95, rate(ninepee_request_duration_bucket[5m]))"
+                "histogram_quantile(0.95, rate(ninep_request_duration_bucket[5m]))"
             ),
         ];
 
@@ -261,13 +261,13 @@ mod grafana_metrics_tests {
         ]);
 
         // Test variable substitution in queries
-        let query = "ninepee_requests{namespace=\"$namespace\"}[$time_range]";
+        let query = "ninep_requests{namespace=\"$namespace\"}[$time_range]";
         let substituted = dashboard.substitute_variables(query, &[
             ("namespace", "/public"),
             ("time_range", "1h"),
         ]);
 
-        assert_eq!(substituted, "ninepee_requests{namespace=\"/public\"}[1h]");
+        assert_eq!(substituted, "ninep_requests{namespace=\"/public\"}[1h]");
     }
 
     /// Test: Grafana API integration
@@ -292,7 +292,7 @@ mod grafana_metrics_tests {
         // Test alert creation
         let alert = Alert {
             name: "High Load".to_string(),
-            expression: "ninepee_load > 0.8".to_string(),
+            expression: "ninep_load > 0.8".to_string(),
         };
         let result = api.create_alert(alert).await;
         assert!(result.is_ok());
@@ -309,7 +309,7 @@ mod grafana_metrics_tests {
 
         // Test Prometheus format
         let prometheus = export_prometheus(&metrics);
-        assert!(prometheus.contains("ninepee_connections 42"));
+        assert!(prometheus.contains("ninep_connections 42"));
 
         // Test JSON format
         let json = export_json(&metrics);
@@ -317,7 +317,7 @@ mod grafana_metrics_tests {
 
         // Test InfluxDB line protocol
         let influx = export_influx(&metrics);
-        assert!(influx.contains("ninepee connections=42"));
+        assert!(influx.contains("ninep connections=42"));
 
         // Test OpenMetrics format
         let openmetrics = export_openmetrics(&metrics);
@@ -616,7 +616,7 @@ mod grafana_metrics_tests {
         }
 
         fn evaluate_metric(&mut self, metric: &str, value: f64) {
-            if metric == "ninepee_cpu_percent" && value > 90.0 {
+            if metric == "ninep_cpu_percent" && value > 90.0 {
                 self.active_alerts.push(ActiveAlert {
                     name: "High CPU".to_string(),
                     severity: Severity::Warning,

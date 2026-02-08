@@ -1,0 +1,8 @@
+[server]
+root = "./test_root"
+auto_mount_enabled = true
+listen_addr = "127.0.0.1:5640"
+node_id = "agregore-test-node"
+
+[logging]
+level = "info"

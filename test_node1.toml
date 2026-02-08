@@ -1,0 +1,17 @@
+# Test Node 1 config
+[server]
+listen_addr = "127.0.0.1:5641"
+node_id = "test-node-1"
+mesh_port = 9651
+
+[consensus]
+enabled = true
+peers = []
+
+[gpu]
+enabled = true
+backend = "sycl"
+device_id = 0
+
+[logging]
+level = "debug"
