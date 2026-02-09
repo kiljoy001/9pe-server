@@ -62,6 +62,8 @@ pub struct MeshNetwork {
     service_discovery: Vec<String>, // Services to discover and connect to
     /// Fog router for distributed job execution
     fog_router: Arc<RwLock<Option<Arc<crate::fog::DefaultFogRouter>>>>,
+    /// Resource registry for fog routing (shared with fog router)
+    resource_registry: Arc<crate::fog::resources::ResourceRegistry>,
 }
 
 impl MeshNetwork {
@@ -90,6 +92,7 @@ impl MeshNetwork {
             peer_timeout: Duration::from_secs(90),
             service_discovery,
             fog_router: Arc::new(RwLock::new(None)),
+            resource_registry: Arc::new(crate::fog::resources::ResourceRegistry::new()),
         }
     }
 
@@ -340,6 +343,15 @@ impl MeshNetwork {
                 }
 
                 info!("Peer {} connected successfully via QUIC", node_id);
+
+                // Announce our resources to the new peer
+                let self_clone = self.clone();
+                let peer_id = node_id.clone();
+                tokio::spawn(async move {
+                    if let Err(e) = self_clone.announce_resources_to_peer(&peer_id).await {
+                        warn!("Failed to announce resources to {}: {}", peer_id, e);
+                    }
+                });
             }
             other => {
                 warn!("Expected handshake as first message, got {:?}", other);
@@ -756,7 +768,6 @@ impl MeshNetwork {
                 if let Some(ref router) = *router_guard {
                     let router_clone = Arc::clone(router);
                     let from_node = NodeId::new(from_peer.to_string());
-                    let self_clone = self.clone();
                     let from_peer_clone = from_peer.to_string();
                     drop(router_guard); // Release lock before spawning
 
@@ -773,6 +784,10 @@ impl MeshNetwork {
                 } else {
                     debug!("Fog message received but no fog router configured");
                 }
+            }
+            MeshMessage::ResourceAnnounce { resources } => {
+                info!("Received resource announcement from {}", from_peer);
+                self.register_peer_resources(resources).await;
             }
             _ => {
                 debug!("Received message from {}: {:?}", from_peer, message);
@@ -857,6 +872,55 @@ impl MeshNetwork {
         self.send_message_to_peer(peer_id, MeshMessage::Fog { message: fog_msg }).await
     }
 
+    /// Build local node resources for announcement
+    pub fn build_local_resources(&self) -> crate::fog::resources::NodeResources {
+        use crate::fog::resources::{NodeResources, GpuInfo};
+        use std::net::SocketAddr;
+
+        let addr: SocketAddr = format!("0.0.0.0:{}", self.local_port)
+            .parse()
+            .unwrap_or_else(|_| SocketAddr::from(([0, 0, 0, 0], self.local_port)));
+
+        let mut resources = NodeResources::local(
+            NodeId::new(self.node_id.clone()),
+            addr,
+        );
+
+        // Add GPU info if available (this would be populated from compute manager)
+        // For now, add basic SYCL support indication
+        resources.supported_operations = vec![
+            "vector_add".to_string(),
+            "matrix_multiply".to_string(),
+            "reduce_sum".to_string(),
+            "sycl".to_string(),
+            "wasm".to_string(),
+        ];
+
+        resources.uptime_secs = self.start_time.elapsed().as_secs();
+
+        resources
+    }
+
+    /// Announce local resources to a specific peer
+    pub async fn announce_resources_to_peer(&self, peer_id: &str) -> Result<()> {
+        let resources = self.build_local_resources();
+        debug!("Announcing resources to peer {}: {:?}", peer_id, resources.node_id);
+        self.send_message_to_peer(peer_id, MeshMessage::ResourceAnnounce { resources }).await
+    }
+
+    /// Register received peer resources in the registry
+    pub async fn register_peer_resources(&self, resources: crate::fog::resources::NodeResources) {
+        let peer_id = resources.node_id.as_str().to_string();
+        info!(
+            "Registered resources from peer {}: {} CPUs, {} GPUs, {} ops",
+            peer_id,
+            resources.cpu_cores,
+            resources.gpu_count,
+            resources.supported_operations.len()
+        );
+        self.resource_registry.register(resources).await;
+    }
+
     /// Create and configure the fog router for this mesh network
     ///
     /// This creates a DefaultFogRouter connected to this mesh network for
@@ -875,8 +939,8 @@ impl MeshNetwork {
         // Create local executor wrapping the compute manager
         let local_executor = Arc::new(ComputeLocalExecutor::new(compute_manager));
 
-        // Create resource registry
-        let resources = Arc::new(ResourceRegistry::new());
+        // Use shared resource registry
+        let resources = Arc::clone(&self.resource_registry);
 
         // Create the fog router
         let router = Arc::new(DefaultFogRouter::new(
@@ -1339,6 +1403,16 @@ impl MeshNetwork {
                 }
 
                 info!("Handshake complete with peer {} at {}", node_id, addr);
+
+                // Announce our resources to the peer
+                let self_clone = self.clone();
+                let peer_id = node_id.clone();
+                tokio::spawn(async move {
+                    if let Err(e) = self_clone.announce_resources_to_peer(&peer_id).await {
+                        warn!("Failed to announce resources to {}: {}", peer_id, e);
+                    }
+                });
+
                 Ok(())
             }
             other => {
@@ -1399,6 +1473,10 @@ pub enum MeshMessage {
     // Fog computing messages for distributed job execution
     Fog {
         message: crate::fog::FogMessage,
+    },
+    // Resource announcement for fog routing
+    ResourceAnnounce {
+        resources: crate::fog::resources::NodeResources,
     },
 }
 
