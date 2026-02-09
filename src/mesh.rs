@@ -15,7 +15,26 @@ use tracing::{debug, error, info, warn};
 
 // QUIC imports
 use quinn::{Connection as QuinnConnection, Endpoint, RecvStream, SendStream, ServerConfig};
-use rustls::{Certificate, PrivateKey, ServerConfig as RustlsServerConfig};
+use rustls::{Certificate, PrivateKey, ServerConfig as RustlsServerConfig, ClientConfig as RustlsClientConfig};
+
+/// Skip server verification for mesh connections (all nodes use self-signed certs)
+struct SkipServerVerification;
+
+impl rustls::client::ServerCertVerifier for SkipServerVerification {
+    fn verify_server_cert(
+        &self,
+        _end_entity: &rustls::Certificate,
+        _intermediates: &[rustls::Certificate],
+        _server_name: &rustls::ServerName,
+        _scts: &mut dyn Iterator<Item = &[u8]>,
+        _ocsp_response: &[u8],
+        _now: std::time::SystemTime,
+    ) -> Result<rustls::client::ServerCertVerified, rustls::Error> {
+        // Accept any certificate for mesh peer-to-peer connections
+        // Actual peer identity is verified via the mesh handshake protocol
+        Ok(rustls::client::ServerCertVerified::assertion())
+    }
+}
 
 const MESH_FRAME_MAGIC: [u8; 4] = *b"9PMH";
 const MESH_FRAME_VERSION: u16 = 1;
@@ -33,7 +52,7 @@ pub struct MeshNetwork {
     local_port: u16,
     peers: Arc<RwLock<HashMap<String, PeerConnection>>>,
     bootstrap_peers: Vec<String>,
-    mdns_daemon: Option<ServiceDaemon>,
+    mdns_daemon: Arc<RwLock<Option<ServiceDaemon>>>,
     dht: Arc<SovereignDht>, // Use our sovereign DHT instead of KademliaTable
     endpoint: Arc<RwLock<Option<Endpoint>>>, // QUIC endpoint
     namespace_manager: Arc<Mutex<Option<Arc<dyn crate::namespace_manager::MeshMessageHandler>>>>,
@@ -62,7 +81,7 @@ impl MeshNetwork {
             local_port,
             peers: Arc::new(RwLock::new(HashMap::new())),
             bootstrap_peers,
-            mdns_daemon: None,
+            mdns_daemon: Arc::new(RwLock::new(None)),
             dht,
             endpoint: Arc::new(RwLock::new(None)),
             namespace_manager: Arc::new(Mutex::new(None)),
@@ -159,24 +178,33 @@ impl MeshNetwork {
         // Use our sovereign identity's certificate
         let cert_der = self.sovereign_identity.certificate.clone();
         let private_key_der = self.sovereign_identity.private_key_der.clone();
-        
+
         // Create rustls certificate and private key
-        let cert_chain = vec![Certificate(cert_der)];
+        let cert_chain = vec![Certificate(cert_der.clone())];
         let private_key = PrivateKey(private_key_der);
 
         // Create rustls server config
         let rustls_config = RustlsServerConfig::builder()
             .with_safe_defaults()
             .with_no_client_auth()
-            .with_single_cert(cert_chain, private_key)
+            .with_single_cert(cert_chain.clone(), private_key)
             .map_err(|e| anyhow::anyhow!("Failed to create rustls config: {}", e))?;
 
         // Create QUIC endpoint
         let mut server_config = ServerConfig::with_crypto(Arc::new(rustls_config));
         server_config.transport = Arc::new(quinn::TransportConfig::default());
 
-        let endpoint = Endpoint::server(server_config, addr)
+        let mut endpoint = Endpoint::server(server_config, addr)
             .map_err(|e| anyhow::anyhow!("Failed to create QUIC endpoint: {}", e))?;
+
+        // Create client config for outgoing connections (skip certificate verification for mesh)
+        let client_crypto = rustls::ClientConfig::builder()
+            .with_safe_defaults()
+            .with_custom_certificate_verifier(Arc::new(SkipServerVerification))
+            .with_single_cert(cert_chain, PrivateKey(self.sovereign_identity.private_key_der.clone()))
+            .map_err(|e| anyhow::anyhow!("Failed to create client TLS config: {}", e))?;
+        let client_config = quinn::ClientConfig::new(Arc::new(client_crypto));
+        endpoint.set_default_client_config(client_config);
 
         Ok(endpoint)
     }
@@ -234,7 +262,8 @@ impl MeshNetwork {
         let peer_addr = connecting.remote_address();
 
         // Accept bi-directional stream for mesh communication
-        let (_send_stream, recv_stream) = connecting
+        // Keep send_stream to respond on the SAME stream the client is listening on
+        let (send_stream, recv_stream) = connecting
             .accept_bi()
             .await
             .context("Failed to accept QUIC stream")?;
@@ -289,13 +318,8 @@ impl MeshNetwork {
                     permissions: self.sovereign_identity.permissions.clone(),
                 };
 
-                // Create new stream for sending response
-                let (response_send, _) = connecting
-                    .open_bi()
-                    .await
-                    .context("Failed to open QUIC stream for response")?;
-
-                self.send_message_quic(response_send, &response).await?;
+                // Send response on the SAME stream the client is listening on
+                self.send_message_quic(send_stream, &response).await?;
 
                 self.register_peer_connection(node_id.clone(), peer_addr, connecting)
                     .await;
@@ -384,6 +408,12 @@ impl MeshNetwork {
                 return;
             }
         };
+
+        // Store the daemon for later use by announce_service
+        {
+            let mut daemon_guard = self.mdns_daemon.write().await;
+            *daemon_guard = Some(mdns.clone());
+        }
 
         // Service type for 9pe mesh nodes
         let service_type = "_9pe-mesh._udp.local.";
@@ -1107,8 +1137,34 @@ impl MeshNetwork {
     }
 
     pub async fn announce_service(&self, service_name: &str) -> Result<()> {
-        if self.mdns_daemon.is_some() {
-            info!("Announcing service '{}' via mDNS (stub)", service_name);
+        let daemon_guard = self.mdns_daemon.read().await;
+        if let Some(ref mdns) = *daemon_guard {
+            // Create service type from name (e.g., "compute" -> "_9pe-compute._tcp.local.")
+            let service_type = format!("_9pe-{}._tcp.local.", service_name);
+            let instance_name = format!("9pe-{}-{}", service_name, &self.node_id[..8]);
+            let service_hostname = format!("{}.local.", instance_name);
+            let properties = [("node_id", self.node_id.as_str())];
+
+            match mdns_sd::ServiceInfo::new(
+                &service_type,
+                &instance_name,
+                &service_hostname,
+                "",  // No specific IP, let mDNS resolve
+                self.local_port,
+                &properties[..],
+            ) {
+                Ok(service_info) => {
+                    if let Err(e) = mdns.register(service_info) {
+                        error!("Failed to register mDNS service '{}': {}", service_name, e);
+                        return Err(anyhow!("mDNS registration failed: {}", e));
+                    }
+                    info!("Announced service '{}' via mDNS as {}", service_name, instance_name);
+                }
+                Err(e) => {
+                    error!("Failed to create mDNS service info for '{}': {}", service_name, e);
+                    return Err(anyhow!("mDNS service info creation failed: {}", e));
+                }
+            }
         } else {
             info!(
                 "mDNS service announcement requested for '{}' but daemon is not initialized",
@@ -1126,7 +1182,7 @@ impl MeshNetwork {
             node_id: self.node_id.clone(),
             peer_count: peers.len(),
             active_connections,
-            mdns_enabled: self.mdns_daemon.is_some(),
+            mdns_enabled: self.mdns_daemon.read().await.is_some(),
             dht_enabled: true,
             uptime_seconds: self.start_time.elapsed().as_secs(),
         }
@@ -1193,8 +1249,11 @@ impl MeshNetwork {
                 .ok_or_else(|| anyhow!("QUIC endpoint not initialized"))?
         };
 
+        // Use node ID prefix as subdomain for SNI - forms valid DNS name like "09e44bec.9pe.mesh"
+        // Actual peer identity is verified via the mesh handshake protocol
+        let server_name = format!("{}.9pe.mesh", &self.node_id[..8]);
         let connecting = endpoint
-            .connect(addr, &self.node_id)
+            .connect(addr, &server_name)
             .map_err(|e| anyhow!("Failed to initiate QUIC connection: {}", e))?;
 
         let connection = connecting
