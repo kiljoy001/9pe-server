@@ -296,8 +296,10 @@ impl Server {
         let mesh_network = if config.mesh_enabled {
             info!("Starting mesh networking on port {}", config.mesh_port);
 
-            // Get bootstrap peers from consensus config
-            let bootstrap_peers = if let Some(ref consensus_cfg) = config.consensus_config {
+            // Get bootstrap peers from config (prefer dht_bootstrap_peers, fall back to consensus)
+            let bootstrap_peers = if !config.dht_bootstrap_peers.is_empty() {
+                config.dht_bootstrap_peers.clone()
+            } else if let Some(ref consensus_cfg) = config.consensus_config {
                 consensus_cfg.peers.clone()
             } else {
                 Vec::new()
